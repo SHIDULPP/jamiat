@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:jamiat/src/interfaces/main_pages/navbar.dart';
+import 'package:jamiat/src/interfaces/onboarding/login.dart';
 import 'package:jamiat/src/interfaces/onboarding/splash_screen.dart';
+
 
 enum TransitionType { slideFromBottom, slideFromRight, fade, fadeScale }
 
@@ -110,7 +112,11 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
       transitionDuration = const Duration(milliseconds: 500);
       break;
 
-
+    case 'Login':
+      page = const LoginScreen();
+      transitionToUse = TransitionType.slideFromRight;
+      transitionDuration = const Duration(milliseconds: 300);
+      break;
 
     case 'navBar':
       page = const NavBar();

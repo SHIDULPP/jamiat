@@ -77,13 +77,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     _entranceController.forward();
 
-    // Future.delayed(const Duration(seconds: 3), _navigateToNext);
+    Future.delayed(const Duration(seconds: 3), _navigateToNext);
   }
 
-  // ignore: unused_element
   Future<void> _navigateToNext() async {
     if (!mounted) return;
-    NavigationService().pushNamedAndRemoveUntil('navBar');
+    NavigationService().pushNamedAndRemoveUntil('Login');
   }
 
   @override
