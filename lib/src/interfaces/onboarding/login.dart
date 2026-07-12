@@ -1,178 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/interfaces/components/primarybutton.dart';
-
-// ================= CUSTOM VECTOR ARTWORK ICONS =================
-
-class SmartphoneIcon extends StatelessWidget {
-  const SmartphoneIcon({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 80,
-      height: 80,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Vibration waves on top-right
-          Positioned(
-            top: 16,
-            right: 18,
-            child: SizedBox(
-              width: 14,
-              height: 20,
-              child: CustomPaint(
-                painter: _VibrationLinesPainter(),
-              ),
-            ),
-          ),
-          // Smartphone shell
-          Container(
-            width: 38,
-            height: 56,
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: kTextColor, width: 2),
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Top receiver speaker
-                Positioned(
-                  top: 5,
-                  child: Container(
-                    width: 10,
-                    height: 2,
-                    decoration: BoxDecoration(
-                      color: kTextColor,
-                      borderRadius: BorderRadius.circular(1),
-                    ),
-                  ),
-                ),
-                // Bottom circular home key
-                Positioned(
-                  bottom: 3,
-                  child: Container(
-                    width: 5,
-                    height: 5,
-                    decoration: const BoxDecoration(
-                      color: kTextColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _VibrationLinesPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = kTextColor
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    // Outer larger arc
-    canvas.drawArc(
-      Rect.fromLTWH(0, 0, size.width * 2, size.height),
-      -0.9 * 3.1415,
-      0.6 * 3.1415,
-      false,
-      paint,
-    );
-    // Inner smaller arc
-    canvas.drawArc(
-      Rect.fromLTWH(size.width * 0.3, size.height * 0.15, size.width * 1.4, size.height * 0.7),
-      -0.9 * 3.1415,
-      0.6 * 3.1415,
-      false,
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class PasscodeIcon extends StatelessWidget {
-  const PasscodeIcon({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 80,
-      height: 80,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Keyboard ticks/rays indicator on top right
-          Positioned(
-            top: 22,
-            right: 12,
-            child: SizedBox(
-              width: 12,
-              height: 12,
-              child: CustomPaint(
-                painter: _PasscodeRaysPainter(),
-              ),
-            ),
-          ),
-          // Passcode block
-          Container(
-            width: 72,
-            height: 26,
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: kTextColor, width: 2),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Text('*', style: TextStyle(color: kTextColor, fontSize: 18, fontWeight: FontWeight.bold, height: 1.5)),
-                Text('*', style: TextStyle(color: kTextColor, fontSize: 18, fontWeight: FontWeight.bold, height: 1.5)),
-                Text('*', style: TextStyle(color: kTextColor, fontSize: 18, fontWeight: FontWeight.bold, height: 1.5)),
-                Text('*', style: TextStyle(color: kTextColor, fontSize: 18, fontWeight: FontWeight.bold, height: 1.5)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PasscodeRaysPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = kTextColor
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    // Draw three ray vectors
-    canvas.drawLine(const Offset(0, 8), const Offset(4, 4), paint);
-    canvas.drawLine(const Offset(4, 10), const Offset(9, 7), paint);
-    canvas.drawLine(const Offset(1, 11), const Offset(5, 13), paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
+import 'package:pin_code_fields/pin_code_fields.dart';
 
 // ================= MAIN LOGIN SCREEN =================
 
@@ -185,23 +20,35 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   late TextEditingController _phoneController;
+  late FocusNode _phoneFocusNode;
   bool _isLoading = false;
+  bool _showPhoneError = false;
+  String _fullPhoneNumber = '';
+  String _dialCode = '91';
 
   @override
   void initState() {
     super.initState();
     _phoneController = TextEditingController();
+    _phoneFocusNode = FocusNode();
   }
 
   @override
   void dispose() {
     _phoneController.dispose();
+    _phoneFocusNode.dispose();
     super.dispose();
   }
 
-  void _requestOtp() async {
+  Future<void> _requestOtp() async {
+    setState(() => _showPhoneError = true);
+
     final digits = _phoneController.text.trim();
-    if (digits.isEmpty || digits.length < 10) {
+    if (digits.isEmpty || !RegExp(r'^[0-9]+$').hasMatch(digits)) {
+      _showMessage('Please enter a valid mobile number');
+      return;
+    }
+    if (digits.length < 10) {
       _showMessage('Please enter a valid 10-digit mobile number');
       return;
     }
@@ -214,14 +61,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!mounted) return;
     setState(() => _isLoading = false);
 
-    _showMessage('OTP Sent successfully to +91 $digits');
+    final displayNumber = _fullPhoneNumber.isNotEmpty
+        ? _fullPhoneNumber
+        : '+$_dialCode $digits';
+    _showMessage('OTP Sent successfully to $displayNumber');
 
-    // Transition to OTP screen
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => OTPScreen(
           phoneNumber: digits,
+          dialCode: _dialCode,
+          fullPhoneNumber: displayNumber,
         ),
       ),
     );
@@ -229,10 +80,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
+  }
+
+  OutlineInputBorder _phoneBorder({Color? color, double width = 1.0}) {
+    return OutlineInputBorder(
+      borderRadius: BorderRadius.circular(16),
+      borderSide: BorderSide(color: color ?? kBorder, width: width),
     );
   }
 
@@ -241,13 +96,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Scaffold(
       backgroundColor: kWhite,
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Circular Back Button
-            Padding(
-              padding: const EdgeInsets.only(left: 24, top: 24),
-              child: GestureDetector(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
                 onTap: () {
                   if (Navigator.canPop(context)) {
                     Navigator.pop(context);
@@ -268,117 +122,82 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 32),
-
-            // Artwork Icon
-            const Center(
-              child: SmartphoneIcon(),
-            ),
-            const SizedBox(height: 16),
-
-            // Heading & Subtitle
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Enter Phone Number',
-                    style: kHeadTitleSB,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'We’ll send a OTP to verify your number',
-                    style: kCaption13R.copyWith(color: kSecondaryTextColor),
-                  ),
-                ],
+              const SizedBox(height: 62),
+              SvgPicture.asset(
+                'assets/svg/phonelogo.svg',
+                width: 42,
+                height: 50,
+                fit: BoxFit.contain,
+                alignment: Alignment.centerLeft,
               ),
-            ),
-            const SizedBox(height: 32),
-
-            // Fields / Input Section
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Mobile Number',
-                      style: kLabel15M,
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Custom horizontal layout phone input container
-                    Container(
-                      height: 66,
-                      decoration: BoxDecoration(
-                        color: kWhite,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: kBorder, width: 1.0),
-                      ),
-                      child: Row(
-                        children: [
-                          // Country selector (+91)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 18),
-                            child: Row(
-                              children: [
-                                Text(
-                                  '+91',
-                                  style: kBodyTitleR.copyWith(color: kTextColor),
-                                ),
-                                const SizedBox(width: 6),
-                                const Icon(
-                                  Icons.keyboard_arrow_down,
-                                  color: kSecondaryTextColor,
-                                  size: 18,
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Vertical dividing border
-                          Container(
-                            width: 1.0,
-                            height: 32,
-                            color: kBorder,
-                          ),
-                          // Mobile Number Input Field
-                          Expanded(
-                            child: TextField(
-                              controller: _phoneController,
-                              keyboardType: TextInputType.phone,
-                              cursorColor: kBlack,
-                              maxLength: 10,
-                              style: kBodyTitleR.copyWith(color: kTextColor),
-                              decoration: InputDecoration(
-                                hintText: 'Enter mobile number',
-                                hintStyle: kBodyTitleR.copyWith(color: kSecondaryTextColor),
-                                border: InputBorder.none,
-                                counterText: '',
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+              const SizedBox(height: 16),
+              Text('Enter Phone Number', style: kHeadTitleSB),
+              const SizedBox(height: 6),
+              Text(
+                'We’ll send a OTP to verify your number',
+                style: kCaption13R.copyWith(color: kSecondaryTextColor),
+              ),
+              const SizedBox(height: 32),
+              Text('Mobile Number', style: kLabel15M),
+              const SizedBox(height: 8),
+              IntlPhoneField(
+                focusNode: _phoneFocusNode,
+                controller: _phoneController,
+                initialCountryCode: 'IN',
+                disableLengthCheck: true,
+                showCountryFlag: false,
+                showDropdownIcon: true,
+                cursorColor: kBlack,
+                style: kBodyTitleR.copyWith(color: kTextColor),
+                dropdownTextStyle: kBodyTitleR.copyWith(color: kTextColor),
+                dropdownIcon: const Icon(
+                  Icons.keyboard_arrow_down,
+                  color: kSecondaryTextColor,
+                  size: 18,
                 ),
+                dropdownIconPosition: IconPosition.trailing,
+                flagsButtonPadding: const EdgeInsets.only(left: 18),
+                validator: (phone) {
+                  if (!_showPhoneError) return null;
+                  if (phone == null || phone.number.isEmpty) {
+                    return 'Mobile number is required';
+                  }
+                  if (!RegExp(r'^[0-9]+$').hasMatch(phone.number)) {
+                    return 'Mobile number must contain only digits';
+                  }
+                  return null;
+                },
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: kWhite,
+                  hintText: 'Enter mobile number',
+                  hintStyle: kBodyTitleR.copyWith(color: kSecondaryTextColor),
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 20,
+                    horizontal: 16,
+                  ),
+                  border: _phoneBorder(),
+                  enabledBorder: _phoneBorder(),
+                  focusedBorder: _phoneBorder(color: kPrimaryColor, width: 1.5),
+                  errorBorder: _phoneBorder(color: kRed, width: 1.5),
+                  focusedErrorBorder: _phoneBorder(color: kRed, width: 2),
+                ),
+                onCountryChanged: (value) {
+                  _dialCode = value.dialCode;
+                },
+                onChanged: (phone) {
+                  _fullPhoneNumber = phone.completeNumber;
+                  _dialCode = phone.countryCode.replaceAll('+', '');
+                },
               ),
-            ),
-
-            // Bottom CTA Button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-              child: primaryButton(
+              const SizedBox(height: 24),
+              primaryButton(
                 label: 'Sent OTP',
                 onPressed: _isLoading ? null : _requestOtp,
                 isLoading: _isLoading,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -389,9 +208,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
 class OTPScreen extends ConsumerStatefulWidget {
   final String phoneNumber;
+  final String dialCode;
+  final String fullPhoneNumber;
 
   const OTPScreen({
     required this.phoneNumber,
+    this.dialCode = '91',
+    this.fullPhoneNumber = '',
     super.key,
   });
 
@@ -401,7 +224,6 @@ class OTPScreen extends ConsumerStatefulWidget {
 
 class _OTPScreenState extends ConsumerState<OTPScreen> {
   late TextEditingController _otpController;
-  late FocusNode _hiddenFocusNode;
   bool _isLoading = false;
   Timer? _timer;
   int _start = 59;
@@ -411,7 +233,6 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
   void initState() {
     super.initState();
     _otpController = TextEditingController();
-    _hiddenFocusNode = FocusNode();
     _startTimer();
   }
 
@@ -419,7 +240,6 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
   void dispose() {
     _timer?.cancel();
     _otpController.dispose();
-    _hiddenFocusNode.dispose();
     super.dispose();
   }
 
@@ -431,32 +251,30 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_start == 0) {
-        setState(() {
-          _isResendDisabled = false;
-        });
+        setState(() => _isResendDisabled = false);
         timer.cancel();
       } else {
-        setState(() {
-          _start--;
-        });
+        setState(() => _start--);
       }
     });
   }
 
-  void _resendOtp() async {
+  Future<void> _resendOtp() async {
     _startTimer();
     setState(() => _isLoading = true);
 
-    // Mock API Delay
     await Future.delayed(const Duration(milliseconds: 1000));
 
     if (!mounted) return;
     setState(() => _isLoading = false);
 
-    _showMessage('OTP resent successfully to +91 ${widget.phoneNumber}');
+    final display = widget.fullPhoneNumber.isNotEmpty
+        ? widget.fullPhoneNumber
+        : '+${widget.dialCode} ${widget.phoneNumber}';
+    _showMessage('OTP resent successfully to $display');
   }
 
-  void _verifyOtp() async {
+  Future<void> _verifyOtp() async {
     final otp = _otpController.text.trim();
     if (otp.length != 6) {
       _showMessage('Please enter the 6-digit OTP');
@@ -465,221 +283,158 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
 
     setState(() => _isLoading = true);
 
-    // Mock API Delay
     await Future.delayed(const Duration(milliseconds: 1000));
 
     if (!mounted) return;
     setState(() => _isLoading = false);
 
     _showMessage('OTP verified successfully!');
-
-    // Transition to main application screen (navBar)
     NavigationService().pushNamedAndRemoveUntil('navBar');
   }
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final otpLength = _otpController.text.length;
-
     return Scaffold(
       backgroundColor: kWhite,
       body: SafeArea(
-        child: Stack(
-          children: [
-            // Invisible input source to capture keyboard taps
-            Positioned(
-              top: -100,
-              left: 0,
-              right: 0,
-              child: Opacity(
-                opacity: 0.0,
-                child: TextField(
-                  focusNode: _hiddenFocusNode,
-                  controller: _otpController,
-                  keyboardType: TextInputType.number,
-                  maxLength: 6,
-                  autofocus: true,
-                  onChanged: (val) {
-                    setState(() {});
-                    if (val.length == 6) {
-                      _hiddenFocusNode.unfocus();
-                    }
-                  },
-                  decoration: const InputDecoration(
-                    counterText: '',
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: kWhite.withValues(alpha: 0.08),
+                    border: Border.all(color: kBorder, width: 1.25),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back,
+                    color: kTextColor,
+                    size: 20,
                   ),
                 ),
               ),
-            ),
+              const SizedBox(height: 62),
+              SvgPicture.asset(
+                'assets/svg/otplogo.svg',
+                width: 72,
+                height: 30,
+                fit: BoxFit.contain,
+                alignment: Alignment.centerLeft,
+              ),
+              const SizedBox(height: 16),
+              Text('Enter Phone Number', style: kHeadTitleSB),
+              const SizedBox(height: 6),
+              Text(
+                'We’ll send a OTP to verify your number',
+                style: kCaption13R.copyWith(color: kSecondaryTextColor),
+              ),
+              const SizedBox(height: 32),
+              Text('Enter OTP', style: kLabel15M),
+              const SizedBox(height: 8),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  const otpLength = 6;
+                  const fieldGap = 8.0;
+                  final fieldWidth =
+                      ((constraints.maxWidth - fieldGap * (otpLength - 1)) /
+                              otpLength)
+                          .clamp(44.0, 56.0);
 
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Circular Back Button
-                Padding(
-                  padding: const EdgeInsets.only(left: 24, top: 24),
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: kWhite.withValues(alpha: 0.08),
-                        border: Border.all(color: kBorder, width: 1.25),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: kTextColor,
-                        size: 20,
-                      ),
+                  return PinCodeTextField(
+                    appContext: context,
+                    length: otpLength,
+                    controller: _otpController,
+                    obscureText: false,
+                    autoFocus: true,
+                    keyboardType: TextInputType.number,
+                    animationType: AnimationType.fade,
+                    textStyle: kHeadTitleSB.copyWith(
+                      color: kTextColor,
+                      fontSize: 20,
                     ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Passcode Vector Artwork Icon
-                const Center(
-                  child: PasscodeIcon(),
-                ),
-                const SizedBox(height: 16),
-
-                // Heading & Subtitle (identical headings as Figma screenshots)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Enter Phone Number',
-                        style: kHeadTitleSB,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'We’ll send a OTP to verify your number',
-                        style: kCaption13R.copyWith(color: kSecondaryTextColor),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Fields / Input Section
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Enter OTP',
-                          style: kLabel15M,
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Grid of 6 rounded boxes
-                        GestureDetector(
-                          onTap: () {
-                            _hiddenFocusNode.requestFocus();
-                          },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: List.generate(6, (index) {
-                              final char = otpLength > index ? _otpController.text[index] : '';
-                              final isFocusedCell = otpLength == index && _hiddenFocusNode.hasFocus;
-
-                              return Container(
-                                width: 52,
-                                height: 58,
-                                decoration: BoxDecoration(
-                                  color: kWhite,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: isFocusedCell
-                                        ? kPrimaryColor
-                                        : kPrimaryColor.withValues(alpha: 0.5),
-                                    width: isFocusedCell ? 2.0 : 1.0,
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    char,
-                                    style: kHeadTitleSB.copyWith(
-                                      color: kTextColor,
-                                      fontSize: 20,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }),
+                    cursorColor: kPrimaryColor,
+                    pinTheme: PinTheme(
+                      shape: PinCodeFieldShape.box,
+                      borderRadius: BorderRadius.circular(16),
+                      fieldHeight: 58,
+                      fieldWidth: fieldWidth,
+                      borderWidth: 1,
+                      activeBorderWidth: 1,
+                      selectedBorderWidth: 2,
+                      inactiveBorderWidth: 1,
+                      selectedColor: kPrimaryColor,
+                      activeColor: kPrimaryColor.withValues(alpha: 0.5),
+                      inactiveColor: kPrimaryColor.withValues(alpha: 0.5),
+                      activeFillColor: kWhite,
+                      selectedFillColor: kWhite,
+                      inactiveFillColor: kWhite,
+                    ),
+                    animationDuration: const Duration(milliseconds: 200),
+                    backgroundColor: Colors.transparent,
+                    enableActiveFill: true,
+                    onChanged: (_) {},
+                    onCompleted: (_) => _verifyOtp(),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+              primaryButton(
+                label: 'Verify OTP',
+                onPressed: _isLoading ? null : _verifyOtp,
+                isLoading: _isLoading,
+              ),
+              const SizedBox(height: 24),
+              Center(
+                child: Column(
+                  children: [
+                    Text(
+                      "Didn't get SMS?",
+                      style: kCaption13R.copyWith(color: kSecondaryTextColor),
+                    ),
+                    const SizedBox(height: 6),
+                    if (_isResendDisabled)
+                      RichText(
+                        text: TextSpan(
+                          style: kCaption13R.copyWith(
+                            color: kSecondaryTextColor,
                           ),
-                        ),
-                        const SizedBox(height: 28),
-
-                        // Resend details
-                        Center(
-                          child: Column(
-                            children: [
-                              Text(
-                                "Didn't get SMS?",
-                                style: kCaption13R.copyWith(color: kSecondaryTextColor),
+                          children: [
+                            const TextSpan(text: 'Get a new OTP in '),
+                            TextSpan(
+                              text: '00:${_start.toString().padLeft(2, '0')}',
+                              style: kCaption13R.copyWith(
+                                color: kPrimaryColor,
+                                fontWeight: kSemiBold,
                               ),
-                              const SizedBox(height: 6),
-                              if (_isResendDisabled)
-                                RichText(
-                                  text: TextSpan(
-                                    style: kCaption13R.copyWith(color: kSecondaryTextColor),
-                                    children: [
-                                      const TextSpan(text: 'Get a new OTP in '),
-                                      TextSpan(
-                                        text: '00:${_start.toString().padLeft(2, '0')}',
-                                        style: kCaption13R.copyWith(
-                                          color: kPrimaryColor,
-                                          fontWeight: kSemiBold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              else
-                                GestureDetector(
-                                  onTap: _resendOtp,
-                                  child: Text(
-                                    'Resend OTP',
-                                    style: kLinkSB.copyWith(fontSize: 13),
-                                  ),
-                                ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
+                      )
+                    else
+                      GestureDetector(
+                        onTap: _resendOtp,
+                        child: Text(
+                          'Resend OTP',
+                          style: kLinkSB.copyWith(fontSize: 13),
+                        ),
+                      ),
+                  ],
                 ),
-
-                // Bottom Verify Button
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                  child: primaryButton(
-                    label: 'Verify OTP',
-                    onPressed: _isLoading ? null : _verifyOtp,
-                    isLoading: _isLoading,
-                  ),
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
