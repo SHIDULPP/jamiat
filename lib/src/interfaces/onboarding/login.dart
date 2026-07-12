@@ -246,7 +246,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           children: [
             // Circular Back Button
             Padding(
-              padding: const EdgeInsets.only(left: 20, top: 16),
+              padding: const EdgeInsets.only(left: 24, top: 24),
               child: GestureDetector(
                 onTap: () {
                   if (Navigator.canPop(context)) {
@@ -269,7 +269,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
 
             // Artwork Icon
             const Center(
@@ -279,7 +279,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
             // Heading & Subtitle
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -300,7 +300,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             // Fields / Input Section
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -371,7 +371,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
             // Bottom CTA Button
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               child: primaryButton(
                 label: 'Sent OTP',
                 onPressed: _isLoading ? null : _requestOtp,
@@ -526,7 +526,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
               children: [
                 // Circular Back Button
                 Padding(
-                  padding: const EdgeInsets.only(left: 20, top: 16),
+                  padding: const EdgeInsets.only(left: 24, top: 24),
                   child: GestureDetector(
                     onTap: () {
                       Navigator.pop(context);
@@ -547,7 +547,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
 
                 // Passcode Vector Artwork Icon
                 const Center(
@@ -557,7 +557,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
 
                 // Heading & Subtitle (identical headings as Figma screenshots)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -578,7 +578,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                 // Fields / Input Section
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -608,7 +608,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                                   border: Border.all(
                                     color: isFocusedCell
                                         ? kPrimaryColor
-                                        : kBorder,
+                                        : kPrimaryColor.withValues(alpha: 0.5),
                                     width: isFocusedCell ? 2.0 : 1.0,
                                   ),
                                 ),
@@ -670,7 +670,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
 
                 // Bottom Verify Button
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
                   child: primaryButton(
                     label: 'Verify OTP',
                     onPressed: _isLoading ? null : _verifyOtp,
