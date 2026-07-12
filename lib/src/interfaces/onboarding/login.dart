@@ -239,7 +239,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
   @override
   void dispose() {
     _timer?.cancel();
-    _otpController.dispose();
+    // _otpController.dispose();
     super.dispose();
   }
 
@@ -289,7 +289,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
     setState(() => _isLoading = false);
 
     _showMessage('OTP verified successfully!');
-    NavigationService().pushNamedAndRemoveUntil('navBar');
+    NavigationService().pushNamedAndRemoveUntil('RoleSelection');
   }
 
   void _showMessage(String message) {

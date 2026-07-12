@@ -113,8 +113,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     const logoTrimTop = 48.0;
     final logoDisplayHeight = logoWidth * (logoAssetHeight / logoAssetWidth);
     final logoTopPad = logoDisplayHeight * (logoTrimTop / logoAssetHeight);
-    final collageLogoGap =
-        (screenSize.heightPercent(4.7) - logoTopPad).clamp(0.0, double.infinity);
+    final collageLogoGap = (screenSize.heightPercent(4.7) - logoTopPad).clamp(
+      0.0,
+      double.infinity,
+    );
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -134,7 +136,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   ),
                   child: SizedBox.expand(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: horizontalInset),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalInset,
+                      ),
                       child: Column(
                         children: [
                           // Figma top ≈ 25%, bottom ≈ 26.6% — near-equal spacers.
@@ -167,8 +171,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                               if (_entranceController.value > 0.5)
                                 Shimmer.fromColors(
                                   baseColor: Colors.transparent,
-                                  highlightColor:
-                                      Colors.white.withValues(alpha: 0.8),
+                                  highlightColor: Colors.white.withValues(
+                                    alpha: 0.8,
+                                  ),
                                   period: const Duration(milliseconds: 1500),
                                   direction: ShimmerDirection.ltr,
                                   child: SizedBox(
@@ -177,8 +182,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                       'assets/pngs/jamiat_logo.png',
                                       fit: BoxFit.contain,
                                       filterQuality: FilterQuality.high,
-                                      color: Colors.white
-                                          .withValues(alpha: 200 / 255),
+                                      color: Colors.white.withValues(
+                                        alpha: 200 / 255,
+                                      ),
                                       colorBlendMode: BlendMode.srcIn,
                                     ),
                                   ),
