@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
+import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/interfaces/components/loading_indicator.dart';
 
+/// Primary CTA matching Figma `Button/N` (Send OTP / Verify OTP).
+///
+/// Specs: height 66 · radius 8 · fill [kPrimaryColor] ·
+/// Noto Sans SemiBold 15 white · horizontal padding 16.
 Widget primaryButton({
   required String label,
   required VoidCallback? onPressed,
   Color labelColor = kWhite,
-  double fontSize = 14,
-  double buttonHeight = 48,
+  double fontSize = kSize15,
+  double buttonHeight = 66,
   bool isLoading = false,
   Color buttonColor = kPrimaryColor,
   Color sideColor = Colors.transparent,
   Widget? icon,
 }) {
-  final BorderRadius borderRadius = BorderRadius.circular(56);
+  final borderRadius = BorderRadius.circular(kCardRadiusSm);
 
   return SizedBox(
     height: buttonHeight,
@@ -69,14 +74,13 @@ class _InteractiveButtonState extends State<_InteractiveButton> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDisabled = widget.onPressed == null || widget.isLoading;
+    final isDisabled = widget.onPressed == null || widget.isLoading;
 
-    Color backgroundColor = widget.buttonColor;
-
+    var backgroundColor = widget.buttonColor;
     if (_isPressed) {
-      backgroundColor = widget.buttonColor.withOpacity(0.85);
+      backgroundColor = widget.buttonColor.withValues(alpha: 0.85);
     } else if (_isHovered) {
-      backgroundColor = widget.buttonColor.withOpacity(0.95);
+      backgroundColor = widget.buttonColor.withValues(alpha: 0.95);
     }
 
     return AnimatedScale(
@@ -85,44 +89,27 @@ class _InteractiveButtonState extends State<_InteractiveButton> {
       curve: Curves.easeOut,
       child: InkWell(
         borderRadius: widget.borderRadius,
-        splashColor: Colors.white.withOpacity(0.15),
+        splashColor: kWhite.withValues(alpha: 0.15),
         highlightColor: Colors.transparent,
-
         onTap: isDisabled ? null : widget.onPressed,
-
         onTapDown: (_) {
           if (!isDisabled) {
             HapticHelper.impact(HapticImpact.medium);
             setState(() => _isPressed = true);
           }
         },
-
-        onTapUp: (_) {
-          setState(() => _isPressed = false);
-        },
-
-        onTapCancel: () {
-          setState(() => _isPressed = false);
-        },
-
+        onTapUp: (_) => setState(() => _isPressed = false),
+        onTapCancel: () => setState(() => _isPressed = false),
         onLongPress: isDisabled
             ? null
-            : () {
-                HapticHelper.impact(HapticImpact.medium);
-              },
-
-        onHover: (value) {
-          setState(() => _isHovered = value);
-        },
-
+            : () => HapticHelper.impact(HapticImpact.medium),
+        onHover: (value) => setState(() => _isHovered = value),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: EdgeInsets.symmetric(
-            // horizontal: GlobalVariables.preferredLanguage == 'ml' ? 20 : 0,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             color: isDisabled
-                ? widget.buttonColor.withOpacity(0.5)
+                ? widget.buttonColor.withValues(alpha: 0.5)
                 : backgroundColor,
             borderRadius: widget.borderRadius,
             border: Border.all(color: widget.sideColor),
@@ -130,25 +117,27 @@ class _InteractiveButtonState extends State<_InteractiveButton> {
           child: Center(
             child: widget.isLoading
                 ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: LoadingAnimation(loadingColor: kWhite),
+                    height: 22,
+                    width: 22,
+                    child: LoadingAnimation(size: 22, loadingColor: kWhite),
                   )
                 : Row(
                     mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (widget.icon != null) ...[
                         widget.icon!,
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
                       ],
-                      Text(
-                        widget.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: widget.labelColor,
-                          fontSize: widget.fontSize,
+                      Flexible(
+                        child: Text(
+                          widget.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: kButtonLabelSB.copyWith(
+                            color: widget.labelColor,
+                            fontSize: widget.fontSize,
+                          ),
                         ),
                       ),
                     ],
