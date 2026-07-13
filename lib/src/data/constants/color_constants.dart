@@ -46,6 +46,12 @@ const Color kRedSoftBg = Color(0xFFFFF4F4);
 
 const Color kGreen = Color(0xFF00A54F);
 const Color kLightGreen = Color(0xFFE4F3E7);
+const Color kContributionsBg = Color(0xFFEBFAF3); // Home · My Contributions card
+
+const Color kQuickWelfareBg = Color(0xFFEFEFF9);
+const Color kQuickEventsBg = Color(0xFFFFFAF4);
+const Color kQuickMarketBg = Color(0xFFEEDBF1);
+const Color kQuickNewsBg = Color(0xFFE8F6EE);
 
 const Color kBlue = Color(0xFF0088FF);
 const Color kBlueSoft = Color(0xFF9DB2CE);

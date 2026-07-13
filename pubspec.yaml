@@ -65,6 +65,7 @@ flutter:
 
   assets:
     - assets/pngs/
+    - assets/jpgs/
     - assets/svg/
 
 
