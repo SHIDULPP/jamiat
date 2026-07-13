@@ -127,7 +127,7 @@ class RoleSelectionScreen extends ConsumerWidget {
                         ref
                             .read(selectedRoleProvider.notifier)
                             .setRole('normal');
-                        NavigationService().pushNamedAndRemoveUntil('navBar');
+                        NavigationService().pushNamed('Registration');
                       },
                     ),
                     SizedBox(height: 16 * scale),
@@ -141,7 +141,7 @@ class RoleSelectionScreen extends ConsumerWidget {
                         ref
                             .read(selectedRoleProvider.notifier)
                             .setRole('member');
-                        NavigationService().pushNamedAndRemoveUntil('navBar');
+                        NavigationService().pushNamed('Registration');
                       },
                     ),
                   ],
@@ -155,7 +155,6 @@ class RoleSelectionScreen extends ConsumerWidget {
   }
 }
 
-/// Figma card: bg #F4F4F4 · radius 14 · pad 16 · icon 24 · gaps 12 / 4
 class _RoleCard extends StatelessWidget {
   const _RoleCard({
     required this.scale,
