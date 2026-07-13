@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
+import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/interfaces/components/primarybutton.dart';
 
 /// Dummy campaigns data — replace with API models later.
@@ -266,7 +267,7 @@ class _CampaignsHeader extends StatelessWidget {
             customBorder: const CircleBorder(),
             onTap: () {
               HapticHelper.impact(HapticImpact.light);
-              // TODO: campaigns menu
+              NavigationService().pushNamed('DonationList');
             },
             child: const SizedBox(
               width: 40,

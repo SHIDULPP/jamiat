@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
-import 'package:jamiat/src/data/router/nav_router.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
+import 'package:jamiat/src/data/services/navigation_services.dart';
 
 /// Dummy home data — replace with API models later.
 class _HomeDummyData {
@@ -147,7 +147,7 @@ class HomePage extends ConsumerWidget {
               child: _ActiveCampaignsSection(
                 onContribute: () {
                   HapticHelper.impact(HapticImpact.light);
-                  ref.read(selectedIndexProvider.notifier).updateIndex(1);
+                  NavigationService().pushNamed('DonationList');
                 },
               ),
             ),
