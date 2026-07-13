@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
+import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/interfaces/components/primarybutton.dart';
 
 class RegistrationScreen extends ConsumerStatefulWidget {
@@ -30,7 +31,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
 
   // State Variables
   bool _sameAsPhoneNumber = false;
-  bool _isLoading = false;
+  bool _isLoading = false; // ignore: prefer_final_fields
 
   // Dropdown Selections
   String? _selectedGender;
@@ -99,10 +100,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       fillColor: kWhite,
       hintText: hintText,
       hintStyle: kBodyTitleR.copyWith(color: kSecondaryTextColor),
-      contentPadding: const EdgeInsets.symmetric(
-        vertical: 20,
-        horizontal: 16,
-      ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       border: _fieldBorder(),
       enabledBorder: _fieldBorder(),
       focusedBorder: _fieldBorder(color: kPrimaryColor, width: 1.5),
@@ -115,10 +113,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        text,
-        style: kLabel15M.copyWith(color: kTextColor),
-      ),
+      child: Text(text, style: kLabel15M.copyWith(color: kTextColor)),
     );
   }
 
@@ -170,10 +165,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
           dropdownColor: kWhite,
           style: kBodyTitleR.copyWith(color: kTextColor),
           items: items.map((String item) {
-            return DropdownMenuItem<String>(
-              value: item,
-              child: Text(item),
-            );
+            return DropdownMenuItem<String>(value: item, child: Text(item));
           }).toList(),
           onChanged: onChanged,
         ),
@@ -198,7 +190,9 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
           onTap: () async {
             final DateTime? picked = await showDatePicker(
               context: context,
-              initialDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
+              initialDate: DateTime.now().subtract(
+                const Duration(days: 365 * 18),
+              ),
               firstDate: DateTime(1900),
               lastDate: DateTime.now(),
               builder: (context, child) {
@@ -229,21 +223,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   }
 
   Future<void> _handleContinue() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() => _isLoading = true);
-      // Mock API delay for onboarding
-      await Future.delayed(const Duration(milliseconds: 1000));
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-
-      // Navigate to next screen or complete onboarding
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profile setup complete!'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+    // For development/testing: bypass validation and go straight to navbar
+    NavigationService().pushNamedAndRemoveUntil('navBar');
   }
 
   @override
@@ -324,7 +305,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                                 color: Colors.black12,
                                 blurRadius: 4,
                                 offset: Offset(0, 2),
-                              )
+                              ),
                             ],
                           ),
                           child: const Icon(
@@ -345,9 +326,9 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   controller: _nameController,
                   hintText: 'Enter name',
                   validator: (val) {
-                    if (val == null || val.trim().isEmpty) {
-                      return 'Name is required';
-                    }
+                    // if (val == null || val.trim().isEmpty) {
+                    //   return 'Name is required';
+                    // }
                     return null;
                   },
                 ),
@@ -373,9 +354,9 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   dropdownIconPosition: IconPosition.trailing,
                   flagsButtonPadding: const EdgeInsets.only(left: 18),
                   validator: (phone) {
-                    if (phone == null || phone.number.trim().isEmpty) {
-                      return 'Phone number is required';
-                    }
+                    // if (phone == null || phone.number.trim().isEmpty) {
+                    //   return 'Phone number is required';
+                    // }
                     return null;
                   },
                   decoration: _inputDecoration(hintText: '999587XXXX'),
@@ -412,17 +393,17 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: _sameAsPhoneNumber ? kPrimaryColor : kBorder,
+                              color: _sameAsPhoneNumber
+                                  ? kPrimaryColor
+                                  : kBorder,
                               width: 1.5,
                             ),
-                            color: _sameAsPhoneNumber ? kPrimaryColor : Colors.transparent,
+                            color: _sameAsPhoneNumber
+                                ? kPrimaryColor
+                                : Colors.transparent,
                           ),
                           child: _sameAsPhoneNumber
-                              ? const Icon(
-                                  Icons.check,
-                                  size: 14,
-                                  color: kWhite,
-                                )
+                              ? const Icon(Icons.check, size: 14, color: kWhite)
                               : null,
                         ),
                         const SizedBox(width: 8),
@@ -447,10 +428,14 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   enabled: !_sameAsPhoneNumber,
                   cursorColor: kBlack,
                   style: kBodyTitleR.copyWith(
-                    color: _sameAsPhoneNumber ? kSecondaryTextColor : kTextColor,
+                    color: _sameAsPhoneNumber
+                        ? kSecondaryTextColor
+                        : kTextColor,
                   ),
                   dropdownTextStyle: kBodyTitleR.copyWith(
-                    color: _sameAsPhoneNumber ? kSecondaryTextColor : kTextColor,
+                    color: _sameAsPhoneNumber
+                        ? kSecondaryTextColor
+                        : kTextColor,
                   ),
                   dropdownIcon: const Icon(
                     Icons.keyboard_arrow_down,
@@ -471,12 +456,12 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   hintText: 'Enter email',
                   keyboardType: TextInputType.emailAddress,
                   validator: (val) {
-                    if (val == null || val.trim().isEmpty) {
-                      return 'Email is required';
-                    }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(val)) {
-                      return 'Please enter a valid email';
-                    }
+                    // if (val == null || val.trim().isEmpty) {
+                    //   return 'Email is required';
+                    // }
+                    // if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(val)) {
+                    //   return 'Please enter a valid email';
+                    // }
                     return null;
                   },
                 ),
