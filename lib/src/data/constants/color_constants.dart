@@ -43,6 +43,9 @@ const Color kTertiary = Color(0xFFF2F3F7);
 const Color kRed = Color(0xFFE52022);
 const Color kRedDark = Color(0xFFC9300E);
 const Color kRedSoftBg = Color(0xFFFFF4F4);
+const Color kEndingSoonBg = Color(0xFFFFF5F4); // Campaigns · ending-soon banner
+
+const Color kDaysLeftWarning = Color(0xFFC47A3A); // Campaigns · "X days left"
 
 const Color kGreen = Color(0xFF00A54F);
 const Color kLightGreen = Color(0xFFE4F3E7);
