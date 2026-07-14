@@ -82,7 +82,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   Future<void> _navigateToNext() async {
     if (!mounted) return;
-    NavigationService().pushNamedAndRemoveUntil('Login');
+    NavigationService().pushNamedAndRemoveUntil('navBar');
   }
 
   @override

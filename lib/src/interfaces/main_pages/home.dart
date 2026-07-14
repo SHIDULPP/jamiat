@@ -143,17 +143,16 @@ class HomePage extends ConsumerWidget {
                 ),
               ),
             ),
-            SliverToBoxAdapter(
-              child: _ActiveCampaignsSection(
-                onContribute: () {
-                  HapticHelper.impact(HapticImpact.light);
-                  NavigationService().pushNamed('DonationList');
-                },
-              ),
-            ),
+            const SliverToBoxAdapter(child: _ActiveCampaignsSection()),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         ),
+      ),
+      floatingActionButton: _ContributeButton(
+        onTap: () {
+          HapticHelper.impact(HapticImpact.light);
+          NavigationService().pushNamed('DonationList');
+        },
       ),
     );
   }
@@ -402,9 +401,7 @@ class _QuickAccessCard extends StatelessWidget {
 }
 
 class _ActiveCampaignsSection extends StatelessWidget {
-  final VoidCallback onContribute;
-
-  const _ActiveCampaignsSection({required this.onContribute});
+  const _ActiveCampaignsSection();
 
   static const double _cardWidth = 200;
   static const double _cardHeight = 280;
@@ -415,32 +412,22 @@ class _ActiveCampaignsSection extends StatelessWidget {
 
     return SizedBox(
       height: _cardHeight,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
-            itemCount: campaigns.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              return _CampaignCard(
-                width: _cardWidth,
-                height: _cardHeight,
-                campaign: campaigns[index],
-                onTap: () {
-                  HapticHelper.impact(HapticImpact.light);
-                  // TODO: open campaign detail
-                },
-              );
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
+        itemCount: campaigns.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          return _CampaignCard(
+            width: _cardWidth,
+            height: _cardHeight,
+            campaign: campaigns[index],
+            onTap: () {
+              HapticHelper.impact(HapticImpact.light);
+              // TODO: open campaign detail
             },
-          ),
-          Positioned(
-            right: kScreenPaddingH,
-            bottom: 16,
-            child: _ContributeButton(onTap: onContribute),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
