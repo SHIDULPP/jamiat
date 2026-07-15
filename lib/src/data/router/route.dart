@@ -10,6 +10,7 @@ import 'package:jamiat/src/interfaces/campaign/donation_success.dart';
 import 'package:jamiat/src/interfaces/campaign/donations_view.dart';
 import 'package:jamiat/src/interfaces/campaign/autopay_view.dart';
 import 'package:jamiat/src/interfaces/campaign/autopay_details.dart';
+import 'package:jamiat/src/interfaces/campaign/donation_history.dart';
 
 enum TransitionType { slideFromBottom, slideFromRight, fade, fadeScale }
 
@@ -212,6 +213,12 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
         endDate: args?['endDate'] as String? ?? '1 Apr,2026',
         history: args?['history'] as List<Map<String, String>>?,
       );
+      transitionToUse = TransitionType.slideFromRight;
+      transitionDuration = const Duration(milliseconds: 300);
+      break;
+
+    case 'DonationHistory':
+      page = const DonationHistoryScreen();
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);
       break;

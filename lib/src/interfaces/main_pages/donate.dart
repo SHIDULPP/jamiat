@@ -292,7 +292,7 @@ class _CampaignsHeader extends StatelessWidget {
             onSelected: (value) {
               HapticHelper.impact(HapticImpact.light);
               if (value == 'history') {
-                NavigationService().pushNamed('DonationsView');
+                NavigationService().pushNamed('DonationHistory');
               } else {
                 NavigationService().pushNamed('DonationList');
               }
