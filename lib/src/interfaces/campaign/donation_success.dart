@@ -215,7 +215,11 @@ class DonationSuccessScreen extends StatelessWidget {
                 onPressed: () {
                   HapticHelper.impact(HapticImpact.medium);
                   NavigationService().pushNamedAndRemoveUntil('navBar');
-                  NavigationService().pushNamed('DonationList');
+                  if (isAutopay) {
+                    NavigationService().pushNamed('AutopayView');
+                  } else {
+                    NavigationService().pushNamed('DonationsView');
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: kPrimaryColor,

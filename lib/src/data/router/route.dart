@@ -7,6 +7,9 @@ import 'package:jamiat/src/interfaces/onboarding/registration.dart';
 import 'package:jamiat/src/interfaces/campaign/campaign_list.dart';
 import 'package:jamiat/src/interfaces/campaign/campaign_details.dart';
 import 'package:jamiat/src/interfaces/campaign/donation_success.dart';
+import 'package:jamiat/src/interfaces/campaign/donations_view.dart';
+import 'package:jamiat/src/interfaces/campaign/autopay_view.dart';
+import 'package:jamiat/src/interfaces/campaign/autopay_details.dart';
 
 enum TransitionType { slideFromBottom, slideFromRight, fade, fadeScale }
 
@@ -175,6 +178,39 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
         campaignName:
             args?['campaignName'] as String? ?? 'Medical aid for patient',
         message: args?['message'] as String?,
+      );
+      transitionToUse = TransitionType.slideFromRight;
+      transitionDuration = const Duration(milliseconds: 300);
+      break;
+
+    case 'DonationsView':
+      page = const DonationsViewScreen();
+      transitionToUse = TransitionType.slideFromRight;
+      transitionDuration = const Duration(milliseconds: 300);
+      break;
+
+    case 'AutopayView':
+      page = const AutopayViewScreen();
+      transitionToUse = TransitionType.slideFromRight;
+      transitionDuration = const Duration(milliseconds: 300);
+      break;
+
+    case 'AutopayDetails':
+      final args = settings?.arguments as Map<String, dynamic>?;
+      page = AutopayDetailsScreen(
+        title: args?['title'] as String? ?? 'Zakat',
+        description:
+            args?['description'] as String? ??
+            'Fulfill your obligatory charity safely and securely.',
+        icon: args?['icon'] as IconData? ?? Icons.payments_outlined,
+        iconBgColor: args?['iconBgColor'] as Color? ?? const Color(0xFFF0FDF4),
+        iconColor: args?['iconColor'] as Color? ?? const Color(0xFF16A34A),
+        status: args?['status'] as String? ?? 'Auto Pay Cancelled',
+        mandateAmount: args?['mandateAmount'] as String? ?? '₹500',
+        period: args?['period'] as String? ?? 'Daily',
+        startDate: args?['startDate'] as String? ?? '28 Mar,2025',
+        endDate: args?['endDate'] as String? ?? '1 Apr,2026',
+        history: args?['history'] as List<Map<String, String>>?,
       );
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);
