@@ -7,7 +7,6 @@ import 'package:jamiat/src/interfaces/onboarding/registration.dart';
 import 'package:jamiat/src/interfaces/campaign/campaign_list.dart';
 import 'package:jamiat/src/interfaces/campaign/campaign_details.dart';
 
-
 enum TransitionType { slideFromBottom, slideFromRight, fade, fadeScale }
 
 PageRouteBuilder<T> createRoute<T>(
@@ -88,7 +87,11 @@ RouteTransitionsBuilder _transitionsBuilderFor(TransitionType? type) {
 }
 
 // ignore: unused_element
-String _routeString(Map<String, dynamic>? args, String key, [String fallback = '']) {
+String _routeString(
+  Map<String, dynamic>? args,
+  String key, [
+  String fallback = '',
+]) {
   final value = args?[key];
   if (value == null) return fallback;
   return value.toString();
@@ -144,15 +147,21 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
       final args = settings?.arguments as Map<String, dynamic>?;
       page = CampaignDetailsScreen(
         title: args?['title'] as String? ?? 'Zakat',
-        description: args?['description'] as String? ?? 'Fulfill your obligatory charity safely and securely.',
+        description:
+            args?['description'] as String? ??
+            'Fulfill your obligatory charity safely and securely.',
         icon: args?['icon'] as IconData? ?? Icons.payments_outlined,
         iconBgColor: args?['iconBgColor'] as Color? ?? const Color(0xFFF0FDF4),
         iconColor: args?['iconColor'] as Color? ?? const Color(0xFF16A34A),
+        image: args?['image'] as String?,
+        category: args?['category'] as String?,
+        raised: args?['raised'] as int?,
+        goal: args?['goal'] as int?,
+        daysLeft: args?['daysLeft'] as int?,
       );
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);
       break;
-
 
     case 'navBar':
       page = const NavBar();
@@ -160,7 +169,6 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
       transitionDuration = const Duration(milliseconds: 300);
       break;
 
-  
     default:
       if (settings?.name?.startsWith('/app') == true) {
         return PageRouteBuilder(

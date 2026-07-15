@@ -11,6 +11,13 @@ class CampaignDetailsScreen extends StatelessWidget {
   final Color iconBgColor;
   final Color iconColor;
 
+  // Extra properties for Active Campaign Details mode
+  final String? image;
+  final String? category;
+  final int? raised;
+  final int? goal;
+  final int? daysLeft;
+
   const CampaignDetailsScreen({
     super.key,
     required this.title,
@@ -18,7 +25,101 @@ class CampaignDetailsScreen extends StatelessWidget {
     required this.icon,
     required this.iconBgColor,
     required this.iconColor,
+    this.image,
+    this.category,
+    this.raised,
+    this.goal,
+    this.daysLeft,
   });
+
+  bool get isCampaignMode => image != null;
+
+  double get progress {
+    final g = goal ?? 0;
+    if (g <= 0) return 0.0;
+    return ((raised ?? 0) / g).clamp(0.0, 1.0);
+  }
+
+  String _formatRupee(int amount) {
+    final raw = amount.toString();
+    final buf = StringBuffer();
+    final len = raw.length;
+    if (len <= 3) return '₹$raw';
+    final last3 = raw.substring(len - 3);
+    var rest = raw.substring(0, len - 3);
+    final parts = <String>[];
+    while (rest.length > 2) {
+      parts.insert(0, rest.substring(rest.length - 2));
+      rest = rest.substring(0, rest.length - 2);
+    }
+    if (rest.isNotEmpty) parts.insert(0, rest);
+    buf.writeAll(parts, ',');
+    buf.write(',$last3');
+    return '₹$buf';
+  }
+
+  IconData _getCategoryIcon(String? categoryName) {
+    switch (categoryName?.toLowerCase() ?? '') {
+      case 'general campaign':
+        return Icons.volunteer_activism_outlined;
+      case 'general funding':
+        return Icons.savings_outlined;
+      case 'zakat':
+      case 'zakath':
+        return Icons.payments_outlined;
+      case 'orphan':
+        return Icons.favorite_border_outlined;
+      case 'building mosque':
+        return Icons.mosque;
+      case 'medical relief':
+      case 'medical aid':
+        return Icons.monitor_heart_outlined;
+      default:
+        return icon;
+    }
+  }
+
+  Color _getCategoryBgColor(String? categoryName) {
+    switch (categoryName?.toLowerCase() ?? '') {
+      case 'general campaign':
+        return const Color(0xFFFFF7ED);
+      case 'general funding':
+        return const Color(0xFFFEF2F2);
+      case 'zakat':
+      case 'zakath':
+        return const Color(0xFFF0FDF4);
+      case 'orphan':
+        return const Color(0xFFFDF4FF);
+      case 'building mosque':
+        return const Color(0xFFEFF6FF);
+      case 'medical relief':
+      case 'medical aid':
+        return const Color(0xFFFFF5F5);
+      default:
+        return iconBgColor;
+    }
+  }
+
+  Color _getCategoryIconColor(String? categoryName) {
+    switch (categoryName?.toLowerCase() ?? '') {
+      case 'general campaign':
+        return const Color(0xFFEA580C);
+      case 'general funding':
+        return const Color(0xFFDC2626);
+      case 'zakat':
+      case 'zakath':
+        return const Color(0xFF16A34A);
+      case 'orphan':
+        return const Color(0xFFC084FC);
+      case 'building mosque':
+        return const Color(0xFF2563EB);
+      case 'medical relief':
+      case 'medical aid':
+        return const Color(0xFFEF4444);
+      default:
+        return iconColor;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +156,7 @@ class CampaignDetailsScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
                   Text(
-                    'Donation details',
+                    isCampaignMode ? 'Campaign details' : 'Donation details',
                     style: kHeadTitleB.copyWith(
                       color: kTextColor,
                       fontSize: 22,
@@ -65,71 +166,190 @@ class CampaignDetailsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Campaign Info Card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: kScreenBg,
-                  borderRadius: BorderRadius.circular(kCardRadiusLg),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Icon Container / Custom Illustration
-                    Container(
-                      width: 58,
-                      height: 58,
-                      decoration: BoxDecoration(
-                        color: iconBgColor,
-                        borderRadius: BorderRadius.circular(12),
+              if (isCampaignMode) ...[
+                // Banner Image Container
+                Container(
+                  height: 190,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(kCardRadiusLg),
+                    boxShadow: [
+                      BoxShadow(
+                        color: kBlack.withValues(alpha: 0.04),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
-                      child: Center(
-                        child: title.toLowerCase() == 'zakat'
-                            ? CustomPaint(
-                                size: const Size(36, 36),
-                                painter: ZakatBagPainter(),
-                              )
-                            : Icon(icon, color: iconColor, size: 26),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Image.asset(image!, fit: BoxFit.cover),
+                ),
+                const SizedBox(height: 20),
+
+                // Category tag chip
+                if (category != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _getCategoryBgColor(category),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Text(
+                      category!,
+                      style: kCaption10SB.copyWith(
+                        color: _getCategoryIconColor(category),
+                        fontWeight: kBold,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    // Details Text (Title & Description)
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                  const SizedBox(height: 10),
+                ],
+
+                // Campaign title
+                Text(title, style: kSectionTitleSB.copyWith(fontSize: 20)),
+                const SizedBox(height: 16),
+
+                // Progress Card
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: kScreenBg,
+                    borderRadius: BorderRadius.circular(kCardRadiusLg),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(kPillRadius),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 8,
+                          backgroundColor: kGreyLight,
+                          color: kSecondaryColor,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            title,
-                            style: kBodyTitleB.copyWith(
-                              color: kTextColor,
-                              fontSize: 16,
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _formatRupee(raised ?? 0),
+                                style: kBodyTitleSB.copyWith(fontSize: 16),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'raised of ${_formatRupee(goal ?? 0)}',
+                                style: kCaption12R.copyWith(
+                                  color: kSecondaryTextColor,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            description,
-                            style: kCaption12R.copyWith(
-                              color: kSecondaryTextColor,
-                              height: 1.25,
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                '${(progress * 100).round()}%',
+                                style: kBodyTitleSB.copyWith(fontSize: 16),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${daysLeft ?? 0} days left',
+                                style: kCaption12M.copyWith(
+                                  color: kDaysLeftWarning,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 20),
 
-              // Description Text Paragraph
-              Text(
-                'Lorem ipsum dolor sit amet consectetur. Volutpat ultricies sed proin tristique augue erat felis eu. Pharetra feugiat molestie tincidunt fames nec malesuada vulputate. Facilisis fermentum non cras orci. Eget nec in sed netus at in blandit. Elementum vestibulum pellentesque faucibus quam elit viverra. Dictum semper netus a arcu volutpat pretium eu. At nec in duis elementum dolor. Magna fermentum parturient tincidunt lorem aliquet non. Mauris non pellentesque turpis quis ut. Volutpat vitae lacus ultrices ullamcorper nullam placerat dignissim.',
-                style: kBodyTitleR.copyWith(
-                  color: kText2Color,
-                  height: 1.5,
-                  fontSize: 14,
+                // Campaign description
+                Text(
+                  description,
+                  style: kBodyTitleR.copyWith(
+                    color: kText2Color,
+                    height: 1.5,
+                    fontSize: 14,
+                  ),
                 ),
-              ),
+              ] else ...[
+                // Category Card
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: kScreenBg,
+                    borderRadius: BorderRadius.circular(kCardRadiusLg),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Icon Container / Custom Illustration
+                      Container(
+                        width: 58,
+                        height: 58,
+                        decoration: BoxDecoration(
+                          color: iconBgColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: title.toLowerCase() == 'zakat'
+                              ? CustomPaint(
+                                  size: const Size(36, 36),
+                                  painter: ZakatBagPainter(),
+                                )
+                              : Icon(icon, color: iconColor, size: 26),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Details Text (Title & Description)
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: kBodyTitleB.copyWith(
+                                color: kTextColor,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              description,
+                              style: kCaption12R.copyWith(
+                                color: kSecondaryTextColor,
+                                height: 1.25,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Description Text Paragraph
+                Text(
+                  'Lorem ipsum dolor sit amet consectetur. Volutpat ultricies sed proin tristique augue erat felis eu. Pharetra feugiat molestie tincidunt fames nec malesuada vulputate. Facilisis fermentum non cras orci. Eget nec in sed netus at in blandit. Elementum vestibulum pellentesque faucibus quam elit viverra. Dictum semper netus a arcu volutpat pretium eu. At nec in duis elementum dolor. Magna fermentum parturient tincidunt lorem aliquet non. Mauris non pellentesque turpis quis ut. Volutpat vitae lacus ultrices ullamcorper nullam placerat dignissim.',
+                  style: kBodyTitleR.copyWith(
+                    color: kText2Color,
+                    height: 1.5,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
             ],
           ),
@@ -141,12 +361,23 @@ class CampaignDetailsScreen extends StatelessWidget {
           child: ElevatedButton(
             onPressed: () {
               HapticHelper.impact(HapticImpact.medium);
+              final displayTitle = isCampaignMode ? category ?? title : title;
+              final sheetIcon = _getCategoryIcon(
+                isCampaignMode ? category : title,
+              );
+              final sheetBg = _getCategoryBgColor(
+                isCampaignMode ? category : title,
+              );
+              final sheetColor = _getCategoryIconColor(
+                isCampaignMode ? category : title,
+              );
+
               DonationSheet.show(
                 context: context,
-                categoryTitle: title,
-                icon: icon,
-                iconBgColor: iconBgColor,
-                iconColor: iconColor,
+                categoryTitle: displayTitle,
+                icon: sheetIcon,
+                iconBgColor: sheetBg,
+                iconColor: sheetColor,
               );
             },
             style: ElevatedButton.styleFrom(

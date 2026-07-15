@@ -237,7 +237,18 @@ class _DonatePageState extends State<DonatePage> {
                           },
                           onDonate: () {
                             HapticHelper.impact(HapticImpact.medium);
-                            // TODO: open donation flow
+                            NavigationService().pushNamed(
+                              'CampaignDetails',
+                              arguments: {
+                                'title': campaign.title,
+                                'description': campaign.description,
+                                'image': campaign.image,
+                                'category': campaign.category,
+                                'raised': campaign.raised,
+                                'goal': campaign.goal,
+                                'daysLeft': campaign.daysLeft,
+                              },
+                            );
                           },
                         ),
                       ),
@@ -522,128 +533,139 @@ class _CampaignCard extends StatelessWidget {
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            height: 180,
-            width: double.infinity,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.asset(campaign.image, fit: BoxFit.cover),
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: kBlack.withValues(alpha: 0.45),
-                      borderRadius: BorderRadius.circular(kPillRadius),
-                    ),
-                    child: Text(
-                      campaign.category,
-                      style: kCaption10M.copyWith(color: kWhite),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Row(
-                    children: [
-                      _OverlayIconButton(
-                        asset: 'assets/svg/share.svg',
-                        onTap: onShare,
-                      ),
-                      const SizedBox(width: 8),
-                      _OverlayIconButton(
-                        asset: 'assets/svg/bookmark.svg',
-                        onTap: onBookmark,
-                        filled: isBookmarked,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  campaign.title,
-                  style: kBodyTitleSB.copyWith(fontSize: kSize16),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  campaign.description,
-                  style: kCaption12R.copyWith(color: kMutedText, height: 1.4),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 14),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(kPillRadius),
-                  child: LinearProgressIndicator(
-                    value: campaign.progress,
-                    minHeight: 8,
-                    backgroundColor: kGreyLight,
-                    color: kSecondaryColor,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onDonate,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                height: 180,
+                width: double.infinity,
+                child: Stack(
+                  fit: StackFit.expand,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    Image.asset(campaign.image, fit: BoxFit.cover),
+                    Positioned(
+                      top: 12,
+                      left: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: kBlack.withValues(alpha: 0.45),
+                          borderRadius: BorderRadius.circular(kPillRadius),
+                        ),
+                        child: Text(
+                          campaign.category,
+                          style: kCaption10M.copyWith(color: kWhite),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: Row(
                         children: [
-                          Text(
-                            _formatRupee(campaign.raised),
-                            style: kBodyTitleSB,
+                          _OverlayIconButton(
+                            asset: 'assets/svg/share.svg',
+                            onTap: onShare,
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'of ${_formatRupee(campaign.goal)}',
-                            style: kCaption12R.copyWith(
-                              color: kSecondaryTextColor,
-                            ),
+                          const SizedBox(width: 8),
+                          _OverlayIconButton(
+                            asset: 'assets/svg/bookmark.svg',
+                            onTap: onBookmark,
+                            filled: isBookmarked,
                           ),
                         ],
                       ),
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      campaign.title,
+                      style: kBodyTitleSB.copyWith(fontSize: kSize16),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      campaign.description,
+                      style: kCaption12R.copyWith(
+                        color: kMutedText,
+                        height: 1.4,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 14),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(kPillRadius),
+                      child: LinearProgressIndicator(
+                        value: campaign.progress,
+                        minHeight: 8,
+                        backgroundColor: kGreyLight,
+                        color: kSecondaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('${campaign.percent}%', style: kBodyTitleSB),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${campaign.daysLeft} days left',
-                          style: kCaption12M.copyWith(color: kDaysLeftWarning),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _formatRupee(campaign.raised),
+                                style: kBodyTitleSB,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'of ${_formatRupee(campaign.goal)}',
+                                style: kCaption12R.copyWith(
+                                  color: kSecondaryTextColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text('${campaign.percent}%', style: kBodyTitleSB),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${campaign.daysLeft} days left',
+                              style: kCaption12M.copyWith(
+                                color: kDaysLeftWarning,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
+                    const SizedBox(height: 14),
+                    primaryButton(
+                      label: 'Donate Now',
+                      onPressed: onDonate,
+                      buttonHeight: 48,
+                    ),
                   ],
                 ),
-                const SizedBox(height: 14),
-                primaryButton(
-                  label: 'Donate Now',
-                  onPressed: onDonate,
-                  buttonHeight: 48,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
