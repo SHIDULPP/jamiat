@@ -5,35 +5,33 @@ import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
+import 'package:jamiat/src/interfaces/components/donation_sheet.dart';
+import 'package:jamiat/src/interfaces/welfare_program/welfare_program.dart';
 
 /// Dummy home data — replace with API models later.
 class _HomeDummyData {
   static const userName = 'Muhammed Rashid';
-  static const greeting = 'As- salamu alaykum';
+  static const greeting = 'As-salamu alaykum';
   static const avatarAsset = 'assets/pngs/dummy_avatar.png';
   static const totalDonated = 68000;
   static const participatedCampaigns = 102;
 
   static const quickAccess = <_QuickAccessItem>[
+    _QuickAccessItem(label: 'Autopay', icon: '', background: Color(0xFFECFDF5)),
     _QuickAccessItem(
       label: 'Welfare',
       icon: 'assets/svg/quick_welfare.svg',
-      background: kQuickWelfareBg,
+      background: Color(0xFFF3E8FF),
     ),
     _QuickAccessItem(
       label: 'Events',
       icon: 'assets/svg/quick_events.svg',
-      background: kQuickEventsBg,
+      background: Color(0xFFFFF7ED),
     ),
     _QuickAccessItem(
       label: 'Market',
       icon: 'assets/svg/quick_market.svg',
-      background: kQuickMarketBg,
-    ),
-    _QuickAccessItem(
-      label: 'News',
-      icon: 'assets/svg/quick_news.svg',
-      background: kQuickNewsBg,
+      background: Color(0xFFFCE7F3),
     ),
   ];
 
@@ -96,6 +94,7 @@ class HomePage extends ConsumerWidget {
       body: SafeArea(
         bottom: false,
         child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
@@ -135,7 +134,7 @@ class HomePage extends ConsumerWidget {
                     GestureDetector(
                       onTap: () {
                         HapticHelper.impact(HapticImpact.light);
-                        // TODO: navigate to campaigns list
+                        NavigationService().pushNamed('DonationList');
                       },
                       child: Text('See all', style: kLinkM),
                     ),
@@ -144,7 +143,293 @@ class HomePage extends ConsumerWidget {
               ),
             ),
             const SliverToBoxAdapter(child: _ActiveCampaignsSection()),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+            // Redesigned: Marketplace Promo Card
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: kScreenPaddingH,
+                  vertical: 20,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFF9FAFB), Color(0xFFF3F4F6)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: kBorder),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Jamiat Market Place',
+                              style: kBodyTitleB.copyWith(
+                                color: kTextColor,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Discover exclusive deals & items',
+                              style: kCaption12R.copyWith(color: kMutedText),
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: () {
+                                HapticHelper.impact(HapticImpact.light);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: kPrimaryColor,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 8,
+                                ),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: Text(
+                                'Explore',
+                                style: kCaption12M.copyWith(
+                                  color: kWhite,
+                                  fontWeight: kBold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        size: 64,
+                        color: kPrimaryColor.withValues(alpha: 0.15),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Redesigned: Welfare Grid Section
+            const SliverToBoxAdapter(child: _WelfareGridSection()),
+
+            // Redesigned: Medical Relief promo card
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: kScreenPaddingH,
+                  vertical: 20,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF3C7), // Yellow background
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFFDE68A)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: kWhite,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'Medical Relief Fund',
+                          style: kCaption10M.copyWith(
+                            color: const Color(0xFFD97706),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Millions lack healthcare; fund life-saving medicine today.',
+                        style: kBodyTitleB.copyWith(
+                          color: const Color(0xFF78350F),
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      ElevatedButton(
+                        onPressed: () {
+                          HapticHelper.impact(HapticImpact.light);
+                          DonationSheet.show(
+                            context: context,
+                            categoryTitle: 'Medical Relief Fund',
+                            icon: Icons.medical_services_outlined,
+                            iconBgColor: const Color(0xFFFFF1F2),
+                            iconColor: const Color(0xFFE11D48),
+                            isAutopay: false,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD97706),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          'Donate Now',
+                          style: kCaption12M.copyWith(
+                            color: kWhite,
+                            fontWeight: kBold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Redesigned: Latest News List
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  kScreenPaddingH,
+                  16,
+                  kScreenPaddingH,
+                  12,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Latest News', style: kSectionTitleSB),
+                    GestureDetector(
+                      onTap: () {
+                        HapticHelper.impact(HapticImpact.light);
+                      },
+                      child: Text('See all', style: kLinkM),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 140,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: kScreenPaddingH,
+                  ),
+                  itemCount: 2,
+                  separatorBuilder: (_, _) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    return Container(
+                      width: 280,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: kWhite,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: kBorder),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Announcement',
+                            style: kCaption10M.copyWith(color: kMutedText),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Annual Jamiat conference - registration open',
+                            style: kBodyTitleB.copyWith(
+                              color: kTextColor,
+                              fontSize: 14,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Join us for the premier community gathering of the year.',
+                            style: kCaption12R.copyWith(
+                              color: kSecondaryTextColor,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+
+            // Redesigned: Empowerment Programs blue card
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: kScreenPaddingH,
+                  vertical: 24,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF), // Blue background
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFDBEAFE)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Empowerment Programs',
+                        style: kBodyTitleB.copyWith(
+                          color: const Color(0xFF1E3A8A),
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'For skill building, financial support, and active services.',
+                        style: kCaption12R.copyWith(
+                          color: const Color(0xFF2563EB),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      ElevatedButton(
+                        onPressed: () {
+                          HapticHelper.impact(HapticImpact.light);
+                          NavigationService().pushNamed('WelfareProgram');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2563EB),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          'Explore Programs',
+                          style: kCaption12M.copyWith(
+                            color: kWhite,
+                            fontWeight: kBold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 48)),
           ],
         ),
       ),
@@ -200,7 +485,6 @@ class _HomeHeader extends StatelessWidget {
             customBorder: const CircleBorder(),
             onTap: () {
               HapticHelper.impact(HapticImpact.light);
-              // TODO: open notifications
             },
             child: SizedBox(
               width: 44,
@@ -233,17 +517,20 @@ class _ContributionsCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kContributionsBg,
+        color: const Color(0xFFECFDF5), // Soft green background
         borderRadius: BorderRadius.circular(kCardRadiusLg),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('My Contributions', style: kBodyTitleSB),
+          Text(
+            'My Contributions',
+            style: kBodyTitleSB.copyWith(color: const Color(0xFF065F46)),
+          ),
           const SizedBox(height: 4),
           Text(
-            'Members-only deals & services',
-            style: kCaption12R.copyWith(color: kMutedText),
+            'Member since 26 Dec 2025',
+            style: kCaption12R.copyWith(color: const Color(0xFF047857)),
           ),
           const SizedBox(height: 14),
           Row(
@@ -298,7 +585,10 @@ class _StatTile extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             value,
-            style: kLabel22B.copyWith(color: kPrimaryColor, height: 1.1),
+            style: kLabel22B.copyWith(
+              color: const Color(0xFF059669), // Green text matching mockup
+              height: 1.1,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -337,6 +627,8 @@ class _QuickAccessList extends StatelessWidget {
                   NavigationService().pushNamed('Events');
                 } else if (item.label == 'Welfare') {
                   NavigationService().pushNamed('WelfareProgram');
+                } else if (item.label == 'Autopay') {
+                  NavigationService().pushNamed('AutopayView');
                 }
               },
             );
@@ -378,21 +670,27 @@ class _QuickAccessCard extends StatelessWidget {
               children: [
                 Text(
                   item.label,
-                  style: kCaption14B,
+                  style: kCaption14B.copyWith(color: kTextColor),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const Spacer(),
                 Center(
-                  child: SvgPicture.asset(
-                    item.icon,
-                    width: 44,
-                    height: 44,
-                    colorFilter: const ColorFilter.mode(
-                      kIconDark,
-                      BlendMode.srcIn,
-                    ),
-                  ),
+                  child: item.icon.isEmpty
+                      ? const Icon(
+                          Icons.sync_rounded,
+                          size: 40,
+                          color: Color(0xFF059669),
+                        )
+                      : SvgPicture.asset(
+                          item.icon,
+                          width: 44,
+                          height: 44,
+                          colorFilter: const ColorFilter.mode(
+                            kIconDark,
+                            BlendMode.srcIn,
+                          ),
+                        ),
                 ),
                 const SizedBox(height: 4),
               ],
@@ -428,7 +726,10 @@ class _ActiveCampaignsSection extends StatelessWidget {
             campaign: campaigns[index],
             onTap: () {
               HapticHelper.impact(HapticImpact.light);
-              // TODO: open campaign detail
+              NavigationService().pushNamed(
+                'CampaignDetails',
+                arguments: {'campaignName': campaigns[index].title},
+              );
             },
           );
         },
@@ -494,18 +795,185 @@ class _CampaignCard extends StatelessWidget {
               Positioned(
                 left: 12,
                 right: 12,
-                bottom: 14,
-                child: Text(
-                  campaign.title,
-                  style: kBodyTitleSB.copyWith(color: kWhite, height: 1.25),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                bottom: 12,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      campaign.title,
+                      style: kBodyTitleSB.copyWith(color: kWhite, height: 1.25),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: LinearProgressIndicator(
+                        value: campaign.title.contains('Maktab') ? 0.65 : 0.68,
+                        minHeight: 3.5,
+                        backgroundColor: kWhite.withValues(alpha: 0.3),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          kSecondaryColor,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      campaign.title.contains('Maktab')
+                          ? '₹ 65,000 of ₹ 1,00,000'
+                          : '₹ 68,000 of ₹ 1,00,000',
+                      style: kCaption10M.copyWith(color: kWhite),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _WelfareGridSection extends StatelessWidget {
+  const _WelfareGridSection();
+
+  static const List<Map<String, dynamic>> _welfareItems = [
+    {
+      'key': 'maktab',
+      'title': 'Maktab',
+      'bgColor': Color(0xFFFFFBEB),
+      'painter': MaktabBookPainter(),
+    },
+    {
+      'key': 'youth_club',
+      'title': 'Youth Club',
+      'bgColor': Color(0xFFF0FDF4),
+      'painter': YouthClubFlagPainter(),
+    },
+    {
+      'key': 'study_center',
+      'title': 'Study Center',
+      'bgColor': Color(0xFFFDF4FF),
+      'painter': StudyCenterBooksPainter(),
+    },
+    {
+      'key': 'ulama',
+      'title': 'Ulama',
+      'bgColor': Color(0xFFFFF1F2),
+      'painter': UlamaTurbanPainter(),
+    },
+    {
+      'key': 'model_village',
+      'title': 'Model Village',
+      'bgColor': Color(0xFFEFF6FF),
+      'painter': ModelVillageHousesPainter(),
+    },
+    {
+      'key': 'jem',
+      'title': 'JEM',
+      'bgColor': Color(0xFFF5EBE6),
+      'painter': JemCourtPainter(),
+    },
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Explore our Social & Welfare Services.',
+                style: kSectionTitleSB.copyWith(fontSize: 16),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Dedicated programs focused on supporting and empowering our community.',
+                style: kCaption12R.copyWith(color: kMutedText),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: () {
+                  HapticHelper.impact(HapticImpact.light);
+                  NavigationService().pushNamed('WelfareProgram');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kPrimaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  'Explore All',
+                  style: kCaption12M.copyWith(color: kWhite, fontWeight: kBold),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final cardWidth = (constraints.maxWidth - 24) / 3;
+              return Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: _welfareItems.map((item) {
+                  return GestureDetector(
+                    onTap: () {
+                      HapticHelper.impact(HapticImpact.light);
+                      NavigationService().pushNamed(
+                        'WelfareDetails',
+                        arguments: {'serviceKey': item['key']},
+                      );
+                    },
+                    child: Container(
+                      width: cardWidth,
+                      height: 110,
+                      decoration: BoxDecoration(
+                        color: item['bgColor'] as Color,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: (item['bgColor'] as Color).withValues(
+                            alpha: 0.15,
+                          ),
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            item['title'] as String,
+                            style: kCaption12R.copyWith(
+                              color: kTextColor,
+                              fontWeight: kBold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: 50,
+                            height: 50,
+                            child: CustomPaint(
+                              painter: item['painter'] as CustomPainter,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
@@ -518,25 +986,30 @@ class _ContributeButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: kSecondaryColor,
-      borderRadius: BorderRadius.circular(kPillRadius),
-      elevation: 2,
+      color: const Color(0xFFFBBF24), // Yellow background matching mockup
+      borderRadius: BorderRadius.circular(24),
+      elevation: 4,
       shadowColor: kBlack.withValues(alpha: 0.18),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(kPillRadius),
+        borderRadius: BorderRadius.circular(24),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Contribute', style: kCaption14B.copyWith(color: kDarkText)),
+              Text(
+                'Contribute',
+                style: kCaption14B.copyWith(
+                  color: const Color(0xFF78350F), // Dark brown/amber text
+                  fontWeight: kBold,
+                ),
+              ),
               const SizedBox(width: 8),
-              SvgPicture.asset(
-                'assets/svg/donate.svg',
-                width: 18,
-                height: 18,
-                colorFilter: const ColorFilter.mode(kDarkText, BlendMode.srcIn),
+              const Icon(
+                Icons.volunteer_activism,
+                size: 18,
+                color: Color(0xFF78350F),
               ),
             ],
           ),
