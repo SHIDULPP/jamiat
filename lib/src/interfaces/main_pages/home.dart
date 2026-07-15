@@ -313,6 +313,7 @@ class HomePage extends ConsumerWidget {
                     GestureDetector(
                       onTap: () {
                         HapticHelper.impact(HapticImpact.light);
+                        NavigationService().pushNamed('NewsList');
                       },
                       child: Text('See all', style: kLinkM),
                     ),
@@ -331,41 +332,55 @@ class HomePage extends ConsumerWidget {
                   itemCount: 2,
                   separatorBuilder: (_, _) => const SizedBox(width: 12),
                   itemBuilder: (context, index) {
-                    return Container(
-                      width: 280,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: kWhite,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: kBorder),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Announcement',
-                            style: kCaption10M.copyWith(color: kMutedText),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Annual Jamiat conference - registration open',
-                            style: kBodyTitleB.copyWith(
-                              color: kTextColor,
-                              fontSize: 14,
+                    final isFirst = index == 0;
+                    return GestureDetector(
+                      onTap: () {
+                        HapticHelper.impact(HapticImpact.light);
+                        NavigationService().pushNamed(
+                          'NewsDetail',
+                          arguments: {'newsId': isFirst ? '1' : '2'},
+                        );
+                      },
+                      child: Container(
+                        width: 280,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: kWhite,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: kBorder),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isFirst ? 'Announcement' : 'Relief Work',
+                              style: kCaption10M.copyWith(color: kMutedText),
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Join us for the premier community gathering of the year.',
-                            style: kCaption12R.copyWith(
-                              color: kSecondaryTextColor,
+                            const SizedBox(height: 6),
+                            Text(
+                              isFirst
+                                  ? 'Annual Jamiat conference - registration open'
+                                  : 'Flood relief update- thank you for your support, 218 families helped.',
+                              style: kBodyTitleB.copyWith(
+                                color: kTextColor,
+                                fontSize: 14,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                            const SizedBox(height: 4),
+                            Text(
+                              isFirst
+                                  ? 'Join us for the premier community gathering of the year.'
+                                  : 'Thank you for your active support in the community.',
+                              style: kCaption12R.copyWith(
+                                color: kSecondaryTextColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },
