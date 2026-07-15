@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
+import 'package:jamiat/src/data/services/navigation_services.dart';
 
 class DonationSheet extends StatefulWidget {
   final String categoryTitle;
   final IconData icon;
   final Color iconBgColor;
   final Color iconColor;
+  final bool isAutopay;
 
   const DonationSheet({
     super.key,
@@ -16,6 +18,7 @@ class DonationSheet extends StatefulWidget {
     required this.icon,
     required this.iconBgColor,
     required this.iconColor,
+    this.isAutopay = false,
   });
 
   static Future<void> show({
@@ -24,6 +27,7 @@ class DonationSheet extends StatefulWidget {
     required IconData icon,
     required Color iconBgColor,
     required Color iconColor,
+    bool isAutopay = false,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -34,6 +38,7 @@ class DonationSheet extends StatefulWidget {
         icon: icon,
         iconBgColor: iconBgColor,
         iconColor: iconColor,
+        isAutopay: isAutopay,
       ),
     );
   }
@@ -45,13 +50,14 @@ class DonationSheet extends StatefulWidget {
 class _DonationSheetState extends State<DonationSheet> {
   final List<int> _presetAmounts = [100, 250, 500, 1000, 2500, 5000];
   final _amountController = TextEditingController();
+  final _messageController = TextEditingController();
   int? _selectedPresetIndex;
-  bool _isRecurring = false;
   bool _isProcessing = false;
 
   @override
   void dispose() {
     _amountController.dispose();
+    _messageController.dispose();
     super.dispose();
   }
 
@@ -97,29 +103,20 @@ class _DonationSheetState extends State<DonationSheet> {
     });
 
     final finalAmount = _amountController.text.trim();
+    final message = _messageController.text.trim();
 
     Navigator.of(context).pop();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: kWhite),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Thank you for contributing ₹$finalAmount to ${widget.categoryTitle}!',
-                style: kCaption14M.copyWith(color: kWhite),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: kPrimaryColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
+    NavigationService().pushNamed(
+      'DonationSuccess',
+      arguments: {
+        'isAutopay': widget.isAutopay,
+        'amount': finalAmount,
+        'message': message.isEmpty ? null : message,
+        'campaignName': widget.categoryTitle,
+        'date':
+            '${DateTime.now().day.toString().padLeft(2, '0')}/${DateTime.now().month.toString().padLeft(2, '0')}/${DateTime.now().year}',
+      },
     );
   }
 
@@ -163,11 +160,7 @@ class _DonationSheetState extends State<DonationSheet> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
-                    child: Icon(
-                      widget.icon,
-                      color: widget.iconColor,
-                      size: 24,
-                    ),
+                    child: Icon(widget.icon, color: widget.iconColor, size: 24),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -310,42 +303,66 @@ class _DonationSheetState extends State<DonationSheet> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: kPrimaryColor, width: 1.5),
+                  borderSide: const BorderSide(
+                    color: kPrimaryColor,
+                    width: 1.5,
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 20),
 
-            // Make recurring Row
+            // Add a message section
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(
-                  child: Text(
-                    'Make this a recurring contribution',
-                    style: kStyle(kMedium, 15, color: kTextColor),
-                  ),
+                Text(
+                  'Add a message ',
+                  style: kStyle(kSemiBold, 16, color: kTextColor),
                 ),
-                Switch(
-                  value: _isRecurring,
-                  activeThumbColor: kPrimaryColor,
-                  activeTrackColor: kLightGreen,
-                  inactiveThumbColor: kWhite,
-                  inactiveTrackColor: kChipGreyBg,
-                  onChanged: (val) {
-                    HapticHelper.impact(HapticImpact.light);
-                    setState(() {
-                      _isRecurring = val;
-                    });
-                  },
+                Text(
+                  '(optional)',
+                  style: kStyle(kRegular, 14, color: kSecondaryTextColor),
                 ),
               ],
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _messageController,
+              maxLines: 3,
+              minLines: 3,
+              style: kStyle(kMedium, 16, color: kTextColor),
+              decoration: InputDecoration(
+                hintText: 'Enter message',
+                hintStyle: kStyle(kRegular, 16, color: kSecondaryTextColor),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 16,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: kBorder, width: 1),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: kBorder, width: 1),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(
+                    color: kPrimaryColor,
+                    width: 1.5,
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 24),
 
             // Continue to payment Button
             ElevatedButton(
-              onPressed: (_hasValidAmount && !_isProcessing) ? _handlePayment : null,
+              onPressed: (_hasValidAmount && !_isProcessing)
+                  ? _handlePayment
+                  : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: kPrimaryColor,
                 disabledBackgroundColor: kChipGreyBg,

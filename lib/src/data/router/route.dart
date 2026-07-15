@@ -6,6 +6,7 @@ import 'package:jamiat/src/interfaces/onboarding/role_selection.dart';
 import 'package:jamiat/src/interfaces/onboarding/registration.dart';
 import 'package:jamiat/src/interfaces/campaign/campaign_list.dart';
 import 'package:jamiat/src/interfaces/campaign/campaign_details.dart';
+import 'package:jamiat/src/interfaces/campaign/donation_success.dart';
 
 enum TransitionType { slideFromBottom, slideFromRight, fade, fadeScale }
 
@@ -158,6 +159,22 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
         raised: args?['raised'] as int?,
         goal: args?['goal'] as int?,
         daysLeft: args?['daysLeft'] as int?,
+      );
+      transitionToUse = TransitionType.slideFromRight;
+      transitionDuration = const Duration(milliseconds: 300);
+      break;
+
+    case 'DonationSuccess':
+      final args = settings?.arguments as Map<String, dynamic>?;
+      page = DonationSuccessScreen(
+        isAutopay: args?['isAutopay'] as bool? ?? false,
+        amount: args?['amount'] as String? ?? '500',
+        period: args?['period'] as String? ?? 'Daily',
+        transactionId: args?['transactionId'] as String? ?? 'TR12451BHGF',
+        date: args?['date'] as String? ?? '20/06/2026',
+        campaignName:
+            args?['campaignName'] as String? ?? 'Medical aid for patient',
+        message: args?['message'] as String?,
       );
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);

@@ -378,6 +378,7 @@ class CampaignDetailsScreen extends StatelessWidget {
                 icon: sheetIcon,
                 iconBgColor: sheetBg,
                 iconColor: sheetColor,
+                isAutopay: !isCampaignMode,
               );
             },
             style: ElevatedButton.styleFrom(
