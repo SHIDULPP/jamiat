@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
+import 'package:jamiat/src/data/services/navigation_services.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final String title;
@@ -346,18 +347,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               child: ElevatedButton(
                 onPressed: () {
                   HapticHelper.impact(HapticImpact.medium);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Successfully registered for "${widget.title}"!',
-                        style: kCaption14M.copyWith(color: kWhite),
-                      ),
-                      backgroundColor: kPrimaryColor,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
+                  final dateOnly = widget.date.contains('•')
+                      ? widget.date.split('•').first.trim()
+                      : widget.date;
+                  NavigationService().pushNamed(
+                    'EventTicket',
+                    arguments: {
+                      'title': widget.title,
+                      'date': dateOnly,
+                      'venue': widget.location,
+                    },
                   );
                 },
                 style: ElevatedButton.styleFrom(

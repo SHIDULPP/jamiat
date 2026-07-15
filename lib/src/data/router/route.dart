@@ -14,6 +14,7 @@ import 'package:jamiat/src/interfaces/campaign/donation_history.dart';
 import 'package:jamiat/src/interfaces/campaign/saved_donations.dart';
 import 'package:jamiat/src/interfaces/events/events.dart';
 import 'package:jamiat/src/interfaces/events/event_details.dart';
+import 'package:jamiat/src/interfaces/events/ticket.dart';
 
 enum TransitionType { slideFromBottom, slideFromRight, fade, fadeScale }
 
@@ -248,6 +249,17 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
         image:
             args?['image'] as String? ?? 'assets/jpgs/campaign_education.jpg',
         isBookmarked: args?['isBookmarked'] as bool? ?? false,
+      );
+      transitionToUse = TransitionType.slideFromRight;
+      transitionDuration = const Duration(milliseconds: 300);
+      break;
+
+    case 'EventTicket':
+      final args = settings?.arguments as Map<String, dynamic>?;
+      page = EventTicketScreen(
+        title: args?['title'] as String? ?? 'Annual Jamiat Conference',
+        date: args?['date'] as String? ?? '20 Jun 2026',
+        venue: args?['venue'] as String? ?? 'Ernakulam Town Hall',
       );
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);
