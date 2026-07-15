@@ -77,171 +77,197 @@ class _EventsScreenState extends State<EventsScreen> {
           ),
         ],
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Banner Image section with badges
-          SizedBox(
-            height: 180,
-            width: double.infinity,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.asset(
-                  event['image'] as String,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: kScreenBg,
-                      child: const Icon(
-                        Icons.image_outlined,
-                        color: kMutedText,
-                        size: 40,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticHelper.impact(HapticImpact.light);
+            Navigator.pushNamed(
+              context,
+              'EventDetails',
+              arguments: {
+                'title': event['title'],
+                'category': event['category'],
+                'date': event['date'],
+                'location': event['location'],
+                'image': event['image'],
+                'isBookmarked': event['isBookmarked'],
+              },
+            );
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Banner Image section with badges
+              SizedBox(
+                height: 180,
+                width: double.infinity,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.asset(
+                      event['image'] as String,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: kScreenBg,
+                          child: const Icon(
+                            Icons.image_outlined,
+                            color: kMutedText,
+                            size: 40,
+                          ),
+                        );
+                      },
+                    ),
+                    // Category Label badge
+                    Positioned(
+                      top: 12,
+                      left: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: kBlack.withValues(alpha: 0.45),
+                          borderRadius: BorderRadius.circular(kPillRadius),
+                        ),
+                        child: Text(
+                          event['category'] as String,
+                          style: kCaption10M.copyWith(color: kWhite),
+                        ),
                       ),
-                    );
-                  },
-                ),
-                // Category Label badge
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
                     ),
-                    decoration: BoxDecoration(
-                      color: kBlack.withValues(alpha: 0.45),
-                      borderRadius: BorderRadius.circular(kPillRadius),
-                    ),
-                    child: Text(
-                      event['category'] as String,
-                      style: kCaption10M.copyWith(color: kWhite),
-                    ),
-                  ),
-                ),
-                // Actions (Share & Bookmark)
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Row(
-                    children: [
-                      // Share action
-                      GestureDetector(
-                        onTap: () {
-                          HapticHelper.impact(HapticImpact.light);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Shared "${event['title']}" successfully!',
-                                style: kCaption14M.copyWith(color: kWhite),
+                    // Actions (Share & Bookmark)
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: Row(
+                        children: [
+                          // Share action
+                          GestureDetector(
+                            onTap: () {
+                              HapticHelper.impact(HapticImpact.light);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Shared "${event['title']}" successfully!',
+                                    style: kCaption14M.copyWith(color: kWhite),
+                                  ),
+                                  backgroundColor: kPrimaryColor,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: kBlack.withValues(alpha: 0.4),
                               ),
-                              backgroundColor: kPrimaryColor,
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                              child: const Icon(
+                                Icons.share_outlined,
+                                color: kWhite,
+                                size: 18,
                               ),
                             ),
-                          );
-                        },
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: kBlack.withValues(alpha: 0.4),
                           ),
-                          child: const Icon(
-                            Icons.share_outlined,
-                            color: kWhite,
-                            size: 18,
+                          const SizedBox(width: 8),
+                          // Bookmark toggle action
+                          GestureDetector(
+                            onTap: () {
+                              HapticHelper.impact(HapticImpact.medium);
+                              setState(() {
+                                event['isBookmarked'] = !isBookmarked;
+                              });
+                            },
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: kBlack.withValues(alpha: 0.4),
+                              ),
+                              child: Icon(
+                                isBookmarked
+                                    ? Icons.bookmark
+                                    : Icons.bookmark_border,
+                                color: isBookmarked ? kPrimaryColor : kWhite,
+                                size: 18,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Bookmark toggle action
-                      GestureDetector(
-                        onTap: () {
-                          HapticHelper.impact(HapticImpact.medium);
-                          setState(() {
-                            event['isBookmarked'] = !isBookmarked;
-                          });
-                        },
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: kBlack.withValues(alpha: 0.4),
-                          ),
-                          child: Icon(
-                            isBookmarked
-                                ? Icons.bookmark
-                                : Icons.bookmark_border,
-                            color: isBookmarked ? kPrimaryColor : kWhite,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Info Details body
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  event['title'] as String,
-                  style: kBodyTitleB.copyWith(fontSize: 16, color: kTextColor),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                // Date Row
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.calendar_today_outlined,
-                      size: 14,
-                      color: kSecondaryTextColor,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        event['date'] as String,
-                        style: kCaption12R.copyWith(color: kSecondaryTextColor),
+                        ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                // Location Row
-                Row(
+              ),
+              // Info Details body
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
-                      Icons.location_on_outlined,
-                      size: 14,
-                      color: kSecondaryTextColor,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        event['location'] as String,
-                        style: kCaption12R.copyWith(color: kSecondaryTextColor),
+                    Text(
+                      event['title'] as String,
+                      style: kBodyTitleB.copyWith(
+                        fontSize: 16,
+                        color: kTextColor,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    // Date Row
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_today_outlined,
+                          size: 14,
+                          color: kSecondaryTextColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            event['date'] as String,
+                            style: kCaption12R.copyWith(
+                              color: kSecondaryTextColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    // Location Row
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_outlined,
+                          size: 14,
+                          color: kSecondaryTextColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            event['location'] as String,
+                            style: kCaption12R.copyWith(
+                              color: kSecondaryTextColor,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
