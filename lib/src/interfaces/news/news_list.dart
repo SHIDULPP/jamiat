@@ -50,7 +50,7 @@ class _NewsListScreenState extends State<NewsListScreen> {
       'subtitle':
           'Connect with industry leaders and explore the latest in technology and innovation.',
       'date': '12 September 2026',
-      'image': 'assets/jpgs/campaign_housing.jpg',
+      'image': 'assets/jpgs/campaign_welfare.jpg',
       'readTime': '6 mins read',
     },
     {

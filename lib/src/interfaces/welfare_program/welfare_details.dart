@@ -129,7 +129,7 @@ class WelfareDetailsScreen extends StatelessWidget {
       case 'model_village':
         return {
           'title': 'Model Village',
-          'image': 'assets/jpgs/campaign_housing.jpg',
+          'image': 'assets/jpgs/campaign_welfare.jpg',
           'description':
               'Developing sustainable model villages and emergency housing infrastructure for rehabilitation and community growth.',
           'blocks': [

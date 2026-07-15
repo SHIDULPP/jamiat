@@ -429,7 +429,7 @@ class HomePage extends ConsumerWidget {
                       ElevatedButton(
                         onPressed: () {
                           HapticHelper.impact(HapticImpact.light);
-                          NavigationService().pushNamed('WelfareProgram');
+                          NavigationService().pushNamed('EmpowermentPrograms');
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF2563EB),
@@ -653,7 +653,7 @@ class _QuickAccessList extends StatelessWidget {
                 } else if (item.label == 'News') {
                   NavigationService().pushNamed('NewsList');
                 } else if (item.label == 'Programs') {
-                  NavigationService().pushNamed('WelfareProgram');
+                  NavigationService().pushNamed('EmpowermentPrograms');
                 }
               },
             );
