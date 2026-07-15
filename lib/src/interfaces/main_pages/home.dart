@@ -333,7 +333,9 @@ class _QuickAccessList extends StatelessWidget {
               item: item,
               onTap: () {
                 HapticHelper.impact(HapticImpact.light);
-                // TODO: route per quick-access item
+                if (item.label == 'Events') {
+                  NavigationService().pushNamed('Events');
+                }
               },
             );
           },

@@ -11,6 +11,8 @@ import 'package:jamiat/src/interfaces/campaign/donations_view.dart';
 import 'package:jamiat/src/interfaces/campaign/autopay_view.dart';
 import 'package:jamiat/src/interfaces/campaign/autopay_details.dart';
 import 'package:jamiat/src/interfaces/campaign/donation_history.dart';
+import 'package:jamiat/src/interfaces/campaign/saved_donations.dart';
+import 'package:jamiat/src/interfaces/events/events.dart';
 
 enum TransitionType { slideFromBottom, slideFromRight, fade, fadeScale }
 
@@ -219,6 +221,18 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
 
     case 'DonationHistory':
       page = const DonationHistoryScreen();
+      transitionToUse = TransitionType.slideFromRight;
+      transitionDuration = const Duration(milliseconds: 300);
+      break;
+
+    case 'SavedDonations':
+      page = const SavedDonationsScreen();
+      transitionToUse = TransitionType.slideFromRight;
+      transitionDuration = const Duration(milliseconds: 300);
+      break;
+
+    case 'Events':
+      page = const EventsScreen();
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);
       break;

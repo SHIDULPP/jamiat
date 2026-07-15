@@ -294,7 +294,7 @@ class _CampaignsHeader extends StatelessWidget {
               if (value == 'history') {
                 NavigationService().pushNamed('DonationHistory');
               } else {
-                NavigationService().pushNamed('DonationList');
+                NavigationService().pushNamed('SavedDonations');
               }
             },
             itemBuilder: (context) => [
