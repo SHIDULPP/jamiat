@@ -4,7 +4,8 @@ import 'package:jamiat/src/interfaces/onboarding/login.dart';
 import 'package:jamiat/src/interfaces/onboarding/splash_screen.dart';
 import 'package:jamiat/src/interfaces/onboarding/role_selection.dart';
 import 'package:jamiat/src/interfaces/onboarding/registration.dart';
-import 'package:jamiat/src/interfaces/donations/donation_list.dart';
+import 'package:jamiat/src/interfaces/campaign/campaign_list.dart';
+import 'package:jamiat/src/interfaces/campaign/campaign_details.dart';
 
 
 enum TransitionType { slideFromBottom, slideFromRight, fade, fadeScale }
@@ -138,6 +139,20 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);
       break;
+
+    case 'CampaignDetails':
+      final args = settings?.arguments as Map<String, dynamic>?;
+      page = CampaignDetailsScreen(
+        title: args?['title'] as String? ?? 'Zakat',
+        description: args?['description'] as String? ?? 'Fulfill your obligatory charity safely and securely.',
+        icon: args?['icon'] as IconData? ?? Icons.payments_outlined,
+        iconBgColor: args?['iconBgColor'] as Color? ?? const Color(0xFFF0FDF4),
+        iconColor: args?['iconColor'] as Color? ?? const Color(0xFF16A34A),
+      );
+      transitionToUse = TransitionType.slideFromRight;
+      transitionDuration = const Duration(milliseconds: 300);
+      break;
+
 
     case 'navBar':
       page = const NavBar();

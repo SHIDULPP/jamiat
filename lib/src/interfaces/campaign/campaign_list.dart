@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
+import 'package:jamiat/src/data/services/navigation_services.dart';
+
 
 class _DonationCategory {
   final String title;
@@ -145,13 +147,18 @@ class _DonationListScreenState extends State<DonationListScreen> {
       child: InkWell(
         onTap: () {
           HapticHelper.impact(HapticImpact.light);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Selected category: ${item.title}'),
-              behavior: SnackBarBehavior.floating,
-            ),
+          NavigationService().pushNamed(
+            'CampaignDetails',
+            arguments: {
+              'title': item.title,
+              'description': item.description,
+              'icon': item.icon,
+              'iconBgColor': item.iconBgColor,
+              'iconColor': item.iconColor,
+            },
           );
         },
+
         borderRadius: BorderRadius.circular(kCardRadiusLg),
         child: Container(
           padding: const EdgeInsets.all(16),
