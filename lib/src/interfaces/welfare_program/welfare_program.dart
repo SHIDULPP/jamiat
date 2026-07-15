@@ -191,71 +191,80 @@ class _WelfareProgramScreenState extends State<WelfareProgramScreen> {
                         itemBuilder: (context, index) {
                           final service = filtered[index];
 
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 20),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: service['bgColor'] as Color,
-                              borderRadius: BorderRadius.circular(
-                                kCardRadiusLg,
-                              ),
-                              border: Border.all(
-                                color: (service['bgColor'] as Color).withValues(
-                                  alpha: 0.15,
+                          return GestureDetector(
+                            onTap: () {
+                              HapticHelper.impact(HapticImpact.light);
+                              Navigator.pushNamed(
+                                context,
+                                'WelfareDetails',
+                                arguments: {'serviceKey': service['key']},
+                              );
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 20),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: service['bgColor'] as Color,
+                                borderRadius: BorderRadius.circular(
+                                  kCardRadiusLg,
+                                ),
+                                border: Border.all(
+                                  color: (service['bgColor'] as Color)
+                                      .withValues(alpha: 0.15),
                                 ),
                               ),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Programmatic Illustration image fallback wrapper
-                                Container(
-                                  width: 80,
-                                  height: 80,
-                                  decoration: BoxDecoration(
-                                    color: kWhite,
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: kBlack.withValues(alpha: 0.03),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Programmatic Illustration image fallback wrapper
+                                  Container(
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      color: kWhite,
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: kBlack.withValues(alpha: 0.03),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: CustomPaint(
+                                      painter:
+                                          service['painter'] as CustomPainter,
+                                    ),
                                   ),
-                                  child: CustomPaint(
-                                    painter:
-                                        service['painter'] as CustomPainter,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
+                                  const SizedBox(width: 16),
 
-                                // Title and Description Column
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        service['title'] as String,
-                                        style: kBodyTitleB.copyWith(
-                                          color: kTextColor,
-                                          fontSize: 16,
+                                  // Title and Description Column
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          service['title'] as String,
+                                          style: kBodyTitleB.copyWith(
+                                            color: kTextColor,
+                                            fontSize: 16,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        service['description'] as String,
-                                        style: kCaption12R.copyWith(
-                                          color: kMutedText,
-                                          height: 1.4,
-                                          fontSize: 12.5,
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          service['description'] as String,
+                                          style: kCaption12R.copyWith(
+                                            color: kMutedText,
+                                            height: 1.4,
+                                            fontSize: 12.5,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           );
                         },
