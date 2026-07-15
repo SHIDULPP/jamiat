@@ -16,6 +16,7 @@ import 'package:jamiat/src/interfaces/events/events.dart';
 import 'package:jamiat/src/interfaces/events/event_details.dart';
 import 'package:jamiat/src/interfaces/events/ticket.dart';
 import 'package:jamiat/src/interfaces/events/tickets_list.dart';
+import 'package:jamiat/src/interfaces/events/saved_events.dart';
 
 enum TransitionType { slideFromBottom, slideFromRight, fade, fadeScale }
 
@@ -268,6 +269,12 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
 
     case 'MyTickets':
       page = const MyTicketsScreen();
+      transitionToUse = TransitionType.slideFromRight;
+      transitionDuration = const Duration(milliseconds: 300);
+      break;
+
+    case 'SavedEvents':
+      page = const SavedEventsScreen();
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);
       break;

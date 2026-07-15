@@ -346,21 +346,9 @@ class _EventsScreenState extends State<EventsScreen> {
                       onSelected: (value) {
                         HapticHelper.impact(HapticImpact.light);
                         if (value == 'my_tickets') {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Navigating to your upcoming registered tickets...',
-                                style: kCaption14M.copyWith(color: kWhite),
-                              ),
-                              backgroundColor: kPrimaryColor,
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          );
+                          NavigationService().pushNamed('MyTickets');
                         } else if (value == 'saved') {
-                          NavigationService().pushNamed('SavedDonations');
+                          NavigationService().pushNamed('SavedEvents');
                         }
                       },
                       itemBuilder: (context) => [
