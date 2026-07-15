@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
+import 'package:jamiat/src/data/services/navigation_services.dart';
 
 class EventTicketScreen extends StatelessWidget {
   final String title;
@@ -387,9 +388,7 @@ class EventTicketScreen extends StatelessWidget {
                   OutlinedButton(
                     onPressed: () {
                       HapticHelper.impact(HapticImpact.light);
-                      Navigator.of(
-                        context,
-                      ).popUntil((route) => route.settings.name == 'Events');
+                      NavigationService().pushNamed('MyTickets');
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: kTextColor,
