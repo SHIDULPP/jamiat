@@ -33,6 +33,12 @@ class _HomeDummyData {
       icon: 'assets/svg/quick_market.svg',
       background: Color(0xFFFCE7F3),
     ),
+    _QuickAccessItem(label: 'News', icon: '', background: Color(0xFFF0FDF4)),
+    _QuickAccessItem(
+      label: 'Programs',
+      icon: '',
+      background: Color(0xFFF5EBE6),
+    ),
   ];
 
   static const campaigns = <_CampaignItem>[
@@ -644,6 +650,10 @@ class _QuickAccessList extends StatelessWidget {
                   NavigationService().pushNamed('WelfareProgram');
                 } else if (item.label == 'Autopay') {
                   NavigationService().pushNamed('AutopayView');
+                } else if (item.label == 'News') {
+                  NavigationService().pushNamed('NewsList');
+                } else if (item.label == 'Programs') {
+                  NavigationService().pushNamed('WelfareProgram');
                 }
               },
             );
@@ -666,6 +676,32 @@ class _QuickAccessCard extends StatelessWidget {
     required this.item,
     required this.onTap,
   });
+
+  IconData _getIconForLabel(String label) {
+    switch (label) {
+      case 'Autopay':
+        return Icons.touch_app_outlined;
+      case 'News':
+        return Icons.newspaper_outlined;
+      case 'Programs':
+        return Icons.shield_outlined;
+      default:
+        return Icons.sync_rounded;
+    }
+  }
+
+  Color _getIconColorForLabel(String label) {
+    switch (label) {
+      case 'Autopay':
+        return const Color(0xFF059669);
+      case 'News':
+        return const Color(0xFF16A34A);
+      case 'Programs':
+        return const Color(0xFF9A3412);
+      default:
+        return const Color(0xFF059669);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -692,10 +728,10 @@ class _QuickAccessCard extends StatelessWidget {
                 const Spacer(),
                 Center(
                   child: item.icon.isEmpty
-                      ? const Icon(
-                          Icons.sync_rounded,
+                      ? Icon(
+                          _getIconForLabel(item.label),
                           size: 40,
-                          color: Color(0xFF059669),
+                          color: _getIconColorForLabel(item.label),
                         )
                       : SvgPicture.asset(
                           item.icon,
