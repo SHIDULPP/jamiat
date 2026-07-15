@@ -335,6 +335,8 @@ class _QuickAccessList extends StatelessWidget {
                 HapticHelper.impact(HapticImpact.light);
                 if (item.label == 'Events') {
                   NavigationService().pushNamed('Events');
+                } else if (item.label == 'Welfare') {
+                  NavigationService().pushNamed('WelfareProgram');
                 }
               },
             );
