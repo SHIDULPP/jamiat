@@ -271,20 +271,60 @@ class _CampaignsHeader extends StatelessWidget {
     return Row(
       children: [
         Expanded(child: Text('Campaigns', style: kSectionTitleSB)),
-        Material(
-          color: kWhite,
-          shape: const CircleBorder(side: BorderSide(color: kStrokeColor)),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: () {
-              HapticHelper.impact(HapticImpact.light);
-              NavigationService().pushNamed('DonationList');
-            },
-            child: const SizedBox(
-              width: 40,
-              height: 40,
-              child: Icon(Icons.more_vert, color: kIconMuted, size: 22),
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: kWhite,
+            border: Border.all(color: kStrokeColor),
+          ),
+          child: PopupMenuButton<String>(
+            padding: EdgeInsets.zero,
+            icon: const Icon(Icons.more_vert, color: kIconMuted, size: 22),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(color: kStrokeColor, width: 1),
             ),
+            color: kWhite,
+            elevation: 4,
+            offset: const Offset(0, 44),
+            onSelected: (value) {
+              HapticHelper.impact(HapticImpact.light);
+              if (value == 'history') {
+                NavigationService().pushNamed('DonationsView');
+              } else {
+                NavigationService().pushNamed('DonationList');
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem<String>(
+                value: 'saved_campaigns',
+                height: 44,
+                child: Text(
+                  'Saved Campaigns',
+                  style: kStyle(kMedium, 15, color: const Color(0xFF888888)),
+                ),
+              ),
+              const PopupMenuDivider(height: 1),
+              PopupMenuItem<String>(
+                value: 'history',
+                height: 44,
+                child: Text(
+                  'Donation History',
+                  style: kStyle(kMedium, 15, color: const Color(0xFF888888)),
+                ),
+              ),
+              const PopupMenuDivider(height: 1),
+              PopupMenuItem<String>(
+                value: 'saved',
+                height: 44,
+                child: Text(
+                  'Saved',
+                  style: kStyle(kMedium, 15, color: const Color(0xFF888888)),
+                ),
+              ),
+            ],
           ),
         ),
       ],
