@@ -8,6 +8,7 @@ class SecureStorageService {
   static const _authTokenKey = 'auth_token';
   static const _userIdKey = 'user_id';
   static const _phoneKey = 'phone';
+  static const _fcmTokenKey = 'fcm_token';
 
   final FlutterSecureStorage _storage;
 
@@ -29,11 +30,18 @@ class SecureStorageService {
 
   Future<String?> getPhone() => _storage.read(key: _phoneKey);
 
+  Future<void> saveFcmToken(String token) async {
+    await _storage.write(key: _fcmTokenKey, value: token);
+  }
+
+  Future<String?> getFcmToken() => _storage.read(key: _fcmTokenKey);
+
   Future<void> clearSession() async {
     await Future.wait([
       _storage.delete(key: _authTokenKey),
       _storage.delete(key: _userIdKey),
       _storage.delete(key: _phoneKey),
+      _storage.delete(key: _fcmTokenKey),
     ]);
   }
 }

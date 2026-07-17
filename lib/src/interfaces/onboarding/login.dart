@@ -10,6 +10,7 @@ import 'package:jamiat/src/data/models/api_response.dart';
 import 'package:jamiat/src/data/models/user_model.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/data/services/secure_storage_service.dart';
+import 'package:jamiat/src/data/services/get_fcm.dart';
 import 'package:jamiat/src/data/utils/auth_navigation.dart';
 import 'package:jamiat/src/interfaces/components/primarybutton.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
@@ -63,7 +64,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final phone = _fullPhoneNumber.isNotEmpty
         ? _fullPhoneNumber.replaceAll(' ', '')
         : '+$_dialCode$digits';
-    final response = await ref.read(authApiProvider).requestOtp(phone: phone);
+
+    final secureStorage = ref.read(secureStorageServiceProvider);
+    String? fcmToken;
+    try {
+      final existingFcmToken = await secureStorage.getFcmToken();
+      if (existingFcmToken == null || existingFcmToken.isEmpty) {
+        if (!mounted) return;
+        await getFcmToken(context, ref);
+        if (!mounted) return;
+        fcmToken = await secureStorage.getFcmToken();
+      } else {
+        fcmToken = existingFcmToken;
+      }
+    } catch (e) {
+      debugPrint('Error getting FCM token: $e');
+    }
+
+    final response = await ref
+        .read(authApiProvider)
+        .requestOtp(phone: phone, fcm: fcmToken);
 
     if (!mounted) return;
     setState(() => _isLoading = false);

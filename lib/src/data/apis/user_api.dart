@@ -16,6 +16,10 @@ class UserApi {
   ) {
     return _api.patch('/user/update', profile, requireAuth: true);
   }
+
+  Future<ApiResponse<Map<String, dynamic>>> updateFcmToken(String fcmToken) {
+    return _api.patch('/user/fcm', {'fcm': fcmToken}, requireAuth: true);
+  }
 }
 
 final userApiProvider = Provider<UserApi>(

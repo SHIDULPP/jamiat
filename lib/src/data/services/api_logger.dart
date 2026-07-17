@@ -1,13 +1,11 @@
 import 'dart:convert';
-import 'dart:developer';
+import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Centralized HTTP logging for backend API calls.
 class ApiLogger {
-  static const _logName = 'API';
-
   static bool get enabled {
     final envFlag = dotenv.env['API_LOGGING']?.trim().toLowerCase();
     if (envFlag == 'true') return true;
@@ -43,7 +41,7 @@ class ApiLogger {
     }
 
     buffer.writeln('└───────────────────────────────────────────');
-    log(buffer.toString(), name: _logName);
+    developer.log(buffer.toString(), name: 'API');
   }
 
   static void response({
@@ -70,7 +68,7 @@ class ApiLogger {
     }
 
     buffer.writeln('└───────────────────────────────────────────');
-    log(buffer.toString(), name: _logName);
+    developer.log(buffer.toString(), name: 'API');
   }
 
   static void error({
@@ -85,12 +83,12 @@ class ApiLogger {
         ? ''
         : ' (${duration.inMilliseconds}ms)';
 
-    log(
+    developer.log(
       '┌─── API ERROR$durationLabel ─────────────────────────────\n'
       '│ $method ${_safeUri(uri)}\n'
       '│ $error\n'
       '└───────────────────────────────────────────',
-      name: _logName,
+      name: 'API',
     );
   }
 

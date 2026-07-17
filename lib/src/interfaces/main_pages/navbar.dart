@@ -7,6 +7,7 @@ import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/router/nav_router.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
+import 'package:jamiat/src/data/services/get_fcm.dart';
 import 'package:jamiat/src/interfaces/main_pages/donate.dart';
 import 'package:jamiat/src/interfaces/main_pages/home.dart';
 import 'package:jamiat/src/interfaces/main_pages/market.dart';
@@ -20,6 +21,13 @@ class NavBar extends ConsumerStatefulWidget {
 }
 
 class _NavBarState extends ConsumerState<NavBar> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await getFcmToken(context, ref);
+    });
+  }
   static const List<Widget> _pages = <Widget>[
     HomePage(),
     DonatePage(),
