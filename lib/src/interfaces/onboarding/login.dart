@@ -3,9 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:jamiat/src/data/apis/auth_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
+import 'package:jamiat/src/data/models/api_response.dart';
+import 'package:jamiat/src/data/models/user_model.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
+import 'package:jamiat/src/data/services/secure_storage_service.dart';
+import 'package:jamiat/src/data/utils/auth_navigation.dart';
 import 'package:jamiat/src/interfaces/components/primarybutton.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
@@ -48,31 +53,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _showMessage('Please enter a valid mobile number');
       return;
     }
-    if (digits.length < 10) {
+    if (digits.length < 6 || digits.length > 14) {
       _showMessage('Please enter a valid 10-digit mobile number');
       return;
     }
 
     setState(() => _isLoading = true);
 
-    // Mock API Delay
-    await Future.delayed(const Duration(milliseconds: 1000));
+    final phone = _fullPhoneNumber.isNotEmpty
+        ? _fullPhoneNumber.replaceAll(' ', '')
+        : '+$_dialCode$digits';
+    final response = await ref.read(authApiProvider).requestOtp(phone: phone);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
 
-    final displayNumber = _fullPhoneNumber.isNotEmpty
-        ? _fullPhoneNumber
-        : '+$_dialCode $digits';
-    _showMessage('OTP Sent successfully to $displayNumber');
+    if (!response.success) {
+      _showMessage(response.message ?? 'Unable to send OTP.');
+      return;
+    }
 
+    _showMessage(response.message ?? 'OTP sent successfully.');
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => OTPScreen(
           phoneNumber: digits,
           dialCode: _dialCode,
-          fullPhoneNumber: displayNumber,
+          fullPhoneNumber: phone,
         ),
       ),
     );
@@ -239,7 +247,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
   @override
   void dispose() {
     _timer?.cancel();
-    // _otpController.dispose();
+    _otpController.dispose();
     super.dispose();
   }
 
@@ -260,21 +268,26 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
   }
 
   Future<void> _resendOtp() async {
+    if (_isLoading) return;
     _startTimer();
     setState(() => _isLoading = true);
 
-    await Future.delayed(const Duration(milliseconds: 1000));
+    final response = await ref
+        .read(authApiProvider)
+        .requestOtp(phone: widget.fullPhoneNumber);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
 
-    final display = widget.fullPhoneNumber.isNotEmpty
-        ? widget.fullPhoneNumber
-        : '+${widget.dialCode} ${widget.phoneNumber}';
-    _showMessage('OTP resent successfully to $display');
+    if (!response.success) {
+      _showMessage(response.message ?? 'Unable to resend OTP.');
+      return;
+    }
+    _showMessage(response.message ?? 'OTP resent successfully.');
   }
 
   Future<void> _verifyOtp() async {
+    if (_isLoading) return;
     final otp = _otpController.text.trim();
     if (otp.length != 6) {
       _showMessage('Please enter the 6-digit OTP');
@@ -283,13 +296,43 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
 
     setState(() => _isLoading = true);
 
-    await Future.delayed(const Duration(milliseconds: 1000));
+    final response = await ref
+        .read(authApiProvider)
+        .verifyOtp(phone: widget.fullPhoneNumber, otp: otp);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
 
-    _showMessage('OTP verified successfully!');
-    NavigationService().pushNamedAndRemoveUntil('RoleSelection');
+    if (!response.success) {
+      _showMessage(response.message ?? 'OTP verification failed.');
+      return;
+    }
+
+    final data = nestedData(response.data);
+    final token = data?['token']?.toString() ?? '';
+    final userJson = data?['user'];
+    if (token.isEmpty || userJson is! Map) {
+      _showMessage('The server returned an invalid login response.');
+      return;
+    }
+
+    final user = UserModel.fromJson(Map<String, dynamic>.from(userJson));
+    if (user.id.isEmpty) {
+      _showMessage('The server returned an invalid user.');
+      return;
+    }
+
+    await ref
+        .read(secureStorageServiceProvider)
+        .saveSession(
+          token: token,
+          userId: user.id,
+          phone: widget.fullPhoneNumber,
+        );
+
+    if (!mounted) return;
+    _showMessage(response.message ?? 'OTP verified successfully.');
+    NavigationService().pushNamedAndRemoveUntil(routeForUser(user));
   }
 
   void _showMessage(String message) {

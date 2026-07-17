@@ -1,10 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jamiat/src/data/apis/auth_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
+import 'package:jamiat/src/data/services/navigation_services.dart';
+import 'package:jamiat/src/data/services/secure_storage_service.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
+
+  Future<void> _logout(BuildContext context, WidgetRef ref) async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Log out?'),
+        content: const Text(
+          'You will need to verify your phone to sign in again.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Log out'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout != true) return;
+
+    await ref.read(authApiProvider).logout();
+    await ref.read(secureStorageServiceProvider).clearSession();
+    NavigationService().pushNamedAndRemoveUntil('Login');
+  }
 
   Widget _buildStatCard({required String title, required String value}) {
     return Container(
@@ -82,7 +114,7 @@ class ProfilePage extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: kWhite,
       body: SafeArea(
@@ -300,6 +332,13 @@ class ProfilePage extends StatelessWidget {
                       title: 'Privacy Policy',
                       chevronColor: kPrimaryColor,
                       onTap: () {},
+                    ),
+                    _buildDivider(),
+                    _buildMenuItem(
+                      icon: Icons.logout,
+                      title: 'Log out',
+                      chevronColor: kRed,
+                      onTap: () => _logout(context, ref),
                     ),
                   ],
                 ),

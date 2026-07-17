@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:jamiat/src/data/apis/user_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
+import 'package:jamiat/src/data/models/api_response.dart';
+import 'package:jamiat/src/data/models/user_model.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
+import 'package:jamiat/src/data/services/secure_storage_service.dart';
+import 'package:jamiat/src/data/utils/auth_navigation.dart';
 import 'package:jamiat/src/interfaces/components/primarybutton.dart';
+import 'package:jamiat/src/interfaces/onboarding/role_selection.dart';
 
 class RegistrationScreen extends ConsumerStatefulWidget {
   const RegistrationScreen({super.key});
@@ -26,12 +32,13 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   late TextEditingController _pincodeController;
 
   // Focus Nodes
-  late FocusNode _phoneFocusNode;
   late FocusNode _whatsappFocusNode;
 
   // State Variables
   bool _sameAsPhoneNumber = false;
-  bool _isLoading = false; // ignore: prefer_final_fields
+  bool _isLoading = false;
+  String _verifiedPhone = '';
+  String _whatsappFullNumber = '';
 
   // Dropdown Selections
   String? _selectedGender;
@@ -58,14 +65,23 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     _addressController = TextEditingController();
     _pincodeController = TextEditingController();
 
-    _phoneFocusNode = FocusNode();
     _whatsappFocusNode = FocusNode();
+    _loadVerifiedPhone();
 
     // Listen to changes in phone number to automatically sync to WhatsApp if checkbox is enabled
     _phoneController.addListener(() {
       if (_sameAsPhoneNumber) {
         _whatsappController.text = _phoneController.text;
       }
+    });
+  }
+
+  Future<void> _loadVerifiedPhone() async {
+    final phone = await ref.read(secureStorageServiceProvider).getPhone();
+    if (!mounted || phone == null) return;
+    setState(() {
+      _verifiedPhone = phone;
+      _phoneController.text = phone;
     });
   }
 
@@ -79,7 +95,6 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     _addressController.dispose();
     _pincodeController.dispose();
 
-    _phoneFocusNode.dispose();
     _whatsappFocusNode.dispose();
     super.dispose();
   }
@@ -123,6 +138,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     required String hintText,
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
+    bool enabled = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,6 +147,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
+          enabled: enabled,
           style: kBodyTitleR.copyWith(color: kTextColor),
           validator: validator,
           decoration: _inputDecoration(hintText: hintText),
@@ -223,8 +240,82 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   }
 
   Future<void> _handleContinue() async {
-    // For development/testing: bypass validation and go straight to navbar
-    NavigationService().pushNamedAndRemoveUntil('navBar');
+    if (_isLoading) return;
+    FocusScope.of(context).unfocus();
+
+    final role = ref.read(selectedRoleProvider);
+    if (role == null) {
+      _showMessage('Please select your membership role.');
+      return;
+    }
+
+    if (!_formKey.currentState!.validate()) return;
+
+    final requiredSelections = [
+      _selectedGender,
+      _selectedCountry,
+      _selectedState,
+      _selectedDistrict,
+      _selectedArea,
+    ];
+    if (requiredSelections.any((value) => value == null || value.isEmpty)) {
+      _showMessage('Please complete all dropdown fields.');
+      return;
+    }
+
+    final whatsapp = _sameAsPhoneNumber ? _verifiedPhone : _whatsappFullNumber;
+    if (whatsapp.isEmpty) {
+      _showMessage('Please enter a valid WhatsApp number.');
+      return;
+    }
+
+    final dobParts = _dobController.text.split('/');
+    final pincode = int.tryParse(_pincodeController.text.trim());
+    if (dobParts.length != 3 || pincode == null) {
+      _showMessage('Please enter a valid date of birth and pin code.');
+      return;
+    }
+    final dob = '${dobParts[2]}-${dobParts[1]}-${dobParts[0]}';
+
+    setState(() => _isLoading = true);
+    final response = await ref.read(userApiProvider).updateProfile({
+      'role': role,
+      'name': _nameController.text.trim(),
+      'email': _emailController.text.trim(),
+      'gender': _selectedGender!.toLowerCase(),
+      'whatsapp_no': whatsapp,
+      'address': _addressController.text.trim(),
+      'area': _selectedArea!,
+      'district': _selectedDistrict!,
+      'state': _selectedState!,
+      'country': _selectedCountry!,
+      'pincode': pincode,
+      'dob': dob,
+    });
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (!response.success) {
+      _showMessage(response.message ?? 'Unable to update your profile.');
+      return;
+    }
+
+    final userJson = nestedData(response.data);
+    if (userJson == null) {
+      _showMessage('The server returned an invalid profile response.');
+      return;
+    }
+
+    final user = UserModel.fromJson(userJson);
+    _showMessage(response.message ?? 'Profile updated successfully.');
+    NavigationService().pushNamedAndRemoveUntil(routeForUser(user));
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
   }
 
   @override
@@ -326,48 +417,21 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   controller: _nameController,
                   hintText: 'Enter name',
                   validator: (val) {
-                    // if (val == null || val.trim().isEmpty) {
-                    //   return 'Name is required';
-                    // }
+                    if (val == null || val.trim().isEmpty) {
+                      return 'Name is required';
+                    }
                     return null;
                   },
                 ),
                 const SizedBox(height: 20),
 
                 // Phone Number field
-                _buildLabel('Phone Number'),
-                IntlPhoneField(
-                  focusNode: _phoneFocusNode,
+                _buildTextField(
+                  label: 'Phone Number',
                   controller: _phoneController,
-                  initialCountryCode: 'IN',
-                  disableLengthCheck: true,
-                  showCountryFlag: false,
-                  showDropdownIcon: true,
-                  cursorColor: kBlack,
-                  style: kBodyTitleR.copyWith(color: kTextColor),
-                  dropdownTextStyle: kBodyTitleR.copyWith(color: kTextColor),
-                  dropdownIcon: const Icon(
-                    Icons.keyboard_arrow_down,
-                    color: kSecondaryTextColor,
-                    size: 18,
-                  ),
-                  dropdownIconPosition: IconPosition.trailing,
-                  flagsButtonPadding: const EdgeInsets.only(left: 18),
-                  validator: (phone) {
-                    // if (phone == null || phone.number.trim().isEmpty) {
-                    //   return 'Phone number is required';
-                    // }
-                    return null;
-                  },
-                  decoration: _inputDecoration(hintText: '999587XXXX'),
-                  onCountryChanged: (value) {},
-                  onChanged: (phone) {
-                    setState(() {
-                      if (_sameAsPhoneNumber) {
-                        _whatsappController.text = phone.number;
-                      }
-                    });
-                  },
+                  hintText: 'Verified phone number',
+                  keyboardType: TextInputType.phone,
+                  enabled: false,
                 ),
                 const SizedBox(height: 20),
 
@@ -379,6 +443,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                       _sameAsPhoneNumber = !_sameAsPhoneNumber;
                       if (_sameAsPhoneNumber) {
                         _whatsappController.text = _phoneController.text;
+                        _whatsappFullNumber = _verifiedPhone;
                       }
                     });
                   },
@@ -446,7 +511,12 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   flagsButtonPadding: const EdgeInsets.only(left: 18),
                   decoration: _inputDecoration(hintText: 'Enter mobile number'),
                   onCountryChanged: (value) {},
-                  onChanged: (phone) {},
+                  onChanged: (phone) {
+                    _whatsappFullNumber = phone.completeNumber.replaceAll(
+                      ' ',
+                      '',
+                    );
+                  },
                 ),
                 const SizedBox(height: 20),
 
@@ -456,12 +526,13 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   hintText: 'Enter email',
                   keyboardType: TextInputType.emailAddress,
                   validator: (val) {
-                    // if (val == null || val.trim().isEmpty) {
-                    //   return 'Email is required';
-                    // }
-                    // if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(val)) {
-                    //   return 'Please enter a valid email';
-                    // }
+                    if (val != null &&
+                        val.trim().isNotEmpty &&
+                        !RegExp(
+                          r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                        ).hasMatch(val.trim())) {
+                      return 'Please enter a valid email';
+                    }
                     return null;
                   },
                 ),
@@ -491,6 +562,12 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   label: 'Address',
                   controller: _addressController,
                   hintText: 'Enter Address',
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Address is required';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 20),
 
@@ -551,6 +628,12 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   controller: _pincodeController,
                   hintText: 'Enter pin code',
                   keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || int.tryParse(value.trim()) == null) {
+                      return 'Enter a valid pin code';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 32),
 

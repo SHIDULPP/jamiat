@@ -126,7 +126,7 @@ class RoleSelectionScreen extends ConsumerWidget {
                       onTap: () {
                         ref
                             .read(selectedRoleProvider.notifier)
-                            .setRole('normal');
+                            .setRole('normal_member');
                         NavigationService().pushNamed('Registration');
                       },
                     ),
@@ -140,7 +140,7 @@ class RoleSelectionScreen extends ConsumerWidget {
                       onTap: () {
                         ref
                             .read(selectedRoleProvider.notifier)
-                            .setRole('member');
+                            .setRole('jamiat_member');
                         NavigationService().pushNamed('Registration');
                       },
                     ),

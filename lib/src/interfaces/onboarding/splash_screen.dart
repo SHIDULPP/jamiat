@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:jamiat/src/data/providers/screen_data_providers.dart';
+import 'package:jamiat/src/data/services/auth_session_service.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -77,12 +78,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     _entranceController.forward();
 
-    Future.delayed(const Duration(seconds: 3), _navigateToNext);
+    _navigateToNext();
   }
 
   Future<void> _navigateToNext() async {
+    final routeFuture = ref
+        .read(authSessionServiceProvider)
+        .resolveInitialRoute();
+    await Future.delayed(const Duration(seconds: 3));
+    final route = await routeFuture;
     if (!mounted) return;
-    NavigationService().pushNamedAndRemoveUntil('navBar');
+    NavigationService().pushNamedAndRemoveUntil(route);
   }
 
   @override

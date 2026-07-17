@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "701382365368",
+    "project_id": "jamiat-9ae1b",
+    "storage_bucket": "jamiat-9ae1b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:701382365368:android:fa5fe0eec409a13f21a44d",
+        "android_client_info": {
+          "package_name": "com.jamiat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBEcnAFjyHABzeZNxxCAOkXxoqZDuS5AAw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
