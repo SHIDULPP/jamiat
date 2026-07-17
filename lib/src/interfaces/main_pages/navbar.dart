@@ -28,6 +28,7 @@ class _NavBarState extends ConsumerState<NavBar> {
       await getFcmToken(context, ref);
     });
   }
+
   static const List<Widget> _pages = <Widget>[
     HomePage(),
     DonatePage(),
@@ -42,12 +43,7 @@ class _NavBarState extends ConsumerState<NavBar> {
     'assets/svg/profile_icon.svg',
   ];
 
-  static const List<String> _labels = [
-    'Home',
-    'Donate',
-    'Market',
-    'Profile',
-  ];
+  static const List<String> _labels = ['Home', 'Donate', 'Market', 'Profile'];
 
   @override
   Widget build(BuildContext context) {
@@ -84,8 +80,7 @@ class _NavBarState extends ConsumerState<NavBar> {
                 child: Row(
                   children: List.generate(_labels.length, (index) {
                     final isSelected = selectedIndex == index;
-                    final color =
-                        isSelected ? kPrimaryColor : kIconMuted;
+                    final color = isSelected ? kPrimaryColor : kIconMuted;
 
                     return Expanded(
                       child: GestureDetector(

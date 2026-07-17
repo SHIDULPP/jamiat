@@ -24,6 +24,7 @@ import 'package:jamiat/src/interfaces/news/news_detail.dart';
 import 'package:jamiat/src/interfaces/empowerment/empowerment_programs.dart';
 import 'package:jamiat/src/interfaces/empowerment/program_details.dart';
 import 'package:jamiat/src/interfaces/empowerment/applied_programs.dart';
+import 'package:jamiat/src/interfaces/notifications/notifications_list.dart';
 
 enum TransitionType { slideFromBottom, slideFromRight, fade, fadeScale }
 
@@ -150,7 +151,8 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
       break;
 
     case 'Registration':
-      page = const RegistrationScreen();
+      final args = settings?.arguments as Map<String, dynamic>?;
+      page = RegistrationScreen(isEditMode: args?['editMode'] == true);
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);
       break;
@@ -164,6 +166,7 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
     case 'CampaignDetails':
       final args = settings?.arguments as Map<String, dynamic>?;
       page = CampaignDetailsScreen(
+        campaignId: args?['campaignId'] as String?,
         title: args?['title'] as String? ?? 'Zakat',
         description:
             args?['description'] as String? ??
@@ -212,6 +215,7 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
     case 'AutopayDetails':
       final args = settings?.arguments as Map<String, dynamic>?;
       page = AutopayDetailsScreen(
+        autopayId: args?['autopayId'] as String?,
         title: args?['title'] as String? ?? 'Zakat',
         description:
             args?['description'] as String? ??
@@ -251,6 +255,7 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
     case 'EventDetails':
       final args = settings?.arguments as Map<String, dynamic>?;
       page = EventDetailsScreen(
+        eventId: args?['eventId'] as String?,
         title: args?['title'] as String? ?? 'Event Details',
         category: args?['category'] as String? ?? 'Conference',
         date: args?['date'] as String? ?? '07 Jun, 2026 • 10:45 am - 3:30pm',
@@ -266,6 +271,7 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
     case 'EventTicket':
       final args = settings?.arguments as Map<String, dynamic>?;
       page = EventTicketScreen(
+        ticketId: args?['ticketId'] as String?,
         title: args?['title'] as String? ?? 'Annual Jamiat Conference',
         date: args?['date'] as String? ?? '20 Jun 2026',
         venue: args?['venue'] as String? ?? 'Ernakulam Town Hall',
@@ -334,6 +340,12 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
       page = AppliedProgramsScreen(
         initialTab: args?['initialTab'] as int? ?? 0,
       );
+      transitionToUse = TransitionType.slideFromRight;
+      transitionDuration = const Duration(milliseconds: 300);
+      break;
+
+    case 'Notifications':
+      page = const NotificationsListScreen();
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);
       break;

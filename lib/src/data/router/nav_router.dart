@@ -9,5 +9,6 @@ class SelectedIndexNotifier extends Notifier<int> {
   }
 }
 
-final selectedIndexProvider =
-    NotifierProvider<SelectedIndexNotifier, int>(SelectedIndexNotifier.new);
+final selectedIndexProvider = NotifierProvider<SelectedIndexNotifier, int>(
+  SelectedIndexNotifier.new,
+);

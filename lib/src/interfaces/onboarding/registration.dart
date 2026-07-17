@@ -1,10 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:jamiat/src/data/apis/upload_api.dart';
 import 'package:jamiat/src/data/apis/user_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
-import 'package:jamiat/src/data/models/api_response.dart';
 import 'package:jamiat/src/data/models/user_model.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/data/services/secure_storage_service.dart';
@@ -13,7 +16,9 @@ import 'package:jamiat/src/interfaces/components/primarybutton.dart';
 import 'package:jamiat/src/interfaces/onboarding/role_selection.dart';
 
 class RegistrationScreen extends ConsumerStatefulWidget {
-  const RegistrationScreen({super.key});
+  const RegistrationScreen({super.key, this.isEditMode = false});
+
+  final bool isEditMode;
 
   @override
   ConsumerState<RegistrationScreen> createState() => _RegistrationScreenState();
@@ -22,7 +27,6 @@ class RegistrationScreen extends ConsumerStatefulWidget {
 class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Text Editing Controllers
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   late TextEditingController _whatsappController;
@@ -31,23 +35,23 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   late TextEditingController _addressController;
   late TextEditingController _pincodeController;
 
-  // Focus Nodes
   late FocusNode _whatsappFocusNode;
 
-  // State Variables
   bool _sameAsPhoneNumber = false;
   bool _isLoading = false;
+  bool _isUploadingAvatar = false;
+  bool _didPrefill = false;
   String _verifiedPhone = '';
   String _whatsappFullNumber = '';
+  String? _imageUrl;
+  String? _existingRole;
 
-  // Dropdown Selections
   String? _selectedGender;
   String? _selectedCountry;
   String? _selectedState;
   String? _selectedDistrict;
   String? _selectedArea;
 
-  // Mock Dropdown Lists
   final List<String> _genders = ['Male', 'Female', 'Other'];
   final List<String> _countries = ['India', 'Other'];
   final List<String> _states = ['Kerala', 'Karnataka', 'Tamil Nadu'];
@@ -68,7 +72,6 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     _whatsappFocusNode = FocusNode();
     _loadVerifiedPhone();
 
-    // Listen to changes in phone number to automatically sync to WhatsApp if checkbox is enabled
     _phoneController.addListener(() {
       if (_sameAsPhoneNumber) {
         _whatsappController.text = _phoneController.text;
@@ -85,6 +88,71 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     });
   }
 
+  void _ensureInList(List<String> list, String? value) {
+    if (value == null || value.isEmpty) return;
+    if (!list.contains(value)) list.add(value);
+  }
+
+  String? _capitalizeGender(String? gender) {
+    if (gender == null || gender.isEmpty) return null;
+    return '${gender[0].toUpperCase()}${gender.substring(1).toLowerCase()}';
+  }
+
+  String _formatDob(DateTime? dob) {
+    if (dob == null) return '';
+    final day = dob.day.toString().padLeft(2, '0');
+    final month = dob.month.toString().padLeft(2, '0');
+    return '$day/$month/${dob.year}';
+  }
+
+  void _prefillFromUser(UserModel user) {
+    if (_didPrefill) return;
+    _didPrefill = true;
+
+    final gender = _capitalizeGender(user.gender);
+    _ensureInList(_genders, gender);
+    _ensureInList(_countries, user.country);
+    _ensureInList(_states, user.state);
+    _ensureInList(_districts, user.district);
+    _ensureInList(_areas, user.area);
+
+    _nameController.text = user.name ?? '';
+    _emailController.text = user.email ?? '';
+    _addressController.text = user.address ?? '';
+    _pincodeController.text = user.pincode?.toString() ?? '';
+    _dobController.text = _formatDob(user.dob);
+    _imageUrl = user.image;
+    _existingRole = user.role;
+
+    final phone = user.phone.isNotEmpty ? user.phone : _verifiedPhone;
+    _verifiedPhone = phone;
+    _phoneController.text = phone;
+
+    final whatsapp = user.whatsappNo ?? '';
+    final sameAsPhone = whatsapp.isEmpty || whatsapp == phone;
+    _sameAsPhoneNumber = sameAsPhone;
+    if (sameAsPhone) {
+      _whatsappController.text = phone;
+      _whatsappFullNumber = phone;
+    } else {
+      _whatsappController.text = whatsapp.replaceFirst(
+        RegExp(r'^\+\d{1,3}'),
+        '',
+      );
+      _whatsappFullNumber = whatsapp;
+    }
+
+    _selectedGender = gender;
+    _selectedCountry = user.country;
+    _selectedState = user.state;
+    _selectedDistrict = user.district;
+    _selectedArea = user.area;
+
+    if (user.role.isNotEmpty) {
+      ref.read(selectedRoleProvider.notifier).setRole(user.role);
+    }
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -94,7 +162,6 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     _dobController.dispose();
     _addressController.dispose();
     _pincodeController.dispose();
-
     _whatsappFocusNode.dispose();
     super.dispose();
   }
@@ -169,22 +236,16 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
         _buildLabel(label),
         DropdownButtonFormField<String>(
           initialValue: value,
-          hint: Text(
-            hintText,
-            style: kBodyTitleR.copyWith(color: kSecondaryTextColor),
-          ),
+          items: items
+              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+              .toList(),
+          onChanged: onChanged,
+          decoration: _inputDecoration(hintText: hintText),
+          style: kBodyTitleR.copyWith(color: kTextColor),
           icon: const Icon(
             Icons.keyboard_arrow_down,
             color: kSecondaryTextColor,
-            size: 20,
           ),
-          decoration: _inputDecoration(hintText: hintText),
-          dropdownColor: kWhite,
-          style: kBodyTitleR.copyWith(color: kTextColor),
-          items: items.map((String item) {
-            return DropdownMenuItem<String>(value: item, child: Text(item));
-          }).toList(),
-          onChanged: onChanged,
         ),
       ],
     );
@@ -203,22 +264,28 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
           controller: controller,
           readOnly: true,
           style: kBodyTitleR.copyWith(color: kTextColor),
-          decoration: _inputDecoration(hintText: 'dd/mm/yyyy'),
+          decoration: _inputDecoration(
+            hintText: 'DD/MM/YYYY',
+            suffixIcon: const Icon(Icons.calendar_today_outlined, size: 18),
+          ),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Date of birth is required';
+            }
+            return null;
+          },
           onTap: () async {
-            final DateTime? picked = await showDatePicker(
+            final now = DateTime.now();
+            final picked = await showDatePicker(
               context: context,
-              initialDate: DateTime.now().subtract(
-                const Duration(days: 365 * 18),
-              ),
-              firstDate: DateTime(1900),
-              lastDate: DateTime.now(),
+              initialDate: DateTime(now.year - 18),
+              firstDate: DateTime(1920),
+              lastDate: now,
               builder: (context, child) {
                 return Theme(
                   data: Theme.of(context).copyWith(
                     colorScheme: const ColorScheme.light(
                       primary: kPrimaryColor,
-                      onPrimary: kWhite,
-                      onSurface: kTextColor,
                     ),
                   ),
                   child: child!,
@@ -239,12 +306,70 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     );
   }
 
+  Future<void> _pickAndUploadAvatar() async {
+    if (_isUploadingAvatar) return;
+
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
+    );
+    if (file == null) return;
+
+    setState(() => _isUploadingAvatar = true);
+    try {
+      final bytes = await file.readAsBytes();
+      final filename = file.name.isNotEmpty ? file.name : 'avatar.jpg';
+      final mimeType = filename.toLowerCase().endsWith('.png')
+          ? 'image/png'
+          : 'image/jpeg';
+
+      final upload = await ref
+          .read(uploadApiProvider)
+          .uploadImage(
+            bytes: Uint8List.fromList(bytes),
+            filename: filename,
+            mimeType: mimeType,
+          );
+
+      if (!mounted) return;
+      if (!upload.success || upload.data == null) {
+        _showMessage(upload.message ?? 'Unable to upload image.');
+        return;
+      }
+
+      final imageUrl = upload.data!;
+      if (widget.isEditMode) {
+        final update = await ref.read(userApiProvider).updateProfile({
+          'image': imageUrl,
+        });
+        if (!mounted) return;
+        if (!update.success) {
+          _showMessage(update.message ?? 'Unable to update avatar.');
+          return;
+        }
+        ref.invalidate(userProfileProvider);
+      }
+
+      setState(() => _imageUrl = imageUrl);
+      _showMessage('Avatar updated.');
+    } catch (e) {
+      if (mounted) {
+        _showMessage(e.toString().replaceFirst('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingAvatar = false);
+    }
+  }
+
   Future<void> _handleContinue() async {
     if (_isLoading) return;
     FocusScope.of(context).unfocus();
 
-    final role = ref.read(selectedRoleProvider);
-    if (role == null) {
+    final role = ref.read(selectedRoleProvider) ?? _existingRole;
+    if (role == null || role.isEmpty) {
       _showMessage('Please select your membership role.');
       return;
     }
@@ -278,7 +403,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     final dob = '${dobParts[2]}-${dobParts[1]}-${dobParts[0]}';
 
     setState(() => _isLoading = true);
-    final response = await ref.read(userApiProvider).updateProfile({
+    final payload = <String, dynamic>{
       'role': role,
       'name': _nameController.text.trim(),
       'email': _emailController.text.trim(),
@@ -291,7 +416,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       'country': _selectedCountry!,
       'pincode': pincode,
       'dob': dob,
-    });
+      if (_imageUrl != null && _imageUrl!.isNotEmpty) 'image': _imageUrl,
+    };
+
+    final response = await ref.read(userApiProvider).updateProfile(payload);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -301,14 +429,22 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       return;
     }
 
-    final userJson = nestedData(response.data);
-    if (userJson == null) {
+    final user = response.data;
+    if (user == null) {
       _showMessage('The server returned an invalid profile response.');
       return;
     }
 
-    final user = UserModel.fromJson(userJson);
+    ref.invalidate(userProfileProvider);
     _showMessage(response.message ?? 'Profile updated successfully.');
+
+    if (widget.isEditMode) {
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      return;
+    }
+
     NavigationService().pushNamedAndRemoveUntil(routeForUser(user));
   }
 
@@ -318,8 +454,41 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     );
   }
 
+  Widget _avatarWidget() {
+    final image = _imageUrl;
+    if (image != null && image.startsWith('http')) {
+      return CircleAvatar(
+        radius: 60,
+        backgroundColor: const Color(0xFFD9D9D9),
+        backgroundImage: NetworkImage(image),
+        onBackgroundImageError: (_, _) {},
+      );
+    }
+    return Container(
+      width: 120,
+      height: 120,
+      decoration: const BoxDecoration(
+        color: Color(0xFFD9D9D9),
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(Icons.person, size: 64, color: Color(0xFF999999)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (widget.isEditMode) {
+      ref.listen(userProfileProvider, (previous, next) {
+        next.whenData(_prefillFromUser);
+      });
+      final profile = ref.watch(userProfileProvider).value;
+      if (profile != null && !_didPrefill) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _prefillFromUser(profile));
+        });
+      }
+    }
+
     return Scaffold(
       backgroundColor: kWhite,
       body: SafeArea(
@@ -330,7 +499,6 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Back Button
                 GestureDetector(
                   onTap: () {
                     if (Navigator.canPop(context)) {
@@ -353,56 +521,55 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-
-                // Screen Title & Subtitle
                 Text(
-                  'Profile setup',
+                  widget.isEditMode ? 'Edit profile' : 'Profile setup',
                   style: kHeadTitleB.copyWith(color: kTextColor, fontSize: 24),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Complete your details to connect with the community and access your services.',
+                  widget.isEditMode
+                      ? 'Update your details and keep your community profile current.'
+                      : 'Complete your details to connect with the community and access your services.',
                   style: kCaption13R.copyWith(color: kSecondaryTextColor),
                 ),
                 const SizedBox(height: 32),
-
-                // Centered Profile Image Avatar
                 Center(
                   child: Stack(
                     children: [
-                      Container(
-                        width: 120,
-                        height: 120,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFD9D9D9),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.person,
-                          size: 64,
-                          color: Color(0xFF999999),
-                        ),
-                      ),
+                      _avatarWidget(),
                       Positioned(
                         bottom: 0,
                         right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: kWhite,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black12,
-                                blurRadius: 4,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt,
-                            color: kTextColor,
-                            size: 18,
+                        child: GestureDetector(
+                          onTap: _isUploadingAvatar
+                              ? null
+                              : _pickAndUploadAvatar,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(
+                              color: kWhite,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black12,
+                                  blurRadius: 4,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: _isUploadingAvatar
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.camera_alt,
+                                    color: kTextColor,
+                                    size: 18,
+                                  ),
                           ),
                         ),
                       ),
@@ -410,8 +577,6 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-
-                // Form Fields
                 _buildTextField(
                   label: 'Name',
                   controller: _nameController,
@@ -424,8 +589,6 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   },
                 ),
                 const SizedBox(height: 20),
-
-                // Phone Number field
                 _buildTextField(
                   label: 'Phone Number',
                   controller: _phoneController,
@@ -434,8 +597,6 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   enabled: false,
                 ),
                 const SizedBox(height: 20),
-
-                // WhatsApp Number with "Same as phone number" checkbox
                 _buildLabel('WhatsApp Number'),
                 GestureDetector(
                   onTap: () {
@@ -519,7 +680,6 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   },
                 ),
                 const SizedBox(height: 20),
-
                 _buildTextField(
                   label: 'Email',
                   controller: _emailController,
@@ -537,27 +697,22 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   },
                 ),
                 const SizedBox(height: 20),
-
                 _buildDropdownField(
                   label: 'Gender',
                   value: _selectedGender,
                   items: _genders,
                   hintText: 'Select',
                   onChanged: (val) {
-                    setState(() {
-                      _selectedGender = val;
-                    });
+                    setState(() => _selectedGender = val);
                   },
                 ),
                 const SizedBox(height: 20),
-
                 _buildDateField(
                   label: 'Date of Birth',
                   controller: _dobController,
                   context: context,
                 ),
                 const SizedBox(height: 20),
-
                 _buildTextField(
                   label: 'Address',
                   controller: _addressController,
@@ -570,59 +725,46 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   },
                 ),
                 const SizedBox(height: 20),
-
                 _buildDropdownField(
                   label: 'Country',
                   value: _selectedCountry,
                   items: _countries,
                   hintText: 'Select',
                   onChanged: (val) {
-                    setState(() {
-                      _selectedCountry = val;
-                    });
+                    setState(() => _selectedCountry = val);
                   },
                 ),
                 const SizedBox(height: 20),
-
                 _buildDropdownField(
                   label: 'State',
                   value: _selectedState,
                   items: _states,
                   hintText: 'Select',
                   onChanged: (val) {
-                    setState(() {
-                      _selectedState = val;
-                    });
+                    setState(() => _selectedState = val);
                   },
                 ),
                 const SizedBox(height: 20),
-
                 _buildDropdownField(
                   label: 'District',
                   value: _selectedDistrict,
                   items: _districts,
                   hintText: 'Select',
                   onChanged: (val) {
-                    setState(() {
-                      _selectedDistrict = val;
-                    });
+                    setState(() => _selectedDistrict = val);
                   },
                 ),
                 const SizedBox(height: 20),
-
                 _buildDropdownField(
                   label: 'Area',
                   value: _selectedArea,
                   items: _areas,
                   hintText: 'Select',
                   onChanged: (val) {
-                    setState(() {
-                      _selectedArea = val;
-                    });
+                    setState(() => _selectedArea = val);
                   },
                 ),
                 const SizedBox(height: 20),
-
                 _buildTextField(
                   label: 'Pin code',
                   controller: _pincodeController,
@@ -636,10 +778,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   },
                 ),
                 const SizedBox(height: 32),
-
-                // Continue Button
                 primaryButton(
-                  label: 'Continue',
+                  label: widget.isEditMode ? 'Save changes' : 'Continue',
                   onPressed: _isLoading ? null : _handleContinue,
                   isLoading: _isLoading,
                 ),

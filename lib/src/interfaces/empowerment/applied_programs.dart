@@ -1,255 +1,67 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
+import 'package:jamiat/src/data/models/empowerment_model.dart';
+import 'package:jamiat/src/data/providers/empowerment_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
-import 'package:jamiat/src/interfaces/empowerment/empowerment_programs.dart';
+import 'package:jamiat/src/data/utils/format_helpers.dart';
+import 'package:jamiat/src/interfaces/components/async_content.dart';
 
-class AppliedProgramsScreen extends StatefulWidget {
+class AppliedProgramsScreen extends ConsumerWidget {
   final int initialTab;
 
   const AppliedProgramsScreen({super.key, this.initialTab = 0});
 
-  @override
-  State<AppliedProgramsScreen> createState() => _AppliedProgramsScreenState();
-}
-
-class _AppliedProgramsScreenState extends State<AppliedProgramsScreen> {
-  void _applyProgram(Map<String, String> program) {
-    showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Text(
-            'Application Submitted',
-            style: kHeadTitleB.copyWith(color: kTextColor, fontSize: 18),
-          ),
-          content: Text(
-            'You have successfully applied for ${program['title']}. We will notify you once your application is reviewed.',
-            style: kCaption12R.copyWith(
-              color: kSecondaryTextColor,
-              fontSize: 13.5,
-              height: 1.4,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                setState(() {
-                  EmpowermentProgramsScreen.appliedProgramIds.add(
-                    program['id']!,
-                  );
-                });
-              },
-              child: Text('OK', style: kLinkSB.copyWith(fontSize: 15)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Widget _buildProgramList(
-    List<Map<String, String>> list,
+    BuildContext context,
+    List<EmpowermentProgramModel> list,
     String emptyMessage,
   ) {
     if (list.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.assignment_outlined, size: 64, color: kMutedText),
-            const SizedBox(height: 16),
-            Text(
-              emptyMessage,
-              style: kEmptyStateM,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
+      return Center(child: Text(emptyMessage, style: kEmptyStateM));
     }
 
     return ListView.builder(
-      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       itemCount: list.length,
       itemBuilder: (context, index) {
         final program = list[index];
-        final isApplied = EmpowermentProgramsScreen.appliedProgramIds.contains(
-          program['id'],
-        );
-        final isSaved = EmpowermentProgramsScreen.savedProgramIds.contains(
-          program['id'],
-        );
-
         return GestureDetector(
           onTap: () {
             HapticHelper.impact(HapticImpact.light);
-            NavigationService()
-                .pushNamed(
-                  'ProgramDetails',
-                  arguments: {'programId': program['id']},
-                )
-                .then((_) {
-                  setState(() {});
-                });
+            NavigationService().pushNamed(
+              'ProgramDetails',
+              arguments: {'programId': program.id},
+            );
           },
           child: Container(
-            margin: const EdgeInsets.only(bottom: 20),
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: kWhite,
-              borderRadius: BorderRadius.circular(kCardRadiusLg),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: kBorder),
-              boxShadow: [
-                BoxShadow(
-                  color: kBlack.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
             ),
-            clipBehavior: Clip.antiAlias,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Image with overlays
-                SizedBox(
-                  height: 150,
-                  width: double.infinity,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.asset(program['image']!, fit: BoxFit.cover),
-                      Positioned(
-                        top: 12,
-                        right: 12,
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: kBlack.withValues(alpha: 0.4),
-                              ),
-                              child: const Icon(
-                                Icons.share_outlined,
-                                color: kWhite,
-                                size: 18,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: () {
-                                HapticHelper.impact(HapticImpact.light);
-                                setState(() {
-                                  if (isSaved) {
-                                    EmpowermentProgramsScreen.savedProgramIds
-                                        .remove(program['id']!);
-                                  } else {
-                                    EmpowermentProgramsScreen.savedProgramIds
-                                        .add(program['id']!);
-                                  }
-                                });
-                              },
-                              child: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: kBlack.withValues(alpha: 0.4),
-                                ),
-                                child: Icon(
-                                  isSaved
-                                      ? Icons.bookmark
-                                      : Icons.bookmark_border,
-                                  color: isSaved
-                                      ? const Color(0xFF10B981)
-                                      : kWhite,
-                                  size: 18,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                Text(program.title, style: kBodyTitleB),
+                const SizedBox(height: 6),
+                Text(
+                  program.description,
+                  style: kCaption12R.copyWith(color: kSecondaryTextColor),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-
-                // Card Details
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        program['title']!,
-                        style: kBodyTitleB.copyWith(
-                          fontSize: 16,
-                          color: kTextColor,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        program['subtitle']!,
-                        style: kCaption12R.copyWith(color: kSecondaryTextColor),
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.calendar_today_outlined,
-                            size: 16,
-                            color: kMutedText,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            program['date']!,
-                            style: kCaption12R.copyWith(
-                              color: kTextColor,
-                              fontWeight: kMedium,
-                            ),
-                          ),
-                          const Spacer(),
-                          SizedBox(
-                            height: 36,
-                            child: ElevatedButton(
-                              onPressed: isApplied
-                                  ? null
-                                  : () {
-                                      HapticHelper.impact(HapticImpact.light);
-                                      _applyProgram(program);
-                                    },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: kPrimaryColor,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                ),
-                                elevation: 0,
-                              ),
-                              child: Text(
-                                isApplied ? 'Applied' : 'Apply',
-                                style: kCaption12M.copyWith(
-                                  color: isApplied ? kMutedText : kWhite,
-                                  fontWeight: kBold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                if (program.startDate != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Starts ${formatDateLabel(program.startDate)}',
+                    style: kCaption12R,
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -259,21 +71,12 @@ class _AppliedProgramsScreenState extends State<AppliedProgramsScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final appliedProgramsList = EmpowermentProgramsScreen.programs
-        .where(
-          (p) => EmpowermentProgramsScreen.appliedProgramIds.contains(p['id']),
-        )
-        .toList();
-
-    final savedProgramsList = EmpowermentProgramsScreen.programs
-        .where(
-          (p) => EmpowermentProgramsScreen.savedProgramIds.contains(p['id']),
-        )
-        .toList();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final appliedAsync = ref.watch(empowermentProgramsProvider('applied'));
+    final savedAsync = ref.watch(empowermentProgramsProvider('saved'));
 
     return DefaultTabController(
-      initialIndex: widget.initialTab,
+      initialIndex: initialTab,
       length: 2,
       child: Scaffold(
         backgroundColor: kWhite,
@@ -281,7 +84,6 @@ class _AppliedProgramsScreenState extends State<AppliedProgramsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -320,37 +122,41 @@ class _AppliedProgramsScreenState extends State<AppliedProgramsScreen> {
                   ],
                 ),
               ),
-
-              // TabBar
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
                 child: TabBar(
                   labelColor: kPrimaryColor,
                   unselectedLabelColor: kSecondaryTextColor,
-                  labelStyle: kLabel15SB,
-                  unselectedLabelStyle: kLabel15M,
                   indicatorColor: kPrimaryColor,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  indicatorWeight: 2.5,
-                  dividerColor: kBorder,
-                  tabs: const [
+                  tabs: [
                     Tab(text: 'Applied Programs'),
                     Tab(text: 'Saved'),
                   ],
                 ),
               ),
-
-              // TabBarView content
               Expanded(
                 child: TabBarView(
                   children: [
-                    _buildProgramList(
-                      appliedProgramsList,
-                      'No applied programs yet',
+                    AsyncContent(
+                      asyncValue: appliedAsync,
+                      onRetry: () => ref.invalidate(
+                        empowermentProgramsProvider('applied'),
+                      ),
+                      builder: (page) => _buildProgramList(
+                        context,
+                        page.items,
+                        'No applied programs yet',
+                      ),
                     ),
-                    _buildProgramList(
-                      savedProgramsList,
-                      'No saved programs yet',
+                    AsyncContent(
+                      asyncValue: savedAsync,
+                      onRetry: () =>
+                          ref.invalidate(empowermentProgramsProvider('saved')),
+                      builder: (page) => _buildProgramList(
+                        context,
+                        page.items,
+                        'No saved programs yet',
+                      ),
                     ),
                   ],
                 ),

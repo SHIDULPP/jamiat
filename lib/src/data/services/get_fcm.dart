@@ -33,7 +33,8 @@ Future<void> _handleIOSPermissions(BuildContext context, WidgetRef ref) async {
       sound: true,
     );
     if (!context.mounted) return;
-    if (resourceSettings.authorizationStatus == AuthorizationStatus.authorized) {
+    if (resourceSettings.authorizationStatus ==
+        AuthorizationStatus.authorized) {
       await _setupFCM(context, ref);
     } else {
       debugPrint('User declined notification permission');
@@ -95,7 +96,9 @@ Future<void> _setupFCM(BuildContext context, WidgetRef ref) async {
         if (response.success) {
           debugPrint("FCM Token uploaded to backend successfully.");
         } else {
-          debugPrint("Failed to upload FCM token to backend: ${response.message}");
+          debugPrint(
+            "Failed to upload FCM token to backend: ${response.message}",
+          );
         }
       }
     }

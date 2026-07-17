@@ -44,7 +44,10 @@ class ScreenSizeData {
   double get horizontalPadding => responsivePadding(20);
 
   double scaffoldBottomPadding() =>
-      responsivePadding(64) + responsivePadding(16) + padding.bottom + responsivePadding(12);
+      responsivePadding(64) +
+      responsivePadding(16) +
+      padding.bottom +
+      responsivePadding(12);
 }
 
 class ScreenSizeScope extends ConsumerWidget {

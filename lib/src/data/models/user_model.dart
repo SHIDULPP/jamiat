@@ -7,6 +7,16 @@ class UserModel {
     required this.isProfileComplete,
     this.name,
     this.email,
+    this.image,
+    this.gender,
+    this.whatsappNo,
+    this.address,
+    this.area,
+    this.district,
+    this.state,
+    this.country,
+    this.pincode,
+    this.dob,
   });
 
   final String id;
@@ -16,8 +26,21 @@ class UserModel {
   final bool isProfileComplete;
   final String? name;
   final String? email;
+  final String? image;
+  final String? gender;
+  final String? whatsappNo;
+  final String? address;
+  final String? area;
+  final String? district;
+  final String? state;
+  final String? country;
+  final int? pincode;
+  final DateTime? dob;
 
   bool get canEnterApp => status == 'active' && isProfileComplete;
+
+  String get displayName =>
+      (name != null && name!.trim().isNotEmpty) ? name!.trim() : 'Member';
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
@@ -28,6 +51,18 @@ class UserModel {
       isProfileComplete: json['is_profile_complete'] == true,
       name: json['name']?.toString(),
       email: json['email']?.toString(),
+      image: json['image']?.toString(),
+      gender: json['gender']?.toString(),
+      whatsappNo: json['whatsapp_no']?.toString(),
+      address: json['address']?.toString(),
+      area: json['area']?.toString(),
+      district: json['district']?.toString(),
+      state: json['state']?.toString(),
+      country: json['country']?.toString(),
+      pincode: (json['pincode'] as num?)?.toInt(),
+      dob: json['dob'] != null
+          ? DateTime.tryParse(json['dob'].toString())
+          : null,
     );
   }
 }

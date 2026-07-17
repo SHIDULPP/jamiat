@@ -3,57 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
+import 'package:jamiat/src/data/models/campaign_model.dart';
+import 'package:jamiat/src/data/providers/campaign_provider.dart';
+import 'package:jamiat/src/data/providers/home_provider.dart';
+import 'package:jamiat/src/data/providers/news_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
-import 'package:jamiat/src/interfaces/components/donation_sheet.dart';
+import 'package:jamiat/src/data/utils/category_mapper.dart';
+import 'package:jamiat/src/data/utils/format_helpers.dart';
+import 'package:jamiat/src/interfaces/components/async_content.dart';
 import 'package:jamiat/src/interfaces/welfare_program/welfare_program.dart';
-
-/// Dummy home data — replace with API models later.
-class _HomeDummyData {
-  static const userName = 'Muhammed Rashid';
-  static const greeting = 'As-salamu alaykum';
-  static const avatarAsset = 'assets/pngs/dummy_avatar.png';
-  static const totalDonated = 68000;
-  static const participatedCampaigns = 102;
-
-  static const quickAccess = <_QuickAccessItem>[
-    _QuickAccessItem(label: 'Autopay', icon: '', background: Color(0xFFECFDF5)),
-    _QuickAccessItem(
-      label: 'Welfare',
-      icon: 'assets/svg/quick_welfare.svg',
-      background: Color(0xFFF3E8FF),
-    ),
-    _QuickAccessItem(
-      label: 'Events',
-      icon: 'assets/svg/quick_events.svg',
-      background: Color(0xFFFFF7ED),
-    ),
-    _QuickAccessItem(
-      label: 'Market',
-      icon: 'assets/svg/quick_market.svg',
-      background: Color(0xFFFCE7F3),
-    ),
-    _QuickAccessItem(label: 'News', icon: '', background: Color(0xFFF0FDF4)),
-    _QuickAccessItem(
-      label: 'Programs',
-      icon: '',
-      background: Color(0xFFF5EBE6),
-    ),
-  ];
-
-  static const campaigns = <_CampaignItem>[
-    _CampaignItem(
-      title: 'Maktab support fund 2026',
-      category: 'Education',
-      image: 'assets/jpgs/campaign_education.jpg',
-    ),
-    _CampaignItem(
-      title: 'Medical Aid for Fatima',
-      category: 'Welfare',
-      image: 'assets/jpgs/campaign_welfare.jpg',
-    ),
-  ];
-}
 
 class _QuickAccessItem {
   final String label;
@@ -67,28 +26,26 @@ class _QuickAccessItem {
   });
 }
 
-class _CampaignItem {
-  final String title;
-  final String category;
-  final String image;
-
-  const _CampaignItem({
-    required this.title,
-    required this.category,
-    required this.image,
-  });
-}
-
-String _formatRupee(int amount) {
-  final raw = amount.toString();
-  final buf = StringBuffer();
-  final len = raw.length;
-  for (var i = 0; i < len; i++) {
-    if (i > 0 && (len - i) % 3 == 0) buf.write(',');
-    buf.write(raw[i]);
-  }
-  return '₹ $buf';
-}
+const _quickAccessItems = <_QuickAccessItem>[
+  _QuickAccessItem(label: 'Autopay', icon: '', background: Color(0xFFECFDF5)),
+  _QuickAccessItem(
+    label: 'Welfare',
+    icon: 'assets/svg/quick_welfare.svg',
+    background: Color(0xFFF3E8FF),
+  ),
+  _QuickAccessItem(
+    label: 'Events',
+    icon: 'assets/svg/quick_events.svg',
+    background: Color(0xFFFFF7ED),
+  ),
+  _QuickAccessItem(
+    label: 'Market',
+    icon: 'assets/svg/quick_market.svg',
+    background: Color(0xFFFCE7F3),
+  ),
+  _QuickAccessItem(label: 'News', icon: '', background: Color(0xFFF0FDF4)),
+  _QuickAccessItem(label: 'Programs', icon: '', background: Color(0xFFF5EBE6)),
+];
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -274,14 +231,7 @@ class HomePage extends ConsumerWidget {
                       ElevatedButton(
                         onPressed: () {
                           HapticHelper.impact(HapticImpact.light);
-                          DonationSheet.show(
-                            context: context,
-                            categoryTitle: 'Medical Relief Fund',
-                            icon: Icons.medical_services_outlined,
-                            iconBgColor: const Color(0xFFFFF1F2),
-                            iconColor: const Color(0xFFE11D48),
-                            isAutopay: false,
-                          );
+                          NavigationService().pushNamed('DonationList');
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFD97706),
@@ -330,64 +280,81 @@ class HomePage extends ConsumerWidget {
             SliverToBoxAdapter(
               child: SizedBox(
                 height: 140,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: kScreenPaddingH,
-                  ),
-                  itemCount: 2,
-                  separatorBuilder: (_, _) => const SizedBox(width: 12),
-                  itemBuilder: (context, index) {
-                    final isFirst = index == 0;
-                    return GestureDetector(
-                      onTap: () {
-                        HapticHelper.impact(HapticImpact.light);
-                        NavigationService().pushNamed(
-                          'NewsDetail',
-                          arguments: {'newsId': isFirst ? '1' : '2'},
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    final newsAsync = ref.watch(newsListProvider);
+                    return AsyncContent(
+                      asyncValue: newsAsync,
+                      onRetry: () => ref.invalidate(newsListProvider),
+                      builder: (page) {
+                        final items = page.items.take(5).toList();
+                        if (items.isEmpty) {
+                          return Center(
+                            child: Text('No news yet', style: kEmptyStateM),
+                          );
+                        }
+                        return ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: kScreenPaddingH,
+                          ),
+                          itemCount: items.length,
+                          separatorBuilder: (_, _) => const SizedBox(width: 12),
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            return GestureDetector(
+                              onTap: () {
+                                HapticHelper.impact(HapticImpact.light);
+                                NavigationService().pushNamed(
+                                  'NewsDetail',
+                                  arguments: {'newsId': item.id},
+                                );
+                              },
+                              child: Container(
+                                width: 280,
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: kWhite,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: kBorder),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.subTitle ?? 'Announcement',
+                                      style: kCaption10M.copyWith(
+                                        color: kMutedText,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      item.title,
+                                      style: kBodyTitleB.copyWith(
+                                        color: kTextColor,
+                                        fontSize: 14,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      item.description,
+                                      style: kCaption12R.copyWith(
+                                        color: kSecondaryTextColor,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         );
                       },
-                      child: Container(
-                        width: 280,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: kWhite,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: kBorder),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              isFirst ? 'Announcement' : 'Relief Work',
-                              style: kCaption10M.copyWith(color: kMutedText),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              isFirst
-                                  ? 'Annual Jamiat conference - registration open'
-                                  : 'Flood relief update- thank you for your support, 218 families helped.',
-                              style: kBodyTitleB.copyWith(
-                                color: kTextColor,
-                                fontSize: 14,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              isFirst
-                                  ? 'Join us for the premier community gathering of the year.'
-                                  : 'Thank you for your active support in the community.',
-                              style: kCaption12R.copyWith(
-                                color: kSecondaryTextColor,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
                     );
                   },
                 ),
@@ -464,20 +431,38 @@ class HomePage extends ConsumerWidget {
   }
 }
 
-class _HomeHeader extends StatelessWidget {
+class _HomeHeader extends ConsumerWidget {
   const _HomeHeader();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final statsAsync = ref.watch(homeStatsProvider);
+    final user = statsAsync.value?.user;
+    final userName = user?.displayName ?? 'Member';
+    final image = user?.image;
+
     return Row(
       children: [
         ClipOval(
-          child: Image.asset(
-            _HomeDummyData.avatarAsset,
-            width: 48,
-            height: 48,
-            fit: BoxFit.cover,
-          ),
+          child: image != null && image.startsWith('http')
+              ? Image.network(
+                  image,
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Image.asset(
+                    'assets/pngs/dummy_avatar.png',
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                  ),
+                )
+              : Image.asset(
+                  'assets/pngs/dummy_avatar.png',
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
+                ),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -485,12 +470,12 @@ class _HomeHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                _HomeDummyData.greeting,
+                'As-salamu alaykum',
                 style: kCaption12R.copyWith(color: kSecondaryTextColor),
               ),
               const SizedBox(height: 2),
               Text(
-                _HomeDummyData.userName,
+                userName,
                 style: kBodyTitleSB.copyWith(fontSize: kSize16),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -506,6 +491,7 @@ class _HomeHeader extends StatelessWidget {
             customBorder: const CircleBorder(),
             onTap: () {
               HapticHelper.impact(HapticImpact.light);
+              NavigationService().pushNamed('Notifications');
             },
             child: SizedBox(
               width: 44,
@@ -529,49 +515,55 @@ class _HomeHeader extends StatelessWidget {
   }
 }
 
-class _ContributionsCard extends StatelessWidget {
+class _ContributionsCard extends ConsumerWidget {
   const _ContributionsCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final statsAsync = ref.watch(homeStatsProvider);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFECFDF5), // Soft green background
+        color: const Color(0xFFECFDF5),
         borderRadius: BorderRadius.circular(kCardRadiusLg),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'My Contributions',
-            style: kBodyTitleSB.copyWith(color: const Color(0xFF065F46)),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Member since 26 Dec 2025',
-            style: kCaption12R.copyWith(color: const Color(0xFF047857)),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _StatTile(
-                  label: 'TOTAL DONATED',
-                  value: _formatRupee(_HomeDummyData.totalDonated),
+      child: AsyncContent(
+        asyncValue: statsAsync,
+        onRetry: () => ref.invalidate(homeStatsProvider),
+        builder: (stats) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'My Contributions',
+              style: kBodyTitleSB.copyWith(color: const Color(0xFF065F46)),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Welcome, ${stats.user.displayName}',
+              style: kCaption12R.copyWith(color: const Color(0xFF047857)),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: _StatTile(
+                    label: 'TOTAL DONATED',
+                    value: formatRupee(stats.totalDonated),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _StatTile(
-                  label: 'PARTICIPATED CAMPAIGNS',
-                  value: '${_HomeDummyData.participatedCampaigns}',
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _StatTile(
+                    label: 'PARTICIPATED CAMPAIGNS',
+                    value: '${stats.participatedCampaigns}',
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -627,7 +619,7 @@ class _QuickAccessList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = _HomeDummyData.quickAccess;
+    final items = _quickAccessItems;
     return SliverToBoxAdapter(
       child: SizedBox(
         height: _cardHeight,
@@ -753,33 +745,44 @@ class _QuickAccessCard extends StatelessWidget {
   }
 }
 
-class _ActiveCampaignsSection extends StatelessWidget {
+class _ActiveCampaignsSection extends ConsumerWidget {
   const _ActiveCampaignsSection();
 
   static const double _cardWidth = 200;
   static const double _cardHeight = 280;
 
   @override
-  Widget build(BuildContext context) {
-    final campaigns = _HomeDummyData.campaigns;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final campaignsAsync = ref.watch(featuredCampaignsProvider);
 
     return SizedBox(
       height: _cardHeight,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
-        itemCount: campaigns.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          return _CampaignCard(
-            width: _cardWidth,
-            height: _cardHeight,
-            campaign: campaigns[index],
-            onTap: () {
-              HapticHelper.impact(HapticImpact.light);
-              NavigationService().pushNamed(
-                'CampaignDetails',
-                arguments: {'campaignName': campaigns[index].title},
+      child: AsyncContent(
+        asyncValue: campaignsAsync,
+        onRetry: () => ref.invalidate(featuredCampaignsProvider),
+        builder: (campaigns) {
+          if (campaigns.isEmpty) {
+            return Center(
+              child: Text('No active campaigns', style: kEmptyStateM),
+            );
+          }
+          return ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
+            itemCount: campaigns.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 12),
+            itemBuilder: (context, index) {
+              return _CampaignCard(
+                width: _cardWidth,
+                height: _cardHeight,
+                campaign: campaigns[index],
+                onTap: () {
+                  HapticHelper.impact(HapticImpact.light);
+                  NavigationService().pushNamed(
+                    'CampaignDetails',
+                    arguments: {'campaignId': campaigns[index].id},
+                  );
+                },
               );
             },
           );
@@ -792,7 +795,7 @@ class _ActiveCampaignsSection extends StatelessWidget {
 class _CampaignCard extends StatelessWidget {
   final double width;
   final double height;
-  final _CampaignItem campaign;
+  final CampaignModel campaign;
   final VoidCallback onTap;
 
   const _CampaignCard({
@@ -804,6 +807,11 @@ class _CampaignCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final progress = campaign.targetAmount <= 0
+        ? 0.0
+        : (campaign.collectedAmount / campaign.targetAmount).clamp(0.0, 1.0);
+    final imageUrl = campaign.coverImage;
+
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
@@ -814,7 +822,20 @@ class _CampaignCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.asset(campaign.image, fit: BoxFit.cover),
+              if (imageUrl != null && imageUrl.startsWith('http'))
+                Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Image.asset(
+                    'assets/jpgs/campaign_education.jpg',
+                    fit: BoxFit.cover,
+                  ),
+                )
+              else
+                Image.asset(
+                  imageUrl ?? 'assets/jpgs/campaign_education.jpg',
+                  fit: BoxFit.cover,
+                ),
               const DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -838,7 +859,7 @@ class _CampaignCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(kPillRadius),
                   ),
                   child: Text(
-                    campaign.category,
+                    CategoryMapper.toUi(campaign.category),
                     style: kCaption10M.copyWith(color: kTextColor),
                   ),
                 ),
@@ -860,7 +881,7 @@ class _CampaignCard extends StatelessWidget {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(2),
                       child: LinearProgressIndicator(
-                        value: campaign.title.contains('Maktab') ? 0.65 : 0.68,
+                        value: progress.toDouble(),
                         minHeight: 3.5,
                         backgroundColor: kWhite.withValues(alpha: 0.3),
                         valueColor: const AlwaysStoppedAnimation<Color>(
@@ -870,9 +891,7 @@ class _CampaignCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      campaign.title.contains('Maktab')
-                          ? '₹ 65,000 of ₹ 1,00,000'
-                          : '₹ 68,000 of ₹ 1,00,000',
+                      '${formatRupee(campaign.collectedAmount)} of ${formatRupee(campaign.targetAmount)}',
                       style: kCaption10M.copyWith(color: kWhite),
                     ),
                   ],
@@ -982,7 +1001,7 @@ class _WelfareGridSection extends StatelessWidget {
                       HapticHelper.impact(HapticImpact.light);
                       NavigationService().pushNamed(
                         'WelfareDetails',
-                        arguments: {'serviceKey': item['key']},
+                        arguments: {'serviceId': item['key']},
                       );
                     },
                     child: Container(

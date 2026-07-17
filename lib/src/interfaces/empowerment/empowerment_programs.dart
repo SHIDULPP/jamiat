@@ -1,64 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jamiat/src/data/apis/empowerment_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
+import 'package:jamiat/src/data/models/empowerment_model.dart';
+import 'package:jamiat/src/data/providers/empowerment_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
+import 'package:jamiat/src/data/utils/format_helpers.dart';
+import 'package:jamiat/src/interfaces/components/async_content.dart';
 
-class EmpowermentProgramsScreen extends StatefulWidget {
+class EmpowermentProgramsScreen extends ConsumerStatefulWidget {
   const EmpowermentProgramsScreen({super.key});
 
-  // Local state for applied and saved programs
-  static final Set<String> appliedProgramIds = {};
-  static final Set<String> savedProgramIds = {};
-
-  static const List<Map<String, String>> programs = [
-    {
-      'id': '1',
-      'title': 'Tailoring & Fashion',
-      'subtitle':
-          'Lorem ipsum dolor sit amet consectetur. Turpis cursus et quisque enim sit leo vitae.',
-      'date': 'Starts 15 Jul',
-      'location': 'Ernakulam Town Hall',
-      'image': 'assets/jpgs/campaign_welfare.jpg',
-    },
-    {
-      'id': '2',
-      'title': 'Small Business startup program',
-      'subtitle':
-          'Lorem ipsum dolor sit amet consectetur. Turpis cursus et quisque enim sit leo vitae.',
-      'date': 'Starts 30 Aug',
-      'location': 'Kozhikode Jamiat Hall',
-      'image': 'assets/jpgs/campaign_education.jpg',
-    },
-    {
-      'id': '3',
-      'title': 'Digital Skill Bootcamp',
-      'subtitle':
-          'For skill building, coding, UI/UX design, and cyber security courses.',
-      'date': 'Starts 10 Oct',
-      'location': 'Cochin Tech Hub',
-      'image': 'assets/jpgs/campaign_education.jpg',
-    },
-  ];
-
   @override
-  State<EmpowermentProgramsScreen> createState() =>
+  ConsumerState<EmpowermentProgramsScreen> createState() =>
       _EmpowermentProgramsScreenState();
 }
 
-class _EmpowermentProgramsScreenState extends State<EmpowermentProgramsScreen> {
+class _EmpowermentProgramsScreenState
+    extends ConsumerState<EmpowermentProgramsScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text.trim().toLowerCase();
-      });
-    });
-  }
 
   @override
   void dispose() {
@@ -66,60 +29,85 @@ class _EmpowermentProgramsScreenState extends State<EmpowermentProgramsScreen> {
     super.dispose();
   }
 
-  void _applyProgram(Map<String, String> program) {
-    showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Text(
-            'Application Submitted',
-            style: kHeadTitleB.copyWith(color: kTextColor, fontSize: 18),
-          ),
-          content: Text(
-            'You have successfully applied for ${program['title']}. We will notify you once your application is reviewed.',
-            style: kCaption12R.copyWith(
-              color: kSecondaryTextColor,
-              fontSize: 13.5,
-              height: 1.4,
-            ),
-          ),
+  List<EmpowermentProgramModel> _filter(List<EmpowermentProgramModel> items) {
+    if (_searchQuery.isEmpty) return items;
+    final q = _searchQuery.toLowerCase();
+    return items.where((p) {
+      return p.title.toLowerCase().contains(q) ||
+          p.description.toLowerCase().contains(q);
+    }).toList();
+  }
+
+  Future<void> _apply(EmpowermentProgramModel program) async {
+    final res = await ref
+        .read(empowermentApiProvider)
+        .applyForProgram(program.id);
+    if (!mounted) return;
+    if (res.success) {
+      ref.invalidate(empowermentProgramsProvider('all'));
+      ref.invalidate(empowermentProgramsProvider('applied'));
+      showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Application Submitted'),
+          content: Text('You have successfully applied for ${program.title}.'),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                setState(() {
-                  EmpowermentProgramsScreen.appliedProgramIds.add(
-                    program['id']!,
-                  );
-                });
-              },
-              child: Text('OK', style: kLinkSB.copyWith(fontSize: 15)),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
             ),
           ],
-        );
-      },
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(res.message ?? 'Failed to apply')));
+    }
+  }
+
+  Future<void> _toggleSave(EmpowermentProgramModel program) async {
+    final api = ref.read(empowermentApiProvider);
+    final res = program.isBookmarked
+        ? await api.unsaveProgram(program.id)
+        : await api.saveProgram(program.id);
+    if (res.success) {
+      ref.invalidate(empowermentProgramsProvider('all'));
+      ref.invalidate(empowermentProgramsProvider('saved'));
+    }
+  }
+
+  Widget _image(String? url) {
+    if (url != null && url.startsWith('http')) {
+      return Image.network(
+        url,
+        height: 160,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => Container(
+          height: 160,
+          color: kScreenBg,
+          child: const Icon(Icons.image_outlined, color: kMutedText),
+        ),
+      );
+    }
+    return Image.asset(
+      url ?? 'assets/jpgs/campaign_welfare.jpg',
+      height: 160,
+      width: double.infinity,
+      fit: BoxFit.cover,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = EmpowermentProgramsScreen.programs.where((item) {
-      if (_searchQuery.isEmpty) return true;
-      final title = item['title']!.toLowerCase();
-      final subtitle = item['subtitle']!.toLowerCase();
-      return title.contains(_searchQuery) || subtitle.contains(_searchQuery);
-    }).toList();
+    final programsAsync = ref.watch(empowermentProgramsProvider('all'));
 
     return Scaffold(
       backgroundColor: kWhite,
       body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Row
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Row(
@@ -152,321 +140,137 @@ class _EmpowermentProgramsScreenState extends State<EmpowermentProgramsScreen> {
                         color: kTextColor,
                         fontSize: 20,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  PopupMenuButton<String>(
-                    icon: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: kBorder, width: 1.25),
-                      ),
-                      child: const Icon(
-                        Icons.more_vert,
-                        color: kTextColor,
-                        size: 20,
-                      ),
-                    ),
-                    color: kWhite,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 3,
-                    onSelected: (value) {
-                      HapticHelper.impact(HapticImpact.light);
-                      if (value == 'applied') {
-                        NavigationService().pushNamed(
-                          'AppliedPrograms',
-                          arguments: {'initialTab': 0},
-                        );
-                      } else if (value == 'saved') {
-                        NavigationService().pushNamed(
-                          'AppliedPrograms',
-                          arguments: {'initialTab': 1},
-                        );
-                      }
+                  IconButton(
+                    onPressed: () {
+                      NavigationService().pushNamed('AppliedPrograms');
                     },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'applied',
-                        child: Text(
-                          'Applied Programs',
-                          style: kBodyTitleR.copyWith(
-                            color: kTextColor,
-                            fontSize: 14.5,
-                          ),
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'saved',
-                        child: Text(
-                          'Saved',
-                          style: kBodyTitleR.copyWith(
-                            color: kTextColor,
-                            fontSize: 14.5,
-                          ),
-                        ),
-                      ),
-                    ],
+                    icon: const Icon(Icons.bookmark_border),
                   ),
                 ],
               ),
             ),
-
-            // Search programs bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: kWhite,
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: kBorder, width: 1.25),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    const Icon(Icons.search, color: kMutedText, size: 22),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        style: kBodyTitleR.copyWith(color: kTextColor),
-                        decoration: InputDecoration(
-                          hintText: 'Search for programs',
-                          hintStyle: kBodyTitleR.copyWith(
-                            color: kMutedText,
-                            fontSize: 15,
-                          ),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (v) => setState(() => _searchQuery = v.trim()),
+                decoration: InputDecoration(
+                  hintText: 'Search programs',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 16),
-
-            // Scrollable programs list
             Expanded(
-              child: filtered.isEmpty
-                  ? Center(
+              child: AsyncContent(
+                asyncValue: programsAsync,
+                onRetry: () =>
+                    ref.invalidate(empowermentProgramsProvider('all')),
+                builder: (page) {
+                  final programs = _filter(page.items);
+                  if (programs.isEmpty) {
+                    return Center(
                       child: Text('No programs found', style: kEmptyStateM),
-                    )
-                  : ListView.builder(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      itemCount: filtered.length,
-                      itemBuilder: (context, index) {
-                        final program = filtered[index];
-                        final isApplied = EmpowermentProgramsScreen
-                            .appliedProgramIds
-                            .contains(program['id']);
-                        final isSaved = EmpowermentProgramsScreen
-                            .savedProgramIds
-                            .contains(program['id']);
-
-                        return GestureDetector(
-                          onTap: () {
-                            HapticHelper.impact(HapticImpact.light);
-                            NavigationService()
-                                .pushNamed(
-                                  'ProgramDetails',
-                                  arguments: {'programId': program['id']},
-                                )
-                                .then((_) {
-                                  // Trigger reload in case they applied inside details
-                                  setState(() {});
-                                });
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 20),
-                            decoration: BoxDecoration(
-                              color: kWhite,
-                              borderRadius: BorderRadius.circular(
-                                kCardRadiusLg,
-                              ),
-                              border: Border.all(color: kBorder),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: kBlack.withValues(alpha: 0.03),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Cover Image with Action Overlays
-                                SizedBox(
-                                  height: 150,
-                                  width: double.infinity,
-                                  child: Stack(
-                                    fit: StackFit.expand,
-                                    children: [
-                                      Image.asset(
-                                        program['image']!,
-                                        fit: BoxFit.cover,
-                                      ),
-                                      Positioned(
-                                        top: 12,
-                                        right: 12,
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              width: 36,
-                                              height: 36,
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color: kBlack.withValues(
-                                                  alpha: 0.4,
-                                                ),
-                                              ),
-                                              child: const Icon(
-                                                Icons.share_outlined,
-                                                color: kWhite,
-                                                size: 18,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            GestureDetector(
-                                              onTap: () {
-                                                HapticHelper.impact(
-                                                  HapticImpact.light,
-                                                );
-                                                setState(() {
-                                                  if (isSaved) {
-                                                    EmpowermentProgramsScreen
-                                                        .savedProgramIds
-                                                        .remove(program['id']!);
-                                                  } else {
-                                                    EmpowermentProgramsScreen
-                                                        .savedProgramIds
-                                                        .add(program['id']!);
-                                                  }
-                                                });
-                                              },
-                                              child: Container(
-                                                width: 36,
-                                                height: 36,
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  color: kBlack.withValues(
-                                                    alpha: 0.4,
-                                                  ),
-                                                ),
-                                                child: Icon(
-                                                  isSaved
-                                                      ? Icons.bookmark
-                                                      : Icons.bookmark_border,
-                                                  color: isSaved
-                                                      ? const Color(0xFF10B981)
-                                                      : kWhite,
-                                                  size: 18,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                // Details area
-                                Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        program['title']!,
-                                        style: kBodyTitleB.copyWith(
-                                          fontSize: 16,
-                                          color: kTextColor,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        program['subtitle']!,
-                                        style: kCaption12R.copyWith(
-                                          color: kSecondaryTextColor,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 14),
-
-                                      // Row showing Date and CTA Apply button
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.calendar_today_outlined,
-                                            size: 16,
-                                            color: kMutedText,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            program['date']!,
-                                            style: kCaption12R.copyWith(
-                                              color: kTextColor,
-                                              fontWeight: kMedium,
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          SizedBox(
-                                            height: 36,
-                                            child: ElevatedButton(
-                                              onPressed: isApplied
-                                                  ? null
-                                                  : () {
-                                                      HapticHelper.impact(
-                                                        HapticImpact.light,
-                                                      );
-                                                      _applyProgram(program);
-                                                    },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: kPrimaryColor,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 20,
-                                                    ),
-                                                elevation: 0,
-                                              ),
-                                              child: Text(
-                                                isApplied ? 'Applied' : 'Apply',
-                                                style: kCaption12M.copyWith(
-                                                  color: isApplied
-                                                      ? kMutedText
-                                                      : kWhite,
-                                                  fontWeight: kBold,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
+                    );
+                  }
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    itemCount: programs.length,
+                    itemBuilder: (context, index) {
+                      final program = programs[index];
+                      return GestureDetector(
+                        onTap: () {
+                          NavigationService().pushNamed(
+                            'ProgramDetails',
+                            arguments: {'programId': program.id},
+                          );
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 20),
+                          decoration: BoxDecoration(
+                            color: kWhite,
+                            borderRadius: BorderRadius.circular(kCardRadiusLg),
+                            border: Border.all(color: kBorder),
                           ),
-                        );
-                      },
-                    ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Stack(
+                                children: [
+                                  _image(program.image),
+                                  Positioned(
+                                    top: 10,
+                                    right: 10,
+                                    child: IconButton(
+                                      onPressed: () => _toggleSave(program),
+                                      icon: Icon(
+                                        program.isBookmarked
+                                            ? Icons.bookmark
+                                            : Icons.bookmark_border,
+                                        color: kWhite,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(14),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(program.title, style: kBodyTitleB),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      program.description,
+                                      style: kCaption12R.copyWith(
+                                        color: kSecondaryTextColor,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          program.startDate != null
+                                              ? 'Starts ${formatDateLabel(program.startDate)}'
+                                              : '',
+                                          style: kCaption12R,
+                                        ),
+                                        const Spacer(),
+                                        ElevatedButton(
+                                          onPressed: program.isApplied
+                                              ? null
+                                              : () => _apply(program),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: kPrimaryColor,
+                                            foregroundColor: kWhite,
+                                          ),
+                                          child: Text(
+                                            program.isApplied
+                                                ? 'Applied'
+                                                : 'Apply',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),

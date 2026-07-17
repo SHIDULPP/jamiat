@@ -4,7 +4,6 @@ import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 
-
 class _DonationCategory {
   final String title;
   final String description;
@@ -34,7 +33,8 @@ class _DonationListScreenState extends State<DonationListScreen> {
   final List<_DonationCategory> _categories = const [
     _DonationCategory(
       title: 'General Campaign',
-      description: 'All active fundraisers, including specific, targeted campaigns.',
+      description:
+          'All active fundraisers, including specific, targeted campaigns.',
       icon: Icons.volunteer_activism_outlined,
       iconBgColor: Color(0xFFFFF7ED), // Soft orange/peach
       iconColor: Color(0xFFEA580C),
@@ -69,7 +69,8 @@ class _DonationListScreenState extends State<DonationListScreen> {
     ),
     _DonationCategory(
       title: 'Medical Releif',
-      description: 'Support underprivileged families facing urgent health crises.',
+      description:
+          'Support underprivileged families facing urgent health crises.',
       icon: Icons.monitor_heart_outlined,
       iconBgColor: Color(0xFFFFF5F5), // Soft red
       iconColor: Color(0xFFEF4444),
@@ -178,11 +179,7 @@ class _DonationListScreenState extends State<DonationListScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
-                  child: Icon(
-                    item.icon,
-                    color: item.iconColor,
-                    size: 26,
-                  ),
+                  child: Icon(item.icon, color: item.iconColor, size: 26),
                 ),
               ),
               const SizedBox(width: 16),
@@ -294,7 +291,8 @@ class _DonationListScreenState extends State<DonationListScreen> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: filteredCategories.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 16),
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 16),
                 itemBuilder: (context, index) {
                   return _buildCategoryCard(filteredCategories[index]);
                 },

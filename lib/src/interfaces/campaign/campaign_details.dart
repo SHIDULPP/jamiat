@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jamiat/src/data/apis/campaign_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
+import 'package:jamiat/src/data/models/campaign_model.dart';
+import 'package:jamiat/src/data/providers/campaign_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
+import 'package:jamiat/src/data/utils/category_mapper.dart';
+import 'package:jamiat/src/data/utils/format_helpers.dart';
+import 'package:jamiat/src/interfaces/components/async_content.dart';
 import 'package:jamiat/src/interfaces/components/donation_sheet.dart';
 
-class CampaignDetailsScreen extends StatelessWidget {
+class CampaignDetailsScreen extends ConsumerStatefulWidget {
   final String title;
   final String description;
   final IconData icon;
   final Color iconBgColor;
   final Color iconColor;
-
-  // Extra properties for Active Campaign Details mode
+  final String? campaignId;
   final String? image;
   final String? category;
   final int? raised;
@@ -25,6 +31,7 @@ class CampaignDetailsScreen extends StatelessWidget {
     required this.icon,
     required this.iconBgColor,
     required this.iconColor,
+    this.campaignId,
     this.image,
     this.category,
     this.raised,
@@ -32,31 +39,19 @@ class CampaignDetailsScreen extends StatelessWidget {
     this.daysLeft,
   });
 
-  bool get isCampaignMode => image != null;
+  @override
+  ConsumerState<CampaignDetailsScreen> createState() =>
+      _CampaignDetailsScreenState();
+}
 
-  double get progress {
-    final g = goal ?? 0;
-    if (g <= 0) return 0.0;
-    return ((raised ?? 0) / g).clamp(0.0, 1.0);
-  }
+class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
+  bool _bookmarkLoading = false;
+  bool _shareLoading = false;
 
-  String _formatRupee(int amount) {
-    final raw = amount.toString();
-    final buf = StringBuffer();
-    final len = raw.length;
-    if (len <= 3) return '₹$raw';
-    final last3 = raw.substring(len - 3);
-    var rest = raw.substring(0, len - 3);
-    final parts = <String>[];
-    while (rest.length > 2) {
-      parts.insert(0, rest.substring(rest.length - 2));
-      rest = rest.substring(0, rest.length - 2);
-    }
-    if (rest.isNotEmpty) parts.insert(0, rest);
-    buf.writeAll(parts, ',');
-    buf.write(',$last3');
-    return '₹$buf';
-  }
+  bool get hasCampaignId =>
+      widget.campaignId != null && widget.campaignId!.isNotEmpty;
+
+  bool get isCampaignMode => hasCampaignId || widget.image != null;
 
   IconData _getCategoryIcon(String? categoryName) {
     switch (categoryName?.toLowerCase() ?? '') {
@@ -75,7 +70,7 @@ class CampaignDetailsScreen extends StatelessWidget {
       case 'medical aid':
         return Icons.monitor_heart_outlined;
       default:
-        return icon;
+        return widget.icon;
     }
   }
 
@@ -96,7 +91,7 @@ class CampaignDetailsScreen extends StatelessWidget {
       case 'medical aid':
         return const Color(0xFFFFF5F5);
       default:
-        return iconBgColor;
+        return widget.iconBgColor;
     }
   }
 
@@ -117,8 +112,334 @@ class CampaignDetailsScreen extends StatelessWidget {
       case 'medical aid':
         return const Color(0xFFEF4444);
       default:
-        return iconColor;
+        return widget.iconColor;
     }
+  }
+
+  Future<void> _toggleBookmark(CampaignModel campaign) async {
+    if (_bookmarkLoading) return;
+    setState(() => _bookmarkLoading = true);
+    try {
+      final api = ref.read(campaignApiProvider);
+      final res = campaign.isBookmarked
+          ? await api.removeBookmark(campaign.id)
+          : await api.bookmarkCampaign(campaign.id);
+      if (!mounted) return;
+      if (!res.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(res.message ?? 'Bookmark failed')),
+        );
+        return;
+      }
+      ref.invalidate(campaignDetailProvider(campaign.id));
+      ref.invalidate(savedCampaignsProvider);
+      ref.invalidate(campaignListProvider(1));
+      ref.invalidate(featuredCampaignsProvider);
+    } finally {
+      if (mounted) setState(() => _bookmarkLoading = false);
+    }
+  }
+
+  Future<void> _shareCampaign(String campaignId, String title) async {
+    if (_shareLoading) return;
+    setState(() => _shareLoading = true);
+    try {
+      final res = await ref.read(campaignApiProvider).shareCampaign(campaignId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            res.success
+                ? 'Thanks for sharing $title'
+                : (res.message ?? 'Share failed'),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _shareLoading = false);
+    }
+  }
+
+  Widget _coverImage(String? url) {
+    if (url != null && url.startsWith('http')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => Container(
+          color: kScreenBg,
+          child: const Icon(Icons.image_outlined, color: kMutedText, size: 40),
+        ),
+      );
+    }
+    return Image.asset(
+      url ?? 'assets/jpgs/campaign_education.jpg',
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => Container(
+        color: kScreenBg,
+        child: const Icon(Icons.image_outlined, color: kMutedText, size: 40),
+      ),
+    );
+  }
+
+  Widget _buildCampaignBody({
+    required BuildContext context,
+    required String displayTitle,
+    required String displayDescription,
+    required String? displayCategory,
+    required String? displayImage,
+    required num displayRaised,
+    required num displayGoal,
+    required int displayDaysLeft,
+    required String? donateCampaignId,
+  }) {
+    final progress = displayGoal <= 0
+        ? 0.0
+        : (displayRaised / displayGoal).clamp(0.0, 1.0);
+    final categoryLabel = CategoryMapper.toUi(displayCategory);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 190,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(kCardRadiusLg),
+            boxShadow: [
+              BoxShadow(
+                color: kBlack.withValues(alpha: 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: _coverImage(displayImage),
+        ),
+        const SizedBox(height: 20),
+        if (displayCategory != null) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: _getCategoryBgColor(categoryLabel),
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: Text(
+              categoryLabel,
+              style: kCaption10SB.copyWith(
+                color: _getCategoryIconColor(categoryLabel),
+                fontWeight: kBold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
+        Text(displayTitle, style: kSectionTitleSB.copyWith(fontSize: 20)),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: kScreenBg,
+            borderRadius: BorderRadius.circular(kCardRadiusLg),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(kPillRadius),
+                child: LinearProgressIndicator(
+                  value: progress.toDouble(),
+                  minHeight: 8,
+                  backgroundColor: kGreyLight,
+                  color: kSecondaryColor,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        formatRupee(displayRaised),
+                        style: kBodyTitleSB.copyWith(fontSize: 16),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'raised of ${formatRupee(displayGoal)}',
+                        style: kCaption12R.copyWith(color: kSecondaryTextColor),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${(progress * 100).round()}%',
+                        style: kBodyTitleSB.copyWith(fontSize: 16),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$displayDaysLeft days left',
+                        style: kCaption12M.copyWith(color: kDaysLeftWarning),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          displayDescription,
+          style: kBodyTitleR.copyWith(
+            color: kText2Color,
+            height: 1.5,
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(height: 24),
+        SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  HapticHelper.impact(HapticImpact.medium);
+                  final displayCat = categoryLabel;
+                  DonationSheet.show(
+                    context: context,
+                    categoryTitle: displayTitle,
+                    icon: _getCategoryIcon(displayCat),
+                    iconBgColor: _getCategoryBgColor(displayCat),
+                    iconColor: _getCategoryIconColor(displayCat),
+                    isAutopay: false,
+                    campaignId: donateCampaignId,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kPrimaryColor,
+                  foregroundColor: kWhite,
+                  minimumSize: const Size.fromHeight(54),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: Text(
+                  'Donate Now',
+                  style: kButtonLabelSB.copyWith(fontSize: 16),
+                ),
+              ),
+              if (donateCampaignId != null && donateCampaignId.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                OutlinedButton(
+                  onPressed: () {
+                    HapticHelper.impact(HapticImpact.medium);
+                    final displayCat = categoryLabel;
+                    DonationSheet.show(
+                      context: context,
+                      categoryTitle: displayTitle,
+                      icon: _getCategoryIcon(displayCat),
+                      iconBgColor: _getCategoryBgColor(displayCat),
+                      iconColor: _getCategoryIconColor(displayCat),
+                      isAutopay: true,
+                      campaignId: donateCampaignId,
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: kPrimaryColor,
+                    minimumSize: const Size.fromHeight(52),
+                    side: const BorderSide(color: kPrimaryColor),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Text(
+                    'Set up Autopay',
+                    style: kButtonLabelSB.copyWith(
+                      fontSize: 15,
+                      color: kPrimaryColor,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryMode(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: kScreenBg,
+            borderRadius: BorderRadius.circular(kCardRadiusLg),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: widget.iconBgColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: widget.title.toLowerCase() == 'zakat'
+                      ? CustomPaint(
+                          size: const Size(36, 36),
+                          painter: ZakatBagPainter(),
+                        )
+                      : Icon(widget.icon, color: widget.iconColor, size: 26),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
+                      style: kBodyTitleB.copyWith(
+                        color: kTextColor,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.description,
+                      style: kCaption12R.copyWith(
+                        color: kSecondaryTextColor,
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          widget.description,
+          style: kBodyTitleR.copyWith(
+            color: kText2Color,
+            height: 1.5,
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
   }
 
   @override
@@ -126,13 +447,11 @@ class CampaignDetailsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: kWhite,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Custom Header / Top Bar
-              Row(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Row(
                 children: [
                   GestureDetector(
                     onTap: () {
@@ -155,248 +474,156 @@ class CampaignDetailsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  Text(
-                    isCampaignMode ? 'Campaign details' : 'Donation details',
-                    style: kHeadTitleB.copyWith(
-                      color: kTextColor,
-                      fontSize: 22,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              if (isCampaignMode) ...[
-                // Banner Image Container
-                Container(
-                  height: 190,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(kCardRadiusLg),
-                    boxShadow: [
-                      BoxShadow(
-                        color: kBlack.withValues(alpha: 0.04),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Image.asset(image!, fit: BoxFit.cover),
-                ),
-                const SizedBox(height: 20),
-
-                // Category tag chip
-                if (category != null) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getCategoryBgColor(category),
-                      borderRadius: BorderRadius.circular(100),
-                    ),
+                  Expanded(
                     child: Text(
-                      category!,
-                      style: kCaption10SB.copyWith(
-                        color: _getCategoryIconColor(category),
-                        fontWeight: kBold,
+                      isCampaignMode ? 'Campaign details' : 'Donation details',
+                      style: kHeadTitleB.copyWith(
+                        color: kTextColor,
+                        fontSize: 22,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  if (hasCampaignId) ...[
+                    IconButton(
+                      onPressed: _shareLoading
+                          ? null
+                          : () {
+                              HapticHelper.impact(HapticImpact.light);
+                              final campaign = ref
+                                  .read(
+                                    campaignDetailProvider(widget.campaignId!),
+                                  )
+                                  .value;
+                              _shareCampaign(
+                                widget.campaignId!,
+                                campaign?.title ?? widget.title,
+                              );
+                            },
+                      icon: _shareLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.share_outlined, color: kTextColor),
+                    ),
+                    IconButton(
+                      onPressed: _bookmarkLoading
+                          ? null
+                          : () {
+                              HapticHelper.impact(HapticImpact.light);
+                              final campaign = ref
+                                  .read(
+                                    campaignDetailProvider(widget.campaignId!),
+                                  )
+                                  .value;
+                              if (campaign != null) {
+                                _toggleBookmark(campaign);
+                              }
+                            },
+                      icon: _bookmarkLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Icon(
+                              (ref
+                                          .watch(
+                                            campaignDetailProvider(
+                                              widget.campaignId!,
+                                            ),
+                                          )
+                                          .value
+                                          ?.isBookmarked ??
+                                      false)
+                                  ? Icons.bookmark
+                                  : Icons.bookmark_border,
+                              color: kTextColor,
+                            ),
+                    ),
+                  ],
                 ],
-
-                // Campaign title
-                Text(title, style: kSectionTitleSB.copyWith(fontSize: 20)),
-                const SizedBox(height: 16),
-
-                // Progress Card
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: kScreenBg,
-                    borderRadius: BorderRadius.circular(kCardRadiusLg),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(kPillRadius),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 8,
-                          backgroundColor: kGreyLight,
-                          color: kSecondaryColor,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _formatRupee(raised ?? 0),
-                                style: kBodyTitleSB.copyWith(fontSize: 16),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'raised of ${_formatRupee(goal ?? 0)}',
-                                style: kCaption12R.copyWith(
-                                  color: kSecondaryTextColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                '${(progress * 100).round()}%',
-                                style: kBodyTitleSB.copyWith(fontSize: 16),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${daysLeft ?? 0} days left',
-                                style: kCaption12M.copyWith(
-                                  color: kDaysLeftWarning,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Campaign description
-                Text(
-                  description,
-                  style: kBodyTitleR.copyWith(
-                    color: kText2Color,
-                    height: 1.5,
-                    fontSize: 14,
-                  ),
-                ),
-              ] else ...[
-                // Category Card
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: kScreenBg,
-                    borderRadius: BorderRadius.circular(kCardRadiusLg),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Icon Container / Custom Illustration
-                      Container(
-                        width: 58,
-                        height: 58,
-                        decoration: BoxDecoration(
-                          color: iconBgColor,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Center(
-                          child: title.toLowerCase() == 'zakat'
-                              ? CustomPaint(
-                                  size: const Size(36, 36),
-                                  painter: ZakatBagPainter(),
-                                )
-                              : Icon(icon, color: iconColor, size: 26),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      // Details Text (Title & Description)
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              style: kBodyTitleB.copyWith(
-                                color: kTextColor,
-                                fontSize: 16,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              description,
-                              style: kCaption12R.copyWith(
-                                color: kSecondaryTextColor,
-                                height: 1.25,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Description Text Paragraph
-                Text(
-                  'Lorem ipsum dolor sit amet consectetur. Volutpat ultricies sed proin tristique augue erat felis eu. Pharetra feugiat molestie tincidunt fames nec malesuada vulputate. Facilisis fermentum non cras orci. Eget nec in sed netus at in blandit. Elementum vestibulum pellentesque faucibus quam elit viverra. Dictum semper netus a arcu volutpat pretium eu. At nec in duis elementum dolor. Magna fermentum parturient tincidunt lorem aliquet non. Mauris non pellentesque turpis quis ut. Volutpat vitae lacus ultrices ullamcorper nullam placerat dignissim.',
-                  style: kBodyTitleR.copyWith(
-                    color: kText2Color,
-                    height: 1.5,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-          child: ElevatedButton(
-            onPressed: () {
-              HapticHelper.impact(HapticImpact.medium);
-              final displayTitle = isCampaignMode ? category ?? title : title;
-              final sheetIcon = _getCategoryIcon(
-                isCampaignMode ? category : title,
-              );
-              final sheetBg = _getCategoryBgColor(
-                isCampaignMode ? category : title,
-              );
-              final sheetColor = _getCategoryIconColor(
-                isCampaignMode ? category : title,
-              );
-
-              DonationSheet.show(
-                context: context,
-                categoryTitle: displayTitle,
-                icon: sheetIcon,
-                iconBgColor: sheetBg,
-                iconColor: sheetColor,
-                isAutopay: !isCampaignMode,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: kPrimaryColor,
-              foregroundColor: kWhite,
-              minimumSize: const Size.fromHeight(54),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
               ),
             ),
-            child: Text(
-              'Donate Now',
-              style: kButtonLabelSB.copyWith(fontSize: 16),
+            Expanded(
+              child: hasCampaignId
+                  ? AsyncContent<CampaignModel>(
+                      asyncValue: ref.watch(
+                        campaignDetailProvider(widget.campaignId!),
+                      ),
+                      onRetry: () => ref.invalidate(
+                        campaignDetailProvider(widget.campaignId!),
+                      ),
+                      builder: (campaign) => SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: _buildCampaignBody(
+                          context: context,
+                          displayTitle: campaign.title,
+                          displayDescription: campaign.description,
+                          displayCategory: campaign.category,
+                          displayImage: campaign.coverImage,
+                          displayRaised: campaign.collectedAmount,
+                          displayGoal: campaign.targetAmount,
+                          displayDaysLeft: campaign.remainingDays ?? 0,
+                          donateCampaignId: campaign.id,
+                        ),
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: isCampaignMode
+                          ? _buildCampaignBody(
+                              context: context,
+                              displayTitle: widget.title,
+                              displayDescription: widget.description,
+                              displayCategory: widget.category,
+                              displayImage: widget.image,
+                              displayRaised: widget.raised ?? 0,
+                              displayGoal: widget.goal ?? 0,
+                              displayDaysLeft: widget.daysLeft ?? 0,
+                              donateCampaignId: widget.campaignId,
+                            )
+                          : _buildCategoryMode(context),
+                    ),
             ),
-          ),
+          ],
         ),
       ),
+      bottomNavigationBar: hasCampaignId || isCampaignMode
+          ? null
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+                child: ElevatedButton(
+                  onPressed: () {
+                    HapticHelper.impact(HapticImpact.medium);
+                    DonationSheet.show(
+                      context: context,
+                      categoryTitle: widget.title,
+                      icon: _getCategoryIcon(widget.title),
+                      iconBgColor: _getCategoryBgColor(widget.title),
+                      iconColor: _getCategoryIconColor(widget.title),
+                      isAutopay: true,
+                      campaignId: widget.campaignId,
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kPrimaryColor,
+                    foregroundColor: kWhite,
+                    minimumSize: const Size.fromHeight(54),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Text(
+                    'Donate Now',
+                    style: kButtonLabelSB.copyWith(fontSize: 16),
+                  ),
+                ),
+              ),
+            ),
     );
   }
 }
@@ -411,7 +638,6 @@ class ZakatBagPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    // Draw background coin first
     final coin1Path = Path();
     coin1Path.addOval(
       Rect.fromLTRB(
@@ -429,14 +655,12 @@ class ZakatBagPainter extends CustomPainter {
     );
     canvas.drawPath(coin1Path, strokePaint);
 
-    // Coin 1 inner pattern (horizontal lines)
     canvas.drawLine(
       Offset(size.width * 0.65, size.height * 0.73),
       Offset(size.width * 0.81, size.height * 0.73),
       strokePaint,
     );
 
-    // Draw foreground/overlay coin
     final coin2Path = Path();
     coin2Path.addOval(
       Rect.fromLTRB(
@@ -454,7 +678,6 @@ class ZakatBagPainter extends CustomPainter {
     );
     canvas.drawPath(coin2Path, strokePaint);
 
-    // Coin 2 inner pattern (star/dot)
     canvas.drawCircle(
       Offset(size.width * 0.67, size.height * 0.59),
       1.5,
@@ -463,9 +686,7 @@ class ZakatBagPainter extends CustomPainter {
         ..style = PaintingStyle.fill,
     );
 
-    // Main bag path
     final bagPath = Path();
-    // Neck ruffles (top waves)
     bagPath.moveTo(size.width * 0.32, size.height * 0.32);
     bagPath.quadraticBezierTo(
       size.width * 0.28,
@@ -491,16 +712,12 @@ class ZakatBagPainter extends CustomPainter {
       size.width * 0.58,
       size.height * 0.32,
     );
-
-    // Neck tie constriction
     bagPath.quadraticBezierTo(
       size.width * 0.55,
       size.height * 0.34,
       size.width * 0.52,
       size.height * 0.36,
     );
-
-    // Bulbous body
     bagPath.quadraticBezierTo(
       size.width * 0.76,
       size.height * 0.55,
@@ -527,7 +744,6 @@ class ZakatBagPainter extends CustomPainter {
     );
     bagPath.close();
 
-    // Fill the bag with white solid fill to mask the background coin
     canvas.drawPath(
       bagPath,
       Paint()
@@ -536,7 +752,6 @@ class ZakatBagPainter extends CustomPainter {
     );
     canvas.drawPath(bagPath, strokePaint);
 
-    // Draw the tie string/band at the neck
     canvas.drawArc(
       Rect.fromCenter(
         center: Offset(size.width * 0.44, size.height * 0.35),
@@ -549,11 +764,9 @@ class ZakatBagPainter extends CustomPainter {
       strokePaint,
     );
 
-    // Draw crescent and star emblem in the center of the bag
     final emblemCenter = Offset(size.width * 0.44, size.height * 0.63);
     canvas.drawCircle(emblemCenter, size.width * 0.14, strokePaint);
 
-    // Crescent path
     final crescentPath = Path();
     crescentPath.addArc(
       Rect.fromCircle(
@@ -565,7 +778,6 @@ class ZakatBagPainter extends CustomPainter {
     );
     canvas.drawPath(crescentPath, strokePaint);
 
-    // Star dot
     canvas.drawCircle(
       Offset(emblemCenter.dx + 2.0, emblemCenter.dy),
       0.8,

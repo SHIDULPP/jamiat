@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
+import 'package:jamiat/src/data/models/autopay_model.dart';
+import 'package:jamiat/src/data/providers/autopay_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
+import 'package:jamiat/src/data/utils/format_helpers.dart';
+import 'package:jamiat/src/interfaces/components/async_content.dart';
 
-class AutopayViewScreen extends StatefulWidget {
+class AutopayViewScreen extends ConsumerStatefulWidget {
   const AutopayViewScreen({super.key});
 
   @override
-  State<AutopayViewScreen> createState() => _AutopayViewScreenState();
+  ConsumerState<AutopayViewScreen> createState() => _AutopayViewScreenState();
 }
 
-class _AutopayViewScreenState extends State<AutopayViewScreen> {
-  bool _isOngoing = true; // default is Ongoing tab as in Figma mockup
+class _AutopayViewScreenState extends ConsumerState<AutopayViewScreen> {
+  bool _isOngoing = true;
 
   Widget _buildTabButton(String label, bool isSelected, VoidCallback onTap) {
     return GestureDetector(
@@ -37,18 +42,30 @@ class _AutopayViewScreenState extends State<AutopayViewScreen> {
     );
   }
 
-  Widget _buildCampaignCard({
-    required String title,
-    required String description,
-    required IconData icon,
-    required Color iconBg,
-    required Color iconColor,
-    required VoidCallback onTap,
-  }) {
+  bool _isActive(AutopayModel a) {
+    final s = a.status.toLowerCase();
+    return s == 'active' || s == 'ongoing' || s == 'paused';
+  }
+
+  Widget _buildCampaignCard(AutopayModel autopay) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticHelper.impact(HapticImpact.light);
+        NavigationService().pushNamed(
+          'AutopayDetails',
+          arguments: {
+            'title': autopay.campaignName ?? 'Autopay',
+            'description': '${formatRupee(autopay.amount)} • ${autopay.period}',
+            'status': autopay.status,
+            'mandateAmount': formatRupee(autopay.amount),
+            'period': autopay.period,
+            'autopayId': autopay.id,
+          },
+        );
+      },
       child: Container(
         padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           color: kScreenBg,
           borderRadius: BorderRadius.circular(kCardRadiusLg),
@@ -56,24 +73,28 @@ class _AutopayViewScreenState extends State<AutopayViewScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Icon Box
             Container(
               width: 58,
               height: 58,
               decoration: BoxDecoration(
-                color: iconBg,
+                color: const Color(0xFFEFF6FF),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Center(child: Icon(icon, color: iconColor, size: 26)),
+              child: const Center(
+                child: Icon(
+                  Icons.autorenew,
+                  color: Color(0xFF2563EB),
+                  size: 26,
+                ),
+              ),
             ),
             const SizedBox(width: 16),
-            // Details
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    autopay.campaignName ?? 'Autopay',
                     style: kBodyTitleB.copyWith(
                       color: kTextColor,
                       fontSize: 16,
@@ -81,7 +102,7 @@ class _AutopayViewScreenState extends State<AutopayViewScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    description,
+                    '${formatRupee(autopay.amount)} • ${autopay.period} • ${autopay.status}',
                     style: kCaption12R.copyWith(
                       color: kSecondaryTextColor,
                       height: 1.25,
@@ -98,6 +119,8 @@ class _AutopayViewScreenState extends State<AutopayViewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final autopaysAsync = ref.watch(myAutopaysProvider);
+
     return Scaffold(
       backgroundColor: kWhite,
       body: SafeArea(
@@ -106,7 +129,6 @@ class _AutopayViewScreenState extends State<AutopayViewScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Row
               Row(
                 children: [
                   GestureDetector(
@@ -140,8 +162,6 @@ class _AutopayViewScreenState extends State<AutopayViewScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-
-              // Segmented Tabs Toggle
               Row(
                 children: [
                   _buildTabButton('Ongoing', _isOngoing, () {
@@ -156,91 +176,29 @@ class _AutopayViewScreenState extends State<AutopayViewScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-
-              // Tab contents
               Expanded(
-                child: _isOngoing
-                    ? ListView(
-                        children: [
-                          _buildCampaignCard(
-                            title: 'Building Mosque',
-                            description:
-                                'Contribute to building and maintaining holy spaces.',
-                            icon: Icons.mosque,
-                            iconBg: const Color(0xFFEFF6FF),
-                            iconColor: const Color(0xFF2563EB),
-                            onTap: () {
-                              HapticHelper.impact(HapticImpact.light);
-                              NavigationService().pushNamed(
-                                'AutopayDetails',
-                                arguments: {
-                                  'title': 'Building Mosque',
-                                  'description':
-                                      'Contribute to building and maintaining holy spaces.',
-                                  'icon': Icons.mosque,
-                                  'iconBgColor': const Color(0xFFEFF6FF),
-                                  'iconColor': const Color(0xFF2563EB),
-                                  'status': 'Auto Pay Active',
-                                  'mandateAmount': '₹1,000',
-                                  'period': 'Weekly',
-                                  'startDate': '15 Jan,2025',
-                                  'endDate': '15 Jan,2026',
-                                  'history': [
-                                    {
-                                      'date': '8 Jul, 2026',
-                                      'amount': '₹ 1,000',
-                                    },
-                                    {
-                                      'date': '1 Jul, 2026',
-                                      'amount': '₹ 1,000',
-                                    },
-                                    {
-                                      'date': '24 Jun, 2026',
-                                      'amount': '₹ 1,000',
-                                    },
-                                  ],
-                                },
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          _buildCampaignCard(
-                            title: 'Medical Releif',
-                            description:
-                                'Support underprivileged families facing urgent health crises.',
-                            icon: Icons.monitor_heart_outlined,
-                            iconBg: const Color(0xFFFFF5F5),
-                            iconColor: const Color(0xFFEF4444),
-                            onTap: () {
-                              HapticHelper.impact(HapticImpact.light);
-                              NavigationService().pushNamed(
-                                'AutopayDetails',
-                                arguments: {
-                                  'title': 'Medical Releif',
-                                  'description':
-                                      'Support underprivileged families facing urgent health crises.',
-                                  'icon': Icons.monitor_heart_outlined,
-                                  'iconBgColor': const Color(0xFFFFF5F5),
-                                  'iconColor': const Color(0xFFEF4444),
-                                  'status': 'Auto Pay Active',
-                                  'mandateAmount': '₹300',
-                                  'period': 'Daily',
-                                  'startDate': '1 Feb,2025',
-                                  'endDate': '1 Feb,2026',
-                                  'history': [
-                                    {'date': '15 Jul, 2026', 'amount': '₹ 300'},
-                                    {'date': '14 Jul, 2026', 'amount': '₹ 300'},
-                                    {'date': '13 Jul, 2026', 'amount': '₹ 300'},
-                                  ],
-                                },
-                              );
-                            },
-                          ),
-                        ],
-                      )
-                    : Center(
-                        child: Text('No past autopays', style: kEmptyStateM),
-                      ),
+                child: AsyncContent(
+                  asyncValue: autopaysAsync,
+                  onRetry: () => ref.invalidate(myAutopaysProvider),
+                  builder: (items) {
+                    final filtered = items
+                        .where((a) => _isOngoing ? _isActive(a) : !_isActive(a))
+                        .toList();
+                    if (filtered.isEmpty) {
+                      return Center(
+                        child: Text(
+                          _isOngoing
+                              ? 'No ongoing autopays'
+                              : 'No past autopays',
+                          style: kEmptyStateM,
+                        ),
+                      );
+                    }
+                    return ListView(
+                      children: filtered.map(_buildCampaignCard).toList(),
+                    );
+                  },
+                ),
               ),
             ],
           ),

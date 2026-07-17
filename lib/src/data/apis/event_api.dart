@@ -1,0 +1,177 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jamiat/src/data/models/api_response.dart';
+import 'package:jamiat/src/data/models/event_model.dart';
+import 'package:jamiat/src/data/models/paginated_response.dart';
+import 'package:jamiat/src/data/providers/api_provider.dart';
+
+class EventApi {
+  EventApi(this._api);
+
+  final ApiProvider _api;
+
+  Future<ApiResponse<PaginatedResponse<EventModel>>> listEvents({
+    int pageNo = 1,
+    int limit = 10,
+    String? search,
+  }) async {
+    final response = await _api.get(
+      '/event/list',
+      requireAuth: true,
+      queryParams: {
+        'page_no': '$pageNo',
+        'limit': '$limit',
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+    );
+
+    if (!response.success) {
+      return ApiResponse.error(
+        response.message ?? 'Failed to load events',
+        response.statusCode,
+      );
+    }
+
+    final items = nestedListData(
+      response.data,
+    ).map(EventModel.fromJson).toList();
+
+    return ApiResponse.success(
+      PaginatedResponse(
+        items: items,
+        totalCount: nestedTotalCount(response.data),
+        pageNo: pageNo,
+        limit: limit,
+      ),
+      response.statusCode ?? 200,
+    );
+  }
+
+  Future<ApiResponse<EventModel>> getEventById(String id) async {
+    final response = await _api.get('/event/$id', requireAuth: true);
+    if (!response.success) {
+      return ApiResponse.error(
+        response.message ?? 'Failed to load event',
+        response.statusCode,
+      );
+    }
+    final data = nestedData(response.data);
+    if (data == null) {
+      return ApiResponse.error('Invalid event response', response.statusCode);
+    }
+    return ApiResponse.success(
+      EventModel.fromJson(data),
+      response.statusCode ?? 200,
+    );
+  }
+
+  Future<ApiResponse<List<EventModel>>> getSavedEvents() async {
+    final response = await _api.get('/event/saved', requireAuth: true);
+    if (!response.success) {
+      return ApiResponse.error(
+        response.message ?? 'Failed to load saved events',
+        response.statusCode,
+      );
+    }
+    final items = nestedListData(
+      response.data,
+    ).map(EventModel.fromJson).toList();
+    return ApiResponse.success(items, response.statusCode ?? 200);
+  }
+
+  Future<ApiResponse<void>> bookmarkEvent(String eventId) async {
+    final response = await _api.post('/event/bookmark', {
+      'event_id': eventId,
+    }, requireAuth: true);
+    if (!response.success) {
+      return ApiResponse.error(
+        response.message ?? 'Failed to save event',
+        response.statusCode,
+      );
+    }
+    return ApiResponse.success(null, response.statusCode ?? 200);
+  }
+
+  Future<ApiResponse<void>> removeBookmark(String eventId) async {
+    final response = await _api.delete(
+      '/event/bookmark/$eventId',
+      requireAuth: true,
+    );
+    if (!response.success) {
+      return ApiResponse.error(
+        response.message ?? 'Failed to remove bookmark',
+        response.statusCode,
+      );
+    }
+    return ApiResponse.success(null, response.statusCode ?? 200);
+  }
+
+  Future<ApiResponse<EventTicketModel>> registerForEvent(String eventId) async {
+    final response = await _api.post(
+      '/event/$eventId/register',
+      const {},
+      requireAuth: true,
+    );
+    if (!response.success) {
+      return ApiResponse.error(
+        response.message ?? 'Registration failed',
+        response.statusCode,
+      );
+    }
+    final data = nestedData(response.data);
+    if (data == null) {
+      return ApiResponse.error(
+        'Invalid registration response',
+        response.statusCode,
+      );
+    }
+    return ApiResponse.success(
+      EventTicketModel.fromJson(data),
+      response.statusCode ?? 200,
+    );
+  }
+
+  Future<ApiResponse<List<EventTicketModel>>> getMyTickets({
+    String tab = 'upcoming',
+  }) async {
+    final response = await _api.get(
+      '/event/my-tickets',
+      requireAuth: true,
+      queryParams: {'tab': tab},
+    );
+    if (!response.success) {
+      return ApiResponse.error(
+        response.message ?? 'Failed to load tickets',
+        response.statusCode,
+      );
+    }
+    final items = nestedListData(
+      response.data,
+    ).map(EventTicketModel.fromJson).toList();
+    return ApiResponse.success(items, response.statusCode ?? 200);
+  }
+
+  Future<ApiResponse<EventTicketModel>> getTicketById(String ticketId) async {
+    final response = await _api.get(
+      '/event/ticket/$ticketId',
+      requireAuth: true,
+    );
+    if (!response.success) {
+      return ApiResponse.error(
+        response.message ?? 'Failed to load ticket',
+        response.statusCode,
+      );
+    }
+    final data = nestedData(response.data);
+    if (data == null) {
+      return ApiResponse.error('Invalid ticket response', response.statusCode);
+    }
+    return ApiResponse.success(
+      EventTicketModel.fromJson(data),
+      response.statusCode ?? 200,
+    );
+  }
+}
+
+final eventApiProvider = Provider<EventApi>(
+  (ref) => EventApi(ref.watch(apiProviderProvider)),
+);

@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:jamiat/src/data/config/app_config.dart';
 import 'package:jamiat/src/data/models/api_response.dart';
 import 'package:jamiat/src/data/services/api_logger.dart';
@@ -26,8 +28,14 @@ class ApiProvider {
   Future<ApiResponse<Map<String, dynamic>>> get(
     String endpoint, {
     bool requireAuth = false,
+    Map<String, String>? queryParams,
   }) {
-    return _send('GET', endpoint, requireAuth: requireAuth);
+    return _send(
+      'GET',
+      endpoint,
+      requireAuth: requireAuth,
+      queryParams: queryParams,
+    );
   }
 
   Future<ApiResponse<Map<String, dynamic>>> post(
@@ -46,11 +54,20 @@ class ApiProvider {
     return _send('PATCH', endpoint, body: body, requireAuth: requireAuth);
   }
 
-  Future<ApiResponse<Map<String, dynamic>>> _send(
-    String method,
+  Future<ApiResponse<Map<String, dynamic>>> delete(
     String endpoint, {
-    Map<String, dynamic>? body,
-    required bool requireAuth,
+    bool requireAuth = false,
+  }) {
+    return _send('DELETE', endpoint, requireAuth: requireAuth);
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> postMultipart({
+    required String endpoint,
+    required String fieldName,
+    required Uint8List bytes,
+    required String filename,
+    required String mimeType,
+    bool requireAuth = true,
   }) async {
     if (baseUrl.isEmpty) {
       return ApiResponse.error(
@@ -61,6 +78,100 @@ class ApiProvider {
     late final Uri uri;
     try {
       uri = Uri.parse('$baseUrl$endpoint');
+    } on FormatException catch (error) {
+      return ApiResponse.error('The API address is invalid: $error');
+    }
+
+    final stopwatch = Stopwatch()..start();
+
+    try {
+      final headers = await _buildHeaders(
+        requireAuth: requireAuth,
+        includeJsonContentType: false,
+      );
+
+      final request = http.MultipartRequest('POST', uri)
+        ..headers.addAll(headers)
+        ..files.add(
+          http.MultipartFile.fromBytes(
+            fieldName,
+            bytes,
+            filename: filename,
+            contentType: MediaType.parse(mimeType),
+          ),
+        );
+
+      ApiLogger.request(
+        method: 'POST',
+        uri: uri,
+        headers: headers,
+        body: '<multipart $fieldName ${bytes.lengthInBytes} bytes>',
+      );
+
+      final streamed = await request.send().timeout(_timeout);
+      final response = await http.Response.fromStream(streamed);
+
+      stopwatch.stop();
+      ApiLogger.response(
+        method: 'POST',
+        uri: uri,
+        statusCode: response.statusCode,
+        body: response.body,
+        duration: stopwatch.elapsed,
+      );
+
+      return _parseResponse(response);
+    } on StateError catch (error) {
+      stopwatch.stop();
+      ApiLogger.error(
+        method: 'POST',
+        uri: uri,
+        error: error,
+        duration: stopwatch.elapsed,
+      );
+      return ApiResponse.error(error.message);
+    } on TimeoutException catch (error) {
+      stopwatch.stop();
+      ApiLogger.error(
+        method: 'POST',
+        uri: uri,
+        error: error,
+        duration: stopwatch.elapsed,
+      );
+      return ApiResponse.error('The request timed out. Please try again.');
+    } catch (error) {
+      stopwatch.stop();
+      ApiLogger.error(
+        method: 'POST',
+        uri: uri,
+        error: error,
+        duration: stopwatch.elapsed,
+      );
+      return ApiResponse.error('Upload failed. Please try again.');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> _send(
+    String method,
+    String endpoint, {
+    Map<String, dynamic>? body,
+    required bool requireAuth,
+    Map<String, String>? queryParams,
+  }) async {
+    if (baseUrl.isEmpty) {
+      return ApiResponse.error(
+        AppConfig.configurationError ?? 'API base URL is missing.',
+      );
+    }
+
+    late final Uri uri;
+    try {
+      final baseUri = Uri.parse('$baseUrl$endpoint');
+      uri = queryParams != null && queryParams.isNotEmpty
+          ? baseUri.replace(
+              queryParameters: {...baseUri.queryParameters, ...queryParams},
+            )
+          : baseUri;
     } on FormatException catch (error) {
       return ApiResponse.error('The API address is invalid: $error');
     }
@@ -88,6 +199,8 @@ class ApiProvider {
           await _client
               .patch(uri, headers: headers, body: encodedBody)
               .timeout(_timeout),
+        'DELETE' =>
+          await _client.delete(uri, headers: headers).timeout(_timeout),
         _ => throw UnsupportedError('Unsupported HTTP method: $method'),
       };
 
@@ -151,11 +264,15 @@ class ApiProvider {
     }
   }
 
-  Future<Map<String, String>> _buildHeaders({required bool requireAuth}) async {
-    final headers = <String, String>{
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-    };
+  Future<Map<String, String>> _buildHeaders({
+    required bool requireAuth,
+    bool includeJsonContentType = true,
+  }) async {
+    final headers = <String, String>{'Accept': 'application/json'};
+
+    if (includeJsonContentType) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     if (apiKey.isNotEmpty) {
       headers['x-api-key'] = apiKey;

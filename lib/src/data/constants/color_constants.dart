@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 // ── Brand (Figma: Jamiat Connect) ─────────────────────────────────────────────
 
 const kPrimaryColor = Color(0xFF00A54F); // Color/Primary · CTAs · Links · Brand
-const kSecondaryColor = Color(0xFFFBBD05); // Color/Secondary · Accents · Highlights
+const kSecondaryColor = Color(
+  0xFFFBBD05,
+); // Color/Secondary · Accents · Highlights
 const kAccentColor = Color(0xFFFFFFFF);
 
 const kBackgroundColor = Color(0xFFF4F4F4); // Color/bg
@@ -49,7 +51,9 @@ const Color kDaysLeftWarning = Color(0xFFC47A3A); // Campaigns · "X days left"
 
 const Color kGreen = Color(0xFF00A54F);
 const Color kLightGreen = Color(0xFFE4F3E7);
-const Color kContributionsBg = Color(0xFFEBFAF3); // Home · My Contributions card
+const Color kContributionsBg = Color(
+  0xFFEBFAF3,
+); // Home · My Contributions card
 
 const Color kQuickWelfareBg = Color(0xFFEFEFF9);
 const Color kQuickEventsBg = Color(0xFFFFFAF4);
