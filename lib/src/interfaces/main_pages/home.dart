@@ -218,129 +218,131 @@ class HomePage extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(24),
                   child: ColoredBox(
                     color: const Color(0xFFFEF9E7),
-                    child: SizedBox(
-                      height: 162,
-                      child: Stack(
-                        clipBehavior: Clip.hardEdge,
-                        children: [
-                          // Decorative wavy vectors on the right
-                          Positioned(
-                            right: -30,
-                            top: -20,
-                            width: 180,
-                            height: 140,
-                            child: Opacity(
-                              opacity: 0.85,
-                              child: Image.asset(
-                                'assets/pngs/medical_deco_1.png',
-                                fit: BoxFit.contain,
-                              ),
+                    child: Stack(
+                      clipBehavior: Clip.hardEdge,
+                      children: [
+                        // Decorative wavy vectors on the right
+                        Positioned(
+                          right: -30,
+                          top: -20,
+                          width: 180,
+                          height: 140,
+                          child: Opacity(
+                            opacity: 0.85,
+                            child: Image.asset(
+                              'assets/pngs/medical_deco_1.png',
+                              fit: BoxFit.contain,
                             ),
                           ),
-                          Positioned(
-                            right: -20,
-                            bottom: -50,
-                            width: 140,
-                            height: 170,
-                            child: Opacity(
-                              opacity: 0.75,
-                              child: Image.asset(
-                                'assets/pngs/medical_deco_3.png',
-                                fit: BoxFit.contain,
-                              ),
+                        ),
+                        Positioned(
+                          right: -20,
+                          bottom: -50,
+                          width: 140,
+                          height: 170,
+                          child: Opacity(
+                            opacity: 0.75,
+                            child: Image.asset(
+                              'assets/pngs/medical_deco_3.png',
+                              fit: BoxFit.contain,
                             ),
                           ),
-                          // Content
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
+                        ),
+                        // Content
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: kWhite,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'Medical Relief Fund',
+                                  style: kCaption12M.copyWith(
+                                    color: kTextColor,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              SizedBox(
+                                width: 210,
+                                child: Text(
+                                  'Millions lack healthcare; fund life-\nsaving medicine today.',
+                                  style: kBodyTitleSB.copyWith(
+                                    color: kTextColor,
+                                    fontSize: 17,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              GestureDetector(
+                                onTap: () {
+                                  HapticHelper.impact(HapticImpact.light);
+                                  NavigationService().pushNamed(
+                                    'DonationList',
+                                  );
+                                },
+                                child: Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
+                                    horizontal: 20,
+                                    vertical: 10,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: kWhite,
-                                    borderRadius: BorderRadius.circular(8),
+                                    color: kSecondaryColor,
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
-                                    'Medical Relief Fund',
+                                    'Donate Now',
                                     style: kCaption12M.copyWith(
                                       color: kTextColor,
                                       height: 1.2,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  width: 210,
-                                  child: Text(
-                                    'Millions lack healthcare; fund life-\nsaving medicine today.',
-                                    style: kBodyTitleSB.copyWith(
-                                      color: kTextColor,
-                                      fontSize: 17,
-                                      height: 1.2,
-                                    ),
-                                  ),
-                                ),
-                                const Spacer(),
-                                GestureDetector(
-                                  onTap: () {
-                                    HapticHelper.impact(HapticImpact.light);
-                                    NavigationService().pushNamed(
-                                      'DonationList',
-                                    );
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: kSecondaryColor,
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      'Donate Now',
-                                      style: kCaption12M.copyWith(
-                                        color: kTextColor,
-                                        height: 1.2,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
             ),
 
-            // Redesigned: Latest News List
+            // Latest News — Figma Frame 43 (370 × 172)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
                   kScreenPaddingH,
                   16,
                   kScreenPaddingH,
-                  12,
+                  8,
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Latest News', style: kSectionTitleSB),
+                    Expanded(
+                      child: Text('Latest News', style: kSectionTitleSB),
+                    ),
                     GestureDetector(
                       onTap: () {
                         HapticHelper.impact(HapticImpact.light);
                         NavigationService().pushNamed('NewsList');
                       },
-                      child: Text('See all', style: kLinkM),
+                      child: Text(
+                        'See all',
+                        style: kCaption12M.copyWith(color: kPrimaryColor),
+                      ),
                     ),
                   ],
                 ),
@@ -348,7 +350,7 @@ class HomePage extends ConsumerWidget {
             ),
             SliverToBoxAdapter(
               child: SizedBox(
-                height: 140,
+                height: 146,
                 child: Consumer(
                   builder: (context, ref, _) {
                     final newsAsync = ref.watch(newsListProvider);
@@ -368,7 +370,7 @@ class HomePage extends ConsumerWidget {
                             horizontal: kScreenPaddingH,
                           ),
                           itemCount: items.length,
-                          separatorBuilder: (_, _) => const SizedBox(width: 12),
+                          separatorBuilder: (_, _) => const SizedBox(width: 8),
                           itemBuilder: (context, index) {
                             final item = items[index];
                             return GestureDetector(
@@ -380,11 +382,11 @@ class HomePage extends ConsumerWidget {
                                 );
                               },
                               child: Container(
-                                width: 280,
+                                width: 323,
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
                                   color: kWhite,
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(14),
                                   border: Border.all(color: kBorder),
                                 ),
                                 child: Column(
@@ -392,30 +394,38 @@ class HomePage extends ConsumerWidget {
                                   children: [
                                     Text(
                                       item.subTitle ?? 'Announcement',
-                                      style: kCaption10M.copyWith(
+                                      style: kCaption12R.copyWith(
                                         color: kMutedText,
+                                        height: 1.2,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                    const SizedBox(height: 6),
+                                    const SizedBox(height: 8),
                                     Text(
                                       item.title,
-                                      style: kBodyTitleB.copyWith(
-                                        color: kTextColor,
-                                        fontSize: 14,
-                                      ),
+                                      style: kLabel15SB.copyWith(height: 1.2),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      item.description,
-                                      style: kCaption12R.copyWith(
-                                        color: kSecondaryTextColor,
+                                    const SizedBox(height: 8),
+                                    Expanded(
+                                      child: Text(
+                                        item.description,
+                                        style: kCaption12R.copyWith(
+                                          color: kTextColor,
+                                          height: 1.2,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      _formatNewsDate(item.createdAt),
+                                      style: kCaption10R.copyWith(
+                                        color: kMutedText,
+                                        height: 1.2,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -430,58 +440,88 @@ class HomePage extends ConsumerWidget {
               ),
             ),
 
-            // Redesigned: Empowerment Programs blue card
+            // Empowerment Programs banner — Figma Frame 46
+            // Asset already includes light-blue left + soft fade into photo
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: kScreenPaddingH,
                   vertical: 24,
                 ),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF), // Blue background
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFDBEAFE)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Empowerment Programs',
-                        style: kBodyTitleB.copyWith(
-                          color: const Color(0xFF1E3A8A),
-                          fontSize: 16,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: AspectRatio(
+                    aspectRatio: 370 / 212,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.asset(
+                          'assets/pngs/empowerment_image.png',
+                          fit: BoxFit.cover,
+                          alignment: Alignment.center,
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'For skill building, financial support, and active services.',
-                        style: kCaption12R.copyWith(
-                          color: const Color(0xFF2563EB),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      ElevatedButton(
-                        onPressed: () {
-                          HapticHelper.impact(HapticImpact.light);
-                          NavigationService().pushNamed('EmpowermentPrograms');
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2563EB),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Explore our',
+                                style: kBodyTitleR.copyWith(
+                                  color: kWhite,
+                                  height: 1.2,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Empowerment\nPrograms',
+                                style: kHeadTitleSB.copyWith(
+                                  color: kWhite,
+                                  height: 1.15,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: 168,
+                                child: Text(
+                                  'for skill building, financial aid requests, and welfare services.',
+                                  style: kCaption12R.copyWith(
+                                    color: kWhite,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ),
+                              const Spacer(),
+                              GestureDetector(
+                                onTap: () {
+                                  HapticHelper.impact(HapticImpact.light);
+                                  NavigationService().pushNamed(
+                                    'EmpowermentPrograms',
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: kPrimaryColor,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    'Explore Programs',
+                                    style: kCaption12M.copyWith(
+                                      color: kWhite,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        child: Text(
-                          'Explore Programs',
-                          style: kCaption12M.copyWith(
-                            color: kWhite,
-                            fontWeight: kBold,
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1244,4 +1284,23 @@ class _ContributeButton extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatNewsDate(DateTime? date) {
+  if (date == null) return '';
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  return '${date.day} ${months[date.month - 1]} ${date.year}';
 }
