@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:jamiat/src/data/apis/user_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/models/campaign_model.dart';
@@ -64,6 +65,11 @@ class HomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isJamiatMember = ref.watch(userProfileProvider).maybeWhen(
+          data: (user) => user.role == 'jamiat_member',
+          orElse: () => false,
+        );
+
     return Scaffold(
       backgroundColor: kWhite,
       body: SafeArea(
@@ -85,14 +91,16 @@ class HomePage extends ConsumerWidget {
                     const _HomeHeader(),
                     const SizedBox(height: 20),
                     const _ContributionsCard(),
-                    const SizedBox(height: 24),
-                    Text('Quick Access', style: kSectionTitleSB),
-                    const SizedBox(height: 12),
+                    if (isJamiatMember) ...[
+                      const SizedBox(height: 24),
+                      Text('Quick Access', style: kSectionTitleSB),
+                      const SizedBox(height: 12),
+                    ],
                   ],
                 ),
               ),
             ),
-            const _QuickAccessList(),
+            if (isJamiatMember) const _QuickAccessList(),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -120,7 +128,8 @@ class HomePage extends ConsumerWidget {
             const SliverToBoxAdapter(child: _ActiveCampaignsSection()),
 
             // Jamiat Market Place promo — Figma 2248:718
-            SliverToBoxAdapter(
+            if (isJamiatMember)
+              SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: kScreenPaddingH,
@@ -205,7 +214,8 @@ class HomePage extends ConsumerWidget {
             ),
 
             // Redesigned: Welfare Grid Section
-            const SliverToBoxAdapter(child: _WelfareGridSection()),
+            if (isJamiatMember)
+              const SliverToBoxAdapter(child: _WelfareGridSection()),
 
             // Medical Relief Fund banner — Figma 2248:756 / Frame 2001
             SliverToBoxAdapter(
@@ -442,7 +452,8 @@ class HomePage extends ConsumerWidget {
 
             // Empowerment Programs banner — Figma Frame 46
             // Asset already includes light-blue left + soft fade into photo
-            SliverToBoxAdapter(
+            if (isJamiatMember)
+              SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: kScreenPaddingH,

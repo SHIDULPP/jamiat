@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:jamiat/src/data/apis/user_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/router/nav_router.dart';
@@ -32,6 +33,8 @@ class DonationListScreen extends ConsumerStatefulWidget {
 }
 
 class _DonationListScreenState extends ConsumerState<DonationListScreen> {
+  static const _jamiatOnlyCategories = {'Zakat', 'Building Mosque'};
+
   late TextEditingController _searchController;
 
   final List<_DonationCategory> _categories = const [
@@ -93,10 +96,18 @@ class _DonationListScreenState extends ConsumerState<DonationListScreen> {
     super.dispose();
   }
 
-  List<_DonationCategory> _getFilteredCategories() {
+  List<_DonationCategory> _categoriesForRole(String role) {
+    if (role == 'jamiat_member') return _categories;
+    return _categories
+        .where((category) => !_jamiatOnlyCategories.contains(category.title))
+        .toList();
+  }
+
+  List<_DonationCategory> _getFilteredCategories(String role) {
+    final categories = _categoriesForRole(role);
     final query = _searchController.text.toLowerCase().trim();
-    if (query.isEmpty) return _categories;
-    return _categories.where((item) {
+    if (query.isEmpty) return categories;
+    return categories.where((item) {
       return item.title.toLowerCase().contains(query) ||
           item.description.toLowerCase().contains(query);
     }).toList();
@@ -237,7 +248,11 @@ class _DonationListScreenState extends ConsumerState<DonationListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredCategories = _getFilteredCategories();
+    final role = ref.watch(userProfileProvider).maybeWhen(
+          data: (user) => user.role,
+          orElse: () => 'normal_member',
+        );
+    final filteredCategories = _getFilteredCategories(role);
 
     return Scaffold(
       backgroundColor: kWhite,
