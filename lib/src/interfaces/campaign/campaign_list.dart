@@ -1,33 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
+import 'package:jamiat/src/data/router/nav_router.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 
 class _DonationCategory {
   final String title;
   final String description;
-  final IconData icon;
+  final String iconAsset;
   final Color iconBgColor;
-  final Color iconColor;
+  final IconData fallbackIcon;
 
   const _DonationCategory({
     required this.title,
     required this.description,
-    required this.icon,
+    required this.iconAsset,
     required this.iconBgColor,
-    required this.iconColor,
+    required this.fallbackIcon,
   });
 }
 
-class DonationListScreen extends StatefulWidget {
+class DonationListScreen extends ConsumerStatefulWidget {
   const DonationListScreen({super.key});
 
   @override
-  State<DonationListScreen> createState() => _DonationListScreenState();
+  ConsumerState<DonationListScreen> createState() =>
+      _DonationListScreenState();
 }
 
-class _DonationListScreenState extends State<DonationListScreen> {
+class _DonationListScreenState extends ConsumerState<DonationListScreen> {
   late TextEditingController _searchController;
 
   final List<_DonationCategory> _categories = const [
@@ -35,45 +39,45 @@ class _DonationListScreenState extends State<DonationListScreen> {
       title: 'General Campaign',
       description:
           'All active fundraisers, including specific, targeted campaigns.',
-      icon: Icons.volunteer_activism_outlined,
-      iconBgColor: Color(0xFFFFF7ED), // Soft orange/peach
-      iconColor: Color(0xFFEA580C),
+      iconAsset: 'assets/svg/generalcampaign.svg',
+      iconBgColor: Color(0xFFFFF7ED),
+      fallbackIcon: Icons.volunteer_activism_outlined,
     ),
     _DonationCategory(
       title: 'General Funding',
       description: 'Empower our ongoing community projects.',
-      icon: Icons.savings_outlined,
-      iconBgColor: Color(0xFFFEF2F2), // Soft red/pink
-      iconColor: Color(0xFFDC2626),
+      iconAsset: 'assets/svg/generalfunding.svg',
+      iconBgColor: Color(0xFFFEF2F2),
+      fallbackIcon: Icons.savings_outlined,
     ),
     _DonationCategory(
       title: 'Zakat',
       description: 'Fulfill your obligatory charity safely and securely.',
-      icon: Icons.payments_outlined,
-      iconBgColor: Color(0xFFF0FDF4), // Soft green
-      iconColor: Color(0xFF16A34A),
+      iconAsset: 'assets/svg/zakat.svg',
+      iconBgColor: Color(0xFFF0FDF4),
+      fallbackIcon: Icons.payments_outlined,
     ),
     _DonationCategory(
       title: 'Orphan',
       description: 'Provide daily essentials and learning for children.',
-      icon: Icons.favorite_border_outlined,
-      iconBgColor: Color(0xFFFDF4FF), // Soft purple/pink
-      iconColor: Color(0xFFC084FC),
+      iconAsset: 'assets/svg/orphan.svg',
+      iconBgColor: Color(0xFFFDF4FF),
+      fallbackIcon: Icons.favorite_border_outlined,
     ),
     _DonationCategory(
       title: 'Building Mosque',
       description: 'Contribute to building and maintaining holy spaces.',
-      icon: Icons.mosque,
-      iconBgColor: Color(0xFFEFF6FF), // Soft blue
-      iconColor: Color(0xFF2563EB),
+      iconAsset: 'assets/svg/buildingmosque.svg',
+      iconBgColor: Color(0xFFEFF6FF),
+      fallbackIcon: Icons.mosque,
     ),
     _DonationCategory(
       title: 'Medical Releif',
       description:
           'Support underprivileged families facing urgent health crises.',
-      icon: Icons.monitor_heart_outlined,
-      iconBgColor: Color(0xFFFFF5F5), // Soft red
-      iconColor: Color(0xFFEF4444),
+      iconAsset: 'assets/svg/medicalreif.svg',
+      iconBgColor: Color(0xFFFFF5EB),
+      fallbackIcon: Icons.monitor_heart_outlined,
     ),
   ];
 
@@ -98,46 +102,62 @@ class _DonationListScreenState extends State<DonationListScreen> {
     }).toList();
   }
 
+  void _viewActive() {
+    HapticHelper.impact(HapticImpact.light);
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+    ref.read(selectedIndexProvider.notifier).updateIndex(1);
+  }
+
+  Widget _buildBackButton() {
+    return GestureDetector(
+      onTap: () {
+        HapticHelper.impact(HapticImpact.light);
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+      },
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: kWhite,
+          border: Border.all(color: kBorder, width: 1.25),
+        ),
+        child: const Icon(Icons.arrow_back, color: kTextColor, size: 20),
+      ),
+    );
+  }
+
   Widget _buildSearchField() {
     return Container(
       decoration: BoxDecoration(
         color: kWhite,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+        border: Border.all(color: kBorder, width: 1),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          const Icon(Icons.search, color: kSecondaryTextColor, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              style: kBodyTitleR.copyWith(color: kTextColor),
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                hintText: 'Search for services',
+                hintStyle: kBodyTitleR.copyWith(color: kSecondaryTextColor),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
           ),
         ],
-      ),
-      child: TextField(
-        controller: _searchController,
-        style: kBodyTitleR.copyWith(color: kTextColor),
-        onChanged: (val) {
-          setState(() {});
-        },
-        decoration: InputDecoration(
-          prefixIcon: const Icon(Icons.search, color: kSecondaryTextColor),
-          hintText: 'Search for services',
-          hintStyle: kBodyTitleR.copyWith(color: kSecondaryTextColor),
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 18,
-            horizontal: 16,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: kBorder, width: 1),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: kBorder, width: 1),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: kPrimaryColor, width: 1.5),
-          ),
-        ),
       ),
     );
   }
@@ -153,24 +173,23 @@ class _DonationListScreenState extends State<DonationListScreen> {
             arguments: {
               'title': item.title,
               'description': item.description,
-              'icon': item.icon,
+              'icon': item.fallbackIcon,
               'iconBgColor': item.iconBgColor,
-              'iconColor': item.iconColor,
+              'iconColor': kTextColor,
+              'category': item.title,
             },
           );
         },
-
-        borderRadius: BorderRadius.circular(kCardRadiusLg),
+        borderRadius: BorderRadius.circular(kCardRadiusMd),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: kScreenBg,
-            borderRadius: BorderRadius.circular(kCardRadiusLg),
+            borderRadius: BorderRadius.circular(kCardRadiusMd),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Icon Container
               Container(
                 width: 54,
                 height: 54,
@@ -179,11 +198,14 @@ class _DonationListScreenState extends State<DonationListScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
-                  child: Icon(item.icon, color: item.iconColor, size: 26),
+                  child: SvgPicture.asset(
+                    item.iconAsset,
+                    width: 32,
+                    height: 32,
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
-              // Details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,86 +242,71 @@ class _DonationListScreenState extends State<DonationListScreen> {
     return Scaffold(
       backgroundColor: kWhite,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top Bar
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingH,
+                16,
+                kScreenPaddingH,
+                0,
+              ),
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      _buildBackButton(),
                       GestureDetector(
-                        onTap: () {
-                          if (Navigator.canPop(context)) {
-                            Navigator.pop(context);
-                          }
-                        },
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: kWhite,
-                            border: Border.all(color: kBorder, width: 1.25),
+                        onTap: _viewActive,
+                        child: Text(
+                          'View Active',
+                          style: kCaption14M.copyWith(
+                            color: kBlue,
+                            fontWeight: kBold,
                           ),
-                          child: const Icon(
-                            Icons.arrow_back,
-                            color: kTextColor,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Text(
-                        'Donations',
-                        style: kHeadTitleB.copyWith(
-                          color: kTextColor,
-                          fontSize: 22,
                         ),
                       ),
                     ],
                   ),
-                  TextButton(
-                    onPressed: () {
-                      HapticHelper.impact(HapticImpact.light);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Viewing active campaigns...'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
-                    style: TextButton.styleFrom(
-                      foregroundColor: kBlue,
-                      textStyle: kCaption14M.copyWith(fontWeight: kBold),
+                  Text(
+                    'Donations',
+                    style: kHeadTitleB.copyWith(
+                      color: kTextColor,
+                      fontSize: 22,
                     ),
-                    child: const Text('View Active'),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-
-              // Search Bar
-              _buildSearchField(),
-              const SizedBox(height: 24),
-
-              // Categories List
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingH,
+                20,
+                kScreenPaddingH,
+                0,
+              ),
+              child: _buildSearchField(),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(
+                  kScreenPaddingH,
+                  0,
+                  kScreenPaddingH,
+                  24,
+                ),
                 itemCount: filteredCategories.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 16),
+                separatorBuilder: (context, index) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   return _buildCategoryCard(filteredCategories[index]);
                 },
               ),
-              const SizedBox(height: 24),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
