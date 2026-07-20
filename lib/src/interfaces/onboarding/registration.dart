@@ -29,6 +29,13 @@ class RegistrationScreen extends ConsumerStatefulWidget {
 }
 
 class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
+  static const double _figmaWidth = 402;
+  static const double _fieldHeight = 66;
+  static const double _fieldGap = 16;
+  static const double _labelGap = 8;
+  static const double _avatarSize = 120;
+  static const double _cameraBadgeSize = 32;
+
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController _nameController;
@@ -88,8 +95,16 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     if (!mounted || phone == null) return;
     setState(() {
       _verifiedPhone = phone;
-      _phoneController.text = phone;
+      _phoneController.text = _phoneDigits(phone);
     });
+  }
+
+  String _phoneDigits(String phone) {
+    final cleaned = phone.replaceAll(RegExp(r'[^\d]'), '');
+    if (cleaned.length > 10 && cleaned.startsWith('91')) {
+      return cleaned.substring(cleaned.length - 10);
+    }
+    return cleaned;
   }
 
   void _ensureInList(List<String> list, String? value) {
@@ -127,7 +142,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
 
     final phone = user.phone.isNotEmpty ? user.phone : _verifiedPhone;
     _verifiedPhone = phone;
-    _phoneController.text = phone;
+    _phoneController.text = _phoneDigits(phone);
 
     final whatsapp = user.whatsappNo ?? '';
     final sameAsPhone = whatsapp.isEmpty || whatsapp == phone;
@@ -242,7 +257,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
 
   OutlineInputBorder _fieldBorder({Color? color, double width = 1.0}) {
     return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(kCardRadiusLg),
       borderSide: BorderSide(color: color ?? kBorder, width: width),
     );
   }
@@ -250,13 +265,17 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   InputDecoration _inputDecoration({
     required String hintText,
     Widget? suffixIcon,
+    EdgeInsetsGeometry? contentPadding,
   }) {
     return InputDecoration(
       filled: true,
       fillColor: kWhite,
       hintText: hintText,
       hintStyle: kBodyTitleR.copyWith(color: kSecondaryTextColor),
-      contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      contentPadding:
+          contentPadding ??
+          const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
+      constraints: const BoxConstraints(minHeight: _fieldHeight),
       border: _fieldBorder(),
       enabledBorder: _fieldBorder(),
       focusedBorder: _fieldBorder(color: kPrimaryColor, width: 1.5),
@@ -268,8 +287,45 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
 
   Widget _buildLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(text, style: kLabel15M.copyWith(color: kTextColor)),
+      padding: const EdgeInsets.only(bottom: _labelGap),
+      child: Text(text, style: kLabel15M.copyWith(height: 1.2)),
+    );
+  }
+
+  Widget _buildIntlPhoneField({
+    required TextEditingController controller,
+    required String hintText,
+    required bool enabled,
+    FocusNode? focusNode,
+    void Function(String completeNumber)? onChanged,
+  }) {
+    return IntlPhoneField(
+      focusNode: focusNode,
+      controller: controller,
+      initialCountryCode: 'IN',
+      disableLengthCheck: true,
+      showCountryFlag: false,
+      showDropdownIcon: true,
+      enabled: enabled,
+      cursorColor: kBlack,
+      style: kBodyTitleR.copyWith(
+        color: enabled ? kTextColor : kSecondaryTextColor,
+      ),
+      dropdownTextStyle: kBodyTitleR.copyWith(
+        color: enabled ? kTextColor : kSecondaryTextColor,
+      ),
+      dropdownIcon: const Icon(
+        Icons.keyboard_arrow_down,
+        color: kSecondaryTextColor,
+        size: 20,
+      ),
+      dropdownIconPosition: IconPosition.trailing,
+      flagsButtonPadding: const EdgeInsets.only(left: 18, right: 8),
+      decoration: _inputDecoration(hintText: hintText),
+      onCountryChanged: (_) {},
+      onChanged: (phone) {
+        onChanged?.call(phone.completeNumber.replaceAll(' ', ''));
+      },
     );
   }
 
@@ -285,47 +341,24 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildLabel(label),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          enabled: enabled,
-          style: kBodyTitleR.copyWith(color: kTextColor),
-          validator: validator,
-          decoration: _inputDecoration(hintText: hintText),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDropdownField({
-    required String label,
-    required String? value,
-    required List<String> items,
-    required String hintText,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildLabel(label),
-        DropdownButtonFormField<String>(
-          initialValue: value,
-          items: items
-              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-              .toList(),
-          onChanged: onChanged,
-          decoration: _inputDecoration(hintText: hintText),
-          style: kBodyTitleR.copyWith(color: kTextColor),
-          icon: const Icon(
-            Icons.keyboard_arrow_down,
-            color: kSecondaryTextColor,
+        SizedBox(
+          height: _fieldHeight,
+          child: TextFormField(
+            controller: controller,
+            keyboardType: keyboardType,
+            enabled: enabled,
+            style: kBodyTitleR.copyWith(
+              color: enabled ? kTextColor : kSecondaryTextColor,
+            ),
+            validator: validator,
+            decoration: _inputDecoration(hintText: hintText),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildLocationPickerField({
+  Widget _buildSelectField({
     required String label,
     required String? value,
     required String hintText,
@@ -339,28 +372,55 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
         _buildLabel(label),
         GestureDetector(
           onTap: onTap,
-          child: InputDecorator(
-            decoration: _inputDecoration(hintText: hintText).copyWith(
-              errorText: errorText,
-              suffixIcon: isLoading
-                  ? const Padding(
-                      padding: EdgeInsets.all(14),
-                      child: LoadingAnimation(size: 20),
-                    )
-                  : const Icon(
-                      Icons.keyboard_arrow_down,
-                      color: kSecondaryTextColor,
-                    ),
-            ),
-            child: Text(
-              value ?? hintText,
-              style: kBodyTitleR.copyWith(
-                color: value == null ? kSecondaryTextColor : kTextColor,
+          child: SizedBox(
+            height: _fieldHeight,
+            child: InputDecorator(
+              decoration: _inputDecoration(hintText: hintText).copyWith(
+                errorText: errorText,
+                suffixIcon: isLoading
+                    ? const Padding(
+                        padding: EdgeInsets.all(14),
+                        child: LoadingAnimation(size: 20),
+                      )
+                    : const Icon(
+                        Icons.keyboard_arrow_down,
+                        color: kSecondaryTextColor,
+                        size: 20,
+                      ),
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value ?? hintText,
+                  style: kBodyTitleR.copyWith(
+                    color: value == null ? kSecondaryTextColor : kTextColor,
+                  ),
+                ),
               ),
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildGenderField() {
+    return _buildSelectField(
+      label: 'Gender',
+      value: _selectedGender,
+      hintText: 'Select',
+      onTap: () {
+        ModalSheet<String>(
+          context: context,
+          title: 'Select gender',
+          searchHint: 'Search gender',
+          items: _genders,
+          itemLabel: (value) => value,
+          onItemSelected: (value) {
+            setState(() => _selectedGender = value);
+          },
+        ).show();
+      },
     );
   }
 
@@ -372,12 +432,13 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
           data: (countries) {
             final countryMap = {
               for (final country in countries)
-                if ((country.iso2 ?? '').isNotEmpty) country.iso2!: country.name ?? '',
+                if ((country.iso2 ?? '').isNotEmpty)
+                  country.iso2!: country.name ?? '',
             };
-            return _buildLocationPickerField(
+            return _buildSelectField(
               label: 'Country',
               value: _selectedCountryName,
-              hintText: 'Select country',
+              hintText: 'Select',
               onTap: () {
                 ModalSheet<String>(
                   context: context,
@@ -405,17 +466,17 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
               },
             );
           },
-          loading: () => _buildLocationPickerField(
+          loading: () => _buildSelectField(
             label: 'Country',
             value: _selectedCountryName,
-            hintText: 'Select country',
+            hintText: 'Select',
             onTap: null,
             isLoading: true,
           ),
-          error: (error, _) => _buildLocationPickerField(
+          error: (error, _) => _buildSelectField(
             label: 'Country',
             value: _selectedCountryName,
-            hintText: 'Select country',
+            hintText: 'Select',
             onTap: null,
             errorText: 'Unable to load countries',
           ),
@@ -425,133 +486,139 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   }
 
   Widget _buildStateField() {
-    if (_selectedCountryCode == null) return const SizedBox.shrink();
+    return Consumer(
+      builder: (context, ref, _) {
+        if (_selectedCountryCode == null) {
+          return _buildSelectField(
+            label: 'State',
+            value: null,
+            hintText: 'Select',
+            onTap: null,
+          );
+        }
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 20),
-      child: Consumer(
-        builder: (context, ref, _) {
-          final statesAsync = ref.watch(
-            getStatesByCountryProvider(_selectedCountryCode!),
-          );
-          return statesAsync.when(
-            data: (states) {
-              final stateMap = {
-                for (final state in states)
-                  state.stateCode.toString(): state.name ?? '',
-              };
-              return _buildLocationPickerField(
-                label: 'State',
-                value: _selectedStateName,
-                hintText: 'Select state',
-                onTap: () {
-                  ModalSheet<String>(
-                    context: context,
-                    title: 'Select state',
-                    searchHint: 'Search state',
-                    items: stateMap.keys.toList(),
-                    itemLabel: (code) => stateMap[code] ?? code,
-                    searchFilter: (code, query) {
-                      final name = stateMap[code] ?? '';
-                      final q = query.toLowerCase();
-                      return name.toLowerCase().contains(q) ||
-                          code.toLowerCase().contains(q);
-                    },
-                    onItemSelected: (code) {
-                      setState(() {
-                        _selectedStateCode = code;
-                        _selectedStateName = stateMap[code];
-                        _selectedDistrictCode = null;
-                        _selectedDistrictName = null;
-                      });
-                    },
-                  ).show();
-                },
-              );
-            },
-            loading: () => _buildLocationPickerField(
+        final statesAsync = ref.watch(
+          getStatesByCountryProvider(_selectedCountryCode!),
+        );
+        return statesAsync.when(
+          data: (states) {
+            final stateMap = {
+              for (final state in states)
+                state.stateCode.toString(): state.name ?? '',
+            };
+            return _buildSelectField(
               label: 'State',
               value: _selectedStateName,
-              hintText: 'Select state',
-              onTap: null,
-              isLoading: true,
-            ),
-            error: (error, _) => _buildLocationPickerField(
-              label: 'State',
-              value: _selectedStateName,
-              hintText: 'Select state',
-              onTap: null,
-              errorText: 'Unable to load states',
-            ),
-          );
-        },
-      ),
+              hintText: 'Select',
+              onTap: () {
+                ModalSheet<String>(
+                  context: context,
+                  title: 'Select state',
+                  searchHint: 'Search state',
+                  items: stateMap.keys.toList(),
+                  itemLabel: (code) => stateMap[code] ?? code,
+                  searchFilter: (code, query) {
+                    final name = stateMap[code] ?? '';
+                    final q = query.toLowerCase();
+                    return name.toLowerCase().contains(q) ||
+                        code.toLowerCase().contains(q);
+                  },
+                  onItemSelected: (code) {
+                    setState(() {
+                      _selectedStateCode = code;
+                      _selectedStateName = stateMap[code];
+                      _selectedDistrictCode = null;
+                      _selectedDistrictName = null;
+                    });
+                  },
+                ).show();
+              },
+            );
+          },
+          loading: () => _buildSelectField(
+            label: 'State',
+            value: _selectedStateName,
+            hintText: 'Select',
+            onTap: null,
+            isLoading: true,
+          ),
+          error: (error, _) => _buildSelectField(
+            label: 'State',
+            value: _selectedStateName,
+            hintText: 'Select',
+            onTap: null,
+            errorText: 'Unable to load states',
+          ),
+        );
+      },
     );
   }
 
   Widget _buildDistrictField() {
-    if (_selectedCountryCode == null || _selectedStateCode == null) {
-      return const SizedBox.shrink();
-    }
+    return Consumer(
+      builder: (context, ref, _) {
+        if (_selectedCountryCode == null || _selectedStateCode == null) {
+          return _buildSelectField(
+            label: 'District',
+            value: null,
+            hintText: 'Select',
+            onTap: null,
+          );
+        }
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 20),
-      child: Consumer(
-        builder: (context, ref, _) {
-          final districtsAsync = ref.watch(
-            getDistrictsByStateProvider((
-              countryCode: _selectedCountryCode!,
-              stateCode: _selectedStateCode!,
-            )),
-          );
-          return districtsAsync.when(
-            data: (districts) {
-              final districtMap = {
-                for (final district in districts)
-                  district.id.toString(): district.name ?? '',
-              };
-              return _buildLocationPickerField(
-                label: 'District',
-                value: _selectedDistrictName,
-                hintText: 'Select district',
-                onTap: () {
-                  ModalSheet<String>(
-                    context: context,
-                    title: 'Select district',
-                    searchHint: 'Search district',
-                    items: districtMap.keys.toList(),
-                    itemLabel: (id) => districtMap[id] ?? id,
-                    searchFilter: (id, query) {
-                      final name = districtMap[id] ?? '';
-                      return name.toLowerCase().contains(query.toLowerCase());
-                    },
-                    onItemSelected: (id) {
-                      setState(() {
-                        _selectedDistrictCode = id;
-                        _selectedDistrictName = districtMap[id];
-                      });
-                    },
-                  ).show();
-                },
-              );
-            },
-            loading: () => _buildLocationPickerField(
+        final districtsAsync = ref.watch(
+          getDistrictsByStateProvider((
+            countryCode: _selectedCountryCode!,
+            stateCode: _selectedStateCode!,
+          )),
+        );
+        return districtsAsync.when(
+          data: (districts) {
+            final districtMap = {
+              for (final district in districts)
+                district.id.toString(): district.name ?? '',
+            };
+            return _buildSelectField(
               label: 'District',
               value: _selectedDistrictName,
-              hintText: 'Select district',
-              onTap: null,
-              isLoading: true,
-            ),
-            error: (error, _) => _buildLocationPickerField(
-              label: 'District',
-              value: _selectedDistrictName,
-              hintText: 'Select district',
-              onTap: null,
-              errorText: 'Unable to load districts',
-            ),
-          );
-        },
-      ),
+              hintText: 'Select',
+              onTap: () {
+                ModalSheet<String>(
+                  context: context,
+                  title: 'Select district',
+                  searchHint: 'Search district',
+                  items: districtMap.keys.toList(),
+                  itemLabel: (id) => districtMap[id] ?? id,
+                  searchFilter: (id, query) {
+                    final name = districtMap[id] ?? '';
+                    return name.toLowerCase().contains(query.toLowerCase());
+                  },
+                  onItemSelected: (id) {
+                    setState(() {
+                      _selectedDistrictCode = id;
+                      _selectedDistrictName = districtMap[id];
+                    });
+                  },
+                ).show();
+              },
+            );
+          },
+          loading: () => _buildSelectField(
+            label: 'District',
+            value: _selectedDistrictName,
+            hintText: 'Select',
+            onTap: null,
+            isLoading: true,
+          ),
+          error: (error, _) => _buildSelectField(
+            label: 'District',
+            value: _selectedDistrictName,
+            hintText: 'Select',
+            onTap: null,
+            errorText: 'Unable to load districts',
+          ),
+        );
+      },
     );
   }
 
@@ -564,47 +631,47 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildLabel(label),
-        TextFormField(
-          controller: controller,
-          readOnly: true,
-          style: kBodyTitleR.copyWith(color: kTextColor),
-          decoration: _inputDecoration(
-            hintText: 'DD/MM/YYYY',
-            suffixIcon: const Icon(Icons.calendar_today_outlined, size: 18),
-          ),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Date of birth is required';
-            }
-            return null;
-          },
-          onTap: () async {
-            final now = DateTime.now();
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: DateTime(now.year - 18),
-              firstDate: DateTime(1920),
-              lastDate: now,
-              builder: (context, child) {
-                return Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: const ColorScheme.light(
-                      primary: kPrimaryColor,
+        SizedBox(
+          height: _fieldHeight,
+          child: TextFormField(
+            controller: controller,
+            readOnly: true,
+            style: kBodyTitleR.copyWith(color: kTextColor),
+            decoration: _inputDecoration(hintText: 'dd/mm/yyyy'),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Date of birth is required';
+              }
+              return null;
+            },
+            onTap: () async {
+              final now = DateTime.now();
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: DateTime(now.year - 18),
+                firstDate: DateTime(1920),
+                lastDate: now,
+                builder: (context, child) {
+                  return Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: const ColorScheme.light(
+                        primary: kPrimaryColor,
+                      ),
                     ),
-                  ),
-                  child: child!,
-                );
-              },
-            );
-            if (picked != null) {
-              final day = picked.day.toString().padLeft(2, '0');
-              final month = picked.month.toString().padLeft(2, '0');
-              final year = picked.year.toString();
-              setState(() {
-                controller.text = '$day/$month/$year';
-              });
-            }
-          },
+                    child: child!,
+                  );
+                },
+              );
+              if (picked != null) {
+                final day = picked.day.toString().padLeft(2, '0');
+                final month = picked.month.toString().padLeft(2, '0');
+                final year = picked.year.toString();
+                setState(() {
+                  controller.text = '$day/$month/$year';
+                });
+              }
+            },
+          ),
         ),
       ],
     );
@@ -762,20 +829,60 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     final image = _imageUrl;
     if (image != null && image.startsWith('http')) {
       return CircleAvatar(
-        radius: 60,
-        backgroundColor: const Color(0xFFD9D9D9),
+        radius: _avatarSize / 2,
+        backgroundColor: kGreyLight,
         backgroundImage: NetworkImage(image),
         onBackgroundImageError: (_, _) {},
       );
     }
     return Container(
-      width: 120,
-      height: 120,
+      width: _avatarSize,
+      height: _avatarSize,
       decoration: const BoxDecoration(
-        color: Color(0xFFD9D9D9),
+        color: kGreyLight,
         shape: BoxShape.circle,
       ),
-      child: const Icon(Icons.person, size: 64, color: Color(0xFF999999)),
+    );
+  }
+
+  Widget _buildWhatsAppCheckbox() {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _sameAsPhoneNumber = !_sameAsPhoneNumber;
+          if (_sameAsPhoneNumber) {
+            _whatsappController.text = _phoneController.text;
+            _whatsappFullNumber = _verifiedPhone;
+          }
+        });
+      },
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: _labelGap),
+        child: Row(
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: _sameAsPhoneNumber ? kPrimaryColor : kBorder,
+                  width: 1.5,
+                ),
+                color: _sameAsPhoneNumber ? kPrimaryColor : Colors.transparent,
+              ),
+              child: _sameAsPhoneNumber
+                  ? const Icon(Icons.check, size: 16, color: kWhite)
+                  : null,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Same as phone number',
+              style: kCaption12R.copyWith(color: kTextColor),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -793,11 +900,24 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       }
     }
 
+    final size = MediaQuery.sizeOf(context);
+    final topInset = MediaQuery.paddingOf(context).top;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final scale = (size.width / _figmaWidth).clamp(0.88, 1.12);
+    final topPadding = (64 * scale - topInset).clamp(0.0, 64 * scale);
+    final sideInset = 24 * scale;
+
     return Scaffold(
       backgroundColor: kWhite,
       body: SafeArea(
+        top: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          padding: EdgeInsets.fromLTRB(
+            sideInset,
+            topPadding,
+            sideInset,
+            24 * scale + bottomInset,
+          ),
           child: Form(
             key: _formKey,
             child: Column(
@@ -824,63 +944,71 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
+                SizedBox(height: 32 * scale),
                 Text(
                   widget.isEditMode ? 'Edit profile' : 'Profile setup',
-                  style: kHeadTitleB.copyWith(color: kTextColor, fontSize: 24),
+                  style: kHeadTitleSB.copyWith(
+                    color: kTextColor,
+                    fontSize: kSize23,
+                    height: 27 / kSize23,
+                  ),
                 ),
-                const SizedBox(height: 6),
                 Text(
                   widget.isEditMode
                       ? 'Update your details and keep your community profile current.'
                       : 'Complete your details to connect with the community and access your services.',
-                  style: kCaption13R.copyWith(color: kSecondaryTextColor),
-                ),
-                const SizedBox(height: 32),
-                Center(
-                  child: Stack(
-                    children: [
-                      _avatarWidget(),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: GestureDetector(
-                          onTap: _isUploadingAvatar
-                              ? null
-                              : _pickAndUploadAvatar,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: const BoxDecoration(
-                              color: kWhite,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 4,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: _isUploadingAvatar
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(
-                                    Icons.camera_alt,
-                                    color: kTextColor,
-                                    size: 18,
-                                  ),
-                          ),
-                        ),
-                      ),
-                    ],
+                  style: kCaption13R.copyWith(
+                    color: kSecondaryTextColor,
+                    height: 32 / kSize13,
                   ),
                 ),
-                const SizedBox(height: 32),
+                SizedBox(height: 16 * scale),
+                Center(
+                  child: SizedBox(
+                    width: _avatarSize,
+                    height: _avatarSize,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        _avatarWidget(),
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: GestureDetector(
+                            onTap: _isUploadingAvatar
+                                ? null
+                                : _pickAndUploadAvatar,
+                            child: Container(
+                              width: _cameraBadgeSize,
+                              height: _cameraBadgeSize,
+                              decoration: const BoxDecoration(
+                                color: kBlack,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: _isUploadingAvatar
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: kWhite,
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.camera_alt,
+                                        color: kWhite,
+                                        size: 16,
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16 * scale),
                 _buildTextField(
                   label: 'Name',
                   controller: _nameController,
@@ -892,98 +1020,34 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 20),
-                _buildTextField(
-                  label: 'Phone Number',
-                  controller: _phoneController,
-                  hintText: 'Verified phone number',
-                  keyboardType: TextInputType.phone,
-                  enabled: false,
-                ),
-                const SizedBox(height: 20),
-                _buildLabel('WhatsApp Number'),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _sameAsPhoneNumber = !_sameAsPhoneNumber;
-                      if (_sameAsPhoneNumber) {
-                        _whatsappController.text = _phoneController.text;
-                        _whatsappFullNumber = _verifiedPhone;
-                      }
-                    });
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 12.0),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 20,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: _sameAsPhoneNumber
-                                  ? kPrimaryColor
-                                  : kBorder,
-                              width: 1.5,
-                            ),
-                            color: _sameAsPhoneNumber
-                                ? kPrimaryColor
-                                : Colors.transparent,
-                          ),
-                          child: _sameAsPhoneNumber
-                              ? const Icon(Icons.check, size: 14, color: kWhite)
-                              : null,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Same as phone number',
-                          style: kCaption12R.copyWith(
-                            color: kTextColor,
-                            fontWeight: kRegular,
-                          ),
-                        ),
-                      ],
+                const SizedBox(height: _fieldGap),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Phone Number'),
+                    _buildIntlPhoneField(
+                      controller: _phoneController,
+                      hintText: '999587XXXX',
+                      enabled: false,
                     ),
-                  ),
+                  ],
                 ),
-                IntlPhoneField(
-                  focusNode: _whatsappFocusNode,
-                  controller: _whatsappController,
-                  initialCountryCode: 'IN',
-                  disableLengthCheck: true,
-                  showCountryFlag: false,
-                  showDropdownIcon: true,
-                  enabled: !_sameAsPhoneNumber,
-                  cursorColor: kBlack,
-                  style: kBodyTitleR.copyWith(
-                    color: _sameAsPhoneNumber
-                        ? kSecondaryTextColor
-                        : kTextColor,
-                  ),
-                  dropdownTextStyle: kBodyTitleR.copyWith(
-                    color: _sameAsPhoneNumber
-                        ? kSecondaryTextColor
-                        : kTextColor,
-                  ),
-                  dropdownIcon: const Icon(
-                    Icons.keyboard_arrow_down,
-                    color: kSecondaryTextColor,
-                    size: 18,
-                  ),
-                  dropdownIconPosition: IconPosition.trailing,
-                  flagsButtonPadding: const EdgeInsets.only(left: 18),
-                  decoration: _inputDecoration(hintText: 'Enter mobile number'),
-                  onCountryChanged: (value) {},
-                  onChanged: (phone) {
-                    _whatsappFullNumber = phone.completeNumber.replaceAll(
-                      ' ',
-                      '',
-                    );
-                  },
+                const SizedBox(height: _fieldGap),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('WhatsApp Number'),
+                    _buildWhatsAppCheckbox(),
+                    _buildIntlPhoneField(
+                      focusNode: _whatsappFocusNode,
+                      controller: _whatsappController,
+                      hintText: 'Enter mobile number',
+                      enabled: !_sameAsPhoneNumber,
+                      onChanged: (value) => _whatsappFullNumber = value,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: _fieldGap),
                 _buildTextField(
                   label: 'Email',
                   controller: _emailController,
@@ -1000,23 +1064,15 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 20),
-                _buildDropdownField(
-                  label: 'Gender',
-                  value: _selectedGender,
-                  items: _genders,
-                  hintText: 'Select',
-                  onChanged: (val) {
-                    setState(() => _selectedGender = val);
-                  },
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: _fieldGap),
+                _buildGenderField(),
+                const SizedBox(height: _fieldGap),
                 _buildDateField(
                   label: 'Date of Birth',
                   controller: _dobController,
                   context: context,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: _fieldGap),
                 _buildTextField(
                   label: 'Address',
                   controller: _addressController,
@@ -1028,15 +1084,17 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: _fieldGap),
                 _buildCountryField(),
+                const SizedBox(height: _fieldGap),
                 _buildStateField(),
+                const SizedBox(height: _fieldGap),
                 _buildDistrictField(),
-                const SizedBox(height: 20),
+                const SizedBox(height: _fieldGap),
                 _buildTextField(
                   label: 'Area',
                   controller: _areaController,
-                  hintText: 'Enter area',
+                  hintText: 'Select',
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Area is required';
@@ -1044,7 +1102,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: _fieldGap),
                 _buildTextField(
                   label: 'Pin code',
                   controller: _pincodeController,
@@ -1057,13 +1115,12 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
                 primaryButton(
                   label: widget.isEditMode ? 'Save changes' : 'Continue',
                   onPressed: _isLoading ? null : _handleContinue,
                   isLoading: _isLoading,
                 ),
-                const SizedBox(height: 16),
               ],
             ),
           ),
