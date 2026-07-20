@@ -12,6 +12,10 @@ import 'package:jamiat/src/data/models/user_model.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/data/services/secure_storage_service.dart';
 import 'package:jamiat/src/data/utils/auth_navigation.dart';
+import 'package:flutter_countries/flutter_countries.dart' as fc;
+import 'package:jamiat/src/data/providers/location_provider.dart';
+import 'package:jamiat/src/interfaces/components/loading_indicator.dart';
+import 'package:jamiat/src/interfaces/components/modal_sheet.dart';
 import 'package:jamiat/src/interfaces/components/primarybutton.dart';
 import 'package:jamiat/src/interfaces/onboarding/role_selection.dart';
 
@@ -33,6 +37,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   late TextEditingController _emailController;
   late TextEditingController _dobController;
   late TextEditingController _addressController;
+  late TextEditingController _areaController;
   late TextEditingController _pincodeController;
 
   late FocusNode _whatsappFocusNode;
@@ -47,16 +52,14 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   String? _existingRole;
 
   String? _selectedGender;
-  String? _selectedCountry;
-  String? _selectedState;
-  String? _selectedDistrict;
-  String? _selectedArea;
+  String? _selectedCountryCode;
+  String? _selectedCountryName;
+  String? _selectedStateCode;
+  String? _selectedStateName;
+  String? _selectedDistrictCode;
+  String? _selectedDistrictName;
 
   final List<String> _genders = ['Male', 'Female', 'Other'];
-  final List<String> _countries = ['India', 'Other'];
-  final List<String> _states = ['Kerala', 'Karnataka', 'Tamil Nadu'];
-  final List<String> _districts = ['Ernakulam', 'Calicut', 'Trivandrum'];
-  final List<String> _areas = ['Area 1', 'Area 2', 'Area 3'];
 
   @override
   void initState() {
@@ -67,6 +70,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     _emailController = TextEditingController();
     _dobController = TextEditingController();
     _addressController = TextEditingController();
+    _areaController = TextEditingController();
     _pincodeController = TextEditingController();
 
     _whatsappFocusNode = FocusNode();
@@ -111,14 +115,11 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
 
     final gender = _capitalizeGender(user.gender);
     _ensureInList(_genders, gender);
-    _ensureInList(_countries, user.country);
-    _ensureInList(_states, user.state);
-    _ensureInList(_districts, user.district);
-    _ensureInList(_areas, user.area);
 
     _nameController.text = user.name ?? '';
     _emailController.text = user.email ?? '';
     _addressController.text = user.address ?? '';
+    _areaController.text = user.area ?? '';
     _pincodeController.text = user.pincode?.toString() ?? '';
     _dobController.text = _formatDob(user.dob);
     _imageUrl = user.image;
@@ -143,14 +144,86 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     }
 
     _selectedGender = gender;
-    _selectedCountry = user.country;
-    _selectedState = user.state;
-    _selectedDistrict = user.district;
-    _selectedArea = user.area;
+    _selectedCountryName = user.country;
+    _selectedStateName = user.state;
+    _selectedDistrictName = user.district;
 
     if (user.role.isNotEmpty) {
       ref.read(selectedRoleProvider.notifier).setRole(user.role);
     }
+
+    _resolveLocationCodesFromNames();
+  }
+
+  Future<void> _resolveLocationCodesFromNames() async {
+    if ((_selectedCountryName == null || _selectedCountryName!.isEmpty) &&
+        _selectedCountryCode == null) {
+      return;
+    }
+
+    final countries = await fc.Countries.all;
+    fc.Country? country;
+    for (final item in countries) {
+      final matchesCode = item.iso2 == _selectedCountryCode;
+      final matchesName =
+          item.name?.toLowerCase() == _selectedCountryName?.toLowerCase();
+      if (matchesCode || matchesName) {
+        country = item;
+        break;
+      }
+    }
+    if (country == null || !mounted) return;
+
+    setState(() {
+      _selectedCountryCode = country!.iso2;
+      _selectedCountryName = country.name;
+    });
+
+    if ((_selectedStateName == null || _selectedStateName!.isEmpty) &&
+        _selectedStateCode == null) {
+      return;
+    }
+
+    final states = await fc.States.byCountryCode(country.iso2!);
+    fc.State? state;
+    for (final item in states) {
+      final matchesCode = item.stateCode.toString() == _selectedStateCode;
+      final matchesName =
+          item.name?.toLowerCase() == _selectedStateName?.toLowerCase();
+      if (matchesCode || matchesName) {
+        state = item;
+        break;
+      }
+    }
+    if (state == null || !mounted) return;
+
+    setState(() {
+      _selectedStateCode = state!.stateCode.toString();
+      _selectedStateName = state.name;
+    });
+
+    if ((_selectedDistrictName == null || _selectedDistrictName!.isEmpty) &&
+        _selectedDistrictCode == null) {
+      return;
+    }
+
+    final cities = await fc.Cities.byStateCode(state.stateCode.toString());
+    fc.City? city;
+    for (final item in cities) {
+      final matchesCode = item.id.toString() == _selectedDistrictCode;
+      final matchesName =
+          item.name?.toLowerCase() == _selectedDistrictName?.toLowerCase();
+      if (matchesCode || matchesName) {
+        city = item;
+        break;
+      }
+    }
+    if (city == null || !mounted) return;
+
+    setState(() {
+      _selectedDistrictCode = city!.id.toString();
+      _selectedDistrictName = city.name;
+    });
   }
 
   @override
@@ -161,6 +234,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     _emailController.dispose();
     _dobController.dispose();
     _addressController.dispose();
+    _areaController.dispose();
     _pincodeController.dispose();
     _whatsappFocusNode.dispose();
     super.dispose();
@@ -248,6 +322,236 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildLocationPickerField({
+    required String label,
+    required String? value,
+    required String hintText,
+    required VoidCallback? onTap,
+    bool isLoading = false,
+    String? errorText,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(label),
+        GestureDetector(
+          onTap: onTap,
+          child: InputDecorator(
+            decoration: _inputDecoration(hintText: hintText).copyWith(
+              errorText: errorText,
+              suffixIcon: isLoading
+                  ? const Padding(
+                      padding: EdgeInsets.all(14),
+                      child: LoadingAnimation(size: 20),
+                    )
+                  : const Icon(
+                      Icons.keyboard_arrow_down,
+                      color: kSecondaryTextColor,
+                    ),
+            ),
+            child: Text(
+              value ?? hintText,
+              style: kBodyTitleR.copyWith(
+                color: value == null ? kSecondaryTextColor : kTextColor,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCountryField() {
+    return Consumer(
+      builder: (context, ref, _) {
+        final countriesAsync = ref.watch(getAllCountriesProvider);
+        return countriesAsync.when(
+          data: (countries) {
+            final countryMap = {
+              for (final country in countries)
+                if ((country.iso2 ?? '').isNotEmpty) country.iso2!: country.name ?? '',
+            };
+            return _buildLocationPickerField(
+              label: 'Country',
+              value: _selectedCountryName,
+              hintText: 'Select country',
+              onTap: () {
+                ModalSheet<String>(
+                  context: context,
+                  title: 'Select country',
+                  searchHint: 'Search country',
+                  items: countryMap.keys.toList(),
+                  itemLabel: (code) => countryMap[code] ?? code,
+                  searchFilter: (code, query) {
+                    final name = countryMap[code] ?? '';
+                    final q = query.toLowerCase();
+                    return name.toLowerCase().contains(q) ||
+                        code.toLowerCase().contains(q);
+                  },
+                  onItemSelected: (code) {
+                    setState(() {
+                      _selectedCountryCode = code;
+                      _selectedCountryName = countryMap[code];
+                      _selectedStateCode = null;
+                      _selectedStateName = null;
+                      _selectedDistrictCode = null;
+                      _selectedDistrictName = null;
+                    });
+                  },
+                ).show();
+              },
+            );
+          },
+          loading: () => _buildLocationPickerField(
+            label: 'Country',
+            value: _selectedCountryName,
+            hintText: 'Select country',
+            onTap: null,
+            isLoading: true,
+          ),
+          error: (error, _) => _buildLocationPickerField(
+            label: 'Country',
+            value: _selectedCountryName,
+            hintText: 'Select country',
+            onTap: null,
+            errorText: 'Unable to load countries',
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStateField() {
+    if (_selectedCountryCode == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 20),
+      child: Consumer(
+        builder: (context, ref, _) {
+          final statesAsync = ref.watch(
+            getStatesByCountryProvider(_selectedCountryCode!),
+          );
+          return statesAsync.when(
+            data: (states) {
+              final stateMap = {
+                for (final state in states)
+                  state.stateCode.toString(): state.name ?? '',
+              };
+              return _buildLocationPickerField(
+                label: 'State',
+                value: _selectedStateName,
+                hintText: 'Select state',
+                onTap: () {
+                  ModalSheet<String>(
+                    context: context,
+                    title: 'Select state',
+                    searchHint: 'Search state',
+                    items: stateMap.keys.toList(),
+                    itemLabel: (code) => stateMap[code] ?? code,
+                    searchFilter: (code, query) {
+                      final name = stateMap[code] ?? '';
+                      final q = query.toLowerCase();
+                      return name.toLowerCase().contains(q) ||
+                          code.toLowerCase().contains(q);
+                    },
+                    onItemSelected: (code) {
+                      setState(() {
+                        _selectedStateCode = code;
+                        _selectedStateName = stateMap[code];
+                        _selectedDistrictCode = null;
+                        _selectedDistrictName = null;
+                      });
+                    },
+                  ).show();
+                },
+              );
+            },
+            loading: () => _buildLocationPickerField(
+              label: 'State',
+              value: _selectedStateName,
+              hintText: 'Select state',
+              onTap: null,
+              isLoading: true,
+            ),
+            error: (error, _) => _buildLocationPickerField(
+              label: 'State',
+              value: _selectedStateName,
+              hintText: 'Select state',
+              onTap: null,
+              errorText: 'Unable to load states',
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDistrictField() {
+    if (_selectedCountryCode == null || _selectedStateCode == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 20),
+      child: Consumer(
+        builder: (context, ref, _) {
+          final districtsAsync = ref.watch(
+            getDistrictsByStateProvider((
+              countryCode: _selectedCountryCode!,
+              stateCode: _selectedStateCode!,
+            )),
+          );
+          return districtsAsync.when(
+            data: (districts) {
+              final districtMap = {
+                for (final district in districts)
+                  district.id.toString(): district.name ?? '',
+              };
+              return _buildLocationPickerField(
+                label: 'District',
+                value: _selectedDistrictName,
+                hintText: 'Select district',
+                onTap: () {
+                  ModalSheet<String>(
+                    context: context,
+                    title: 'Select district',
+                    searchHint: 'Search district',
+                    items: districtMap.keys.toList(),
+                    itemLabel: (id) => districtMap[id] ?? id,
+                    searchFilter: (id, query) {
+                      final name = districtMap[id] ?? '';
+                      return name.toLowerCase().contains(query.toLowerCase());
+                    },
+                    onItemSelected: (id) {
+                      setState(() {
+                        _selectedDistrictCode = id;
+                        _selectedDistrictName = districtMap[id];
+                      });
+                    },
+                  ).show();
+                },
+              );
+            },
+            loading: () => _buildLocationPickerField(
+              label: 'District',
+              value: _selectedDistrictName,
+              hintText: 'Select district',
+              onTap: null,
+              isLoading: true,
+            ),
+            error: (error, _) => _buildLocationPickerField(
+              label: 'District',
+              value: _selectedDistrictName,
+              hintText: 'Select district',
+              onTap: null,
+              errorText: 'Unable to load districts',
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -378,13 +682,13 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
 
     final requiredSelections = [
       _selectedGender,
-      _selectedCountry,
-      _selectedState,
-      _selectedDistrict,
-      _selectedArea,
+      _selectedCountryName,
+      _selectedStateName,
+      _selectedDistrictName,
+      _areaController.text.trim(),
     ];
     if (requiredSelections.any((value) => value == null || value.isEmpty)) {
-      _showMessage('Please complete all dropdown fields.');
+      _showMessage('Please complete all required fields.');
       return;
     }
 
@@ -410,10 +714,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       'gender': _selectedGender!.toLowerCase(),
       'whatsapp_no': whatsapp,
       'address': _addressController.text.trim(),
-      'area': _selectedArea!,
-      'district': _selectedDistrict!,
-      'state': _selectedState!,
-      'country': _selectedCountry!,
+      'area': _areaController.text.trim(),
+      'district': _selectedDistrictName!,
+      'state': _selectedStateName!,
+      'country': _selectedCountryName!,
       'pincode': pincode,
       'dob': dob,
       if (_imageUrl != null && _imageUrl!.isNotEmpty) 'image': _imageUrl,
@@ -725,43 +1029,19 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   },
                 ),
                 const SizedBox(height: 20),
-                _buildDropdownField(
-                  label: 'Country',
-                  value: _selectedCountry,
-                  items: _countries,
-                  hintText: 'Select',
-                  onChanged: (val) {
-                    setState(() => _selectedCountry = val);
-                  },
-                ),
+                _buildCountryField(),
+                _buildStateField(),
+                _buildDistrictField(),
                 const SizedBox(height: 20),
-                _buildDropdownField(
-                  label: 'State',
-                  value: _selectedState,
-                  items: _states,
-                  hintText: 'Select',
-                  onChanged: (val) {
-                    setState(() => _selectedState = val);
-                  },
-                ),
-                const SizedBox(height: 20),
-                _buildDropdownField(
-                  label: 'District',
-                  value: _selectedDistrict,
-                  items: _districts,
-                  hintText: 'Select',
-                  onChanged: (val) {
-                    setState(() => _selectedDistrict = val);
-                  },
-                ),
-                const SizedBox(height: 20),
-                _buildDropdownField(
+                _buildTextField(
                   label: 'Area',
-                  value: _selectedArea,
-                  items: _areas,
-                  hintText: 'Select',
-                  onChanged: (val) {
-                    setState(() => _selectedArea = val);
+                  controller: _areaController,
+                  hintText: 'Enter area',
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Area is required';
+                    }
+                    return null;
                   },
                 ),
                 const SizedBox(height: 20),
