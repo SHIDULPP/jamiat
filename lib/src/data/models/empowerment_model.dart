@@ -23,11 +23,39 @@ class EmpowermentProgramModel {
       title: (json['title'] ?? '').toString(),
       description: (json['description'] ?? '').toString(),
       isBookmarked: json['is_bookmarked'] == true,
-      isApplied: json['is_applied'] == true,
+      isApplied: _parseIsApplied(json),
       image: json['image']?.toString(),
       startDate: json['start_date'] != null
           ? DateTime.tryParse(json['start_date'].toString())
           : null,
+    );
+  }
+
+  static bool _parseIsApplied(Map<String, dynamic> json) {
+    if (json['is_applied'] == true) return true;
+    if (json['applied'] == true) return true;
+    if (json['has_applied'] == true) return true;
+    final status = json['application_status']?.toString().toLowerCase();
+    return status == 'applied';
+  }
+
+  EmpowermentProgramModel copyWith({
+    String? id,
+    String? title,
+    String? description,
+    bool? isBookmarked,
+    bool? isApplied,
+    String? image,
+    DateTime? startDate,
+  }) {
+    return EmpowermentProgramModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      isBookmarked: isBookmarked ?? this.isBookmarked,
+      isApplied: isApplied ?? this.isApplied,
+      image: image ?? this.image,
+      startDate: startDate ?? this.startDate,
     );
   }
 }

@@ -187,7 +187,10 @@ class _EmpowermentProgramsScreenState
                         onTap: () {
                           NavigationService().pushNamed(
                             'ProgramDetails',
-                            arguments: {'programId': program.id},
+                            arguments: {
+                              'programId': program.id,
+                              'isApplied': program.isApplied,
+                            },
                           );
                         },
                         child: Container(

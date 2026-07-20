@@ -330,6 +330,7 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
       final args = settings?.arguments as Map<String, dynamic>?;
       page = ProgramDetailsScreen(
         programId: args?['programId'] as String? ?? '1',
+        initialIsApplied: args?['isApplied'] as bool? ?? false,
       );
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);

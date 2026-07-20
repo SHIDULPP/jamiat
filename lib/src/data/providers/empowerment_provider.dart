@@ -25,5 +25,42 @@ final empowermentProgramDetailProvider =
       if (!response.success || response.data == null) {
         throw Exception(response.message ?? 'Failed to load program');
       }
-      return response.data!;
+
+      var program = response.data!;
+      if (!program.isApplied) {
+        final isApplied = await _resolveProgramAppliedStatus(ref, id);
+        if (isApplied) {
+          program = program.copyWith(isApplied: true);
+        }
+      }
+      return program;
     });
+
+Future<bool> _resolveProgramAppliedStatus(Ref ref, String id) async {
+  final allAsync = ref.read(empowermentProgramsProvider('all'));
+  final fromAll = allAsync.maybeWhen(
+    data: (page) {
+      for (final program in page.items) {
+        if (program.id == id) return program.isApplied;
+      }
+      return null;
+    },
+    orElse: () => null,
+  );
+  if (fromAll == true) return true;
+
+  final appliedAsync = ref.read(empowermentProgramsProvider('applied'));
+  final fromApplied = appliedAsync.maybeWhen(
+    data: (page) => page.items.any((program) => program.id == id),
+    orElse: () => null,
+  );
+  if (fromApplied == true) return true;
+
+  final appliedResponse = await ref
+      .read(empowermentApiProvider)
+      .getPrograms(mode: 'applied', limit: 100);
+  if (appliedResponse.success && appliedResponse.data != null) {
+    return appliedResponse.data!.items.any((program) => program.id == id);
+  }
+  return false;
+}

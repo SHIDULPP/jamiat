@@ -10,8 +10,13 @@ import 'package:jamiat/src/interfaces/components/async_content.dart';
 
 class ProgramDetailsScreen extends ConsumerWidget {
   final String programId;
+  final bool initialIsApplied;
 
-  const ProgramDetailsScreen({super.key, required this.programId});
+  const ProgramDetailsScreen({
+    super.key,
+    required this.programId,
+    this.initialIsApplied = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -62,105 +67,110 @@ class ProgramDetailsScreen extends ConsumerWidget {
                 asyncValue: programAsync,
                 onRetry: () =>
                     ref.invalidate(empowermentProgramDetailProvider(programId)),
-                builder: (program) => SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (program.image != null &&
-                          program.image!.startsWith('http'))
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.network(
-                            program.image!,
-                            height: 200,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
+                builder: (program) {
+                  final isApplied = program.isApplied || initialIsApplied;
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (program.image != null &&
+                            program.image!.startsWith('http'))
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Image.network(
+                              program.image!,
+                              height: 200,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        else
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Image.asset(
+                              'assets/jpgs/campaign_welfare.jpg',
+                              height: 200,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
                           ),
-                        )
-                      else
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.asset(
-                            'assets/jpgs/campaign_welfare.jpg',
-                            height: 200,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      const SizedBox(height: 16),
-                      Text(
-                        program.title,
-                        style: kSectionTitleSB.copyWith(fontSize: 20),
-                      ),
-                      const SizedBox(height: 8),
-                      if (program.startDate != null)
+                        const SizedBox(height: 16),
                         Text(
-                          'Starts ${formatDateLabel(program.startDate)}',
-                          style: kCaption12R.copyWith(
-                            color: kSecondaryTextColor,
+                          program.title,
+                          style: kSectionTitleSB.copyWith(fontSize: 20),
+                        ),
+                        const SizedBox(height: 8),
+                        if (program.startDate != null)
+                          Text(
+                            'Starts ${formatDateLabel(program.startDate)}',
+                            style: kCaption12R.copyWith(
+                              color: kSecondaryTextColor,
+                            ),
+                          ),
+                        const SizedBox(height: 16),
+                        Text(
+                          program.description,
+                          style: kBodyTitleR.copyWith(
+                            color: kText2Color,
+                            height: 1.5,
                           ),
                         ),
-                      const SizedBox(height: 16),
-                      Text(
-                        program.description,
-                        style: kBodyTitleR.copyWith(
-                          color: kText2Color,
-                          height: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: program.isApplied
-                            ? null
-                            : () async {
-                                HapticHelper.impact(HapticImpact.medium);
-                                final res = await ref
-                                    .read(empowermentApiProvider)
-                                    .applyForProgram(program.id);
-                                if (!context.mounted) return;
-                                if (res.success) {
-                                  ref.invalidate(
-                                    empowermentProgramDetailProvider(programId),
-                                  );
-                                  ref.invalidate(
-                                    empowermentProgramsProvider('all'),
-                                  );
-                                  ref.invalidate(
-                                    empowermentProgramsProvider('applied'),
-                                  );
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Application submitted'),
-                                    ),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        res.message ?? 'Failed to apply',
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: isApplied
+                              ? null
+                              : () async {
+                                  HapticHelper.impact(HapticImpact.medium);
+                                  final res = await ref
+                                      .read(empowermentApiProvider)
+                                      .applyForProgram(program.id);
+                                  if (!context.mounted) return;
+                                  if (res.success) {
+                                    ref.invalidate(
+                                      empowermentProgramDetailProvider(
+                                        programId,
                                       ),
-                                    ),
-                                  );
-                                }
-                              },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: kPrimaryColor,
-                          foregroundColor: kWhite,
-                          minimumSize: const Size.fromHeight(52),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                                    );
+                                    ref.invalidate(
+                                      empowermentProgramsProvider('all'),
+                                    );
+                                    ref.invalidate(
+                                      empowermentProgramsProvider('applied'),
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Application submitted'),
+                                      ),
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          res.message ?? 'Failed to apply',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: kPrimaryColor,
+                            foregroundColor: kWhite,
+                            minimumSize: const Size.fromHeight(52),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: Text(
+                            isApplied ? 'Applied' : 'Apply Now',
+                            style: kButtonLabelSB,
                           ),
                         ),
-                        child: Text(
-                          program.isApplied ? 'Applied' : 'Apply Now',
-                          style: kButtonLabelSB,
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                    ],
-                  ),
-                ),
+                        const SizedBox(height: 32),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ],

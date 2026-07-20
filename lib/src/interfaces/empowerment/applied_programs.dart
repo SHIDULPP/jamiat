@@ -33,7 +33,10 @@ class AppliedProgramsScreen extends ConsumerWidget {
             HapticHelper.impact(HapticImpact.light);
             NavigationService().pushNamed(
               'ProgramDetails',
-              arguments: {'programId': program.id},
+              arguments: {
+                'programId': program.id,
+                'isApplied': true,
+              },
             );
           },
           child: Container(
