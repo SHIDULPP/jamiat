@@ -301,7 +301,8 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
     case 'WelfareDetails':
       final args = settings?.arguments as Map<String, dynamic>?;
       page = WelfareDetailsScreen(
-        serviceKey: args?['serviceKey'] as String? ?? 'jem',
+        welfareId: (args?['welfareId'] ?? args?['serviceKey'] ?? '')
+            .toString(),
       );
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);

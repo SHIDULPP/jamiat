@@ -5,9 +5,11 @@ import 'package:jamiat/src/data/apis/user_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/models/campaign_model.dart';
+import 'package:jamiat/src/data/models/welfare_model.dart';
 import 'package:jamiat/src/data/providers/campaign_provider.dart';
 import 'package:jamiat/src/data/providers/home_provider.dart';
 import 'package:jamiat/src/data/providers/news_provider.dart';
+import 'package:jamiat/src/data/providers/welfare_provider.dart';
 import 'package:jamiat/src/data/router/nav_router.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
@@ -1057,73 +1059,68 @@ class _CampaignCard extends StatelessWidget {
   }
 }
 
-class _WelfareGridSection extends StatelessWidget {
+class _WelfareGridSection extends ConsumerWidget {
   const _WelfareGridSection();
 
-  // Figma Frame 39 / 2248:726 — card sizes at design width 113
   static const double _figmaCol = 113;
   static const double _figmaGap = 16;
   static const double _figmaMidOffset = 31;
 
-  static const List<_WelfareCardData> _col1 = [
-    _WelfareCardData(
-      key: 'maktab',
-      title: 'Maktab',
-      imagePath: 'assets/pngs/maktab.png',
-      bgColor: Color(0xFFFFFBEB),
-      height: 128,
-      imageRect: Rect.fromLTWH(8.08, 47.24, 97.08, 114.56),
-    ),
-    _WelfareCardData(
-      key: 'ulama',
-      title: 'Ulama',
-      imagePath: 'assets/pngs/ulama.png',
-      bgColor: Color(0xFFFFF1F2),
-      height: 100,
-      imageRect: Rect.fromLTWH(16, 32.72, 81.83, 96.56),
-    ),
+  static const _fallbackColors = [
+    Color(0xFFFFFBEB),
+    Color(0xFFFFF1F2),
+    Color(0xFFF0FDF4),
+    Color(0xFFEFF6FF),
+    Color(0xFFFDF4FF),
+    Color(0xFFF5EBE6),
   ];
 
-  static const List<_WelfareCardData> _col2 = [
-    _WelfareCardData(
-      key: 'youth_club',
-      title: 'Youth Club',
-      imagePath: 'assets/pngs/youth_club.png',
-      bgColor: Color(0xFFF0FDF4),
-      height: 135,
-      imageRect: Rect.fromLTWH(1.08, 33.42, 110.34, 130.20),
-    ),
-    _WelfareCardData(
-      key: 'model_village',
-      title: 'Model Village',
-      imagePath: 'assets/pngs/model_village.png',
-      bgColor: Color(0xFFEFF6FF),
-      height: 155,
-      imageRect: Rect.fromLTWH(0.08, 55, 112.88, 133.20),
-    ),
-  ];
+  static const _fallbackHeights = [128.0, 100.0, 135.0, 155.0, 100.0, 128.0];
 
-  static const List<_WelfareCardData> _col3 = [
-    _WelfareCardData(
-      key: 'study_center',
-      title: 'Study Centre',
-      imagePath: 'assets/pngs/study_center.png',
-      bgColor: Color(0xFFFDF4FF),
-      height: 100,
-      imageRect: Rect.fromLTWH(6.08, 11, 100, 118),
-    ),
-    _WelfareCardData(
-      key: 'jem',
-      title: 'JEM',
-      imagePath: 'assets/pngs/jem.png',
-      bgColor: Color(0xFFF5EBE6),
-      height: 128,
-      imageRect: Rect.fromLTWH(-3.92, 28, 121.19, 143),
-    ),
-  ];
+  static const _localAssetByKeyword = <String, String>{
+    'maktab': 'assets/pngs/maktab.png',
+    'ulama': 'assets/pngs/ulama.png',
+    'youth': 'assets/pngs/youth_club.png',
+    'model': 'assets/pngs/model_village.png',
+    'study': 'assets/pngs/study_center.png',
+    'jem': 'assets/pngs/jem.png',
+  };
+
+  Color _cardColor(WelfareServiceModel service, int index) {
+    final raw = service.accentColor?.trim();
+    if (raw != null && raw.isNotEmpty) {
+      var hex = raw.replaceFirst('#', '');
+      if (hex.length == 6) hex = 'FF$hex';
+      final value = int.tryParse(hex, radix: 16);
+      if (value != null) {
+        return Color(value).withValues(alpha: 0.18);
+      }
+    }
+    return _fallbackColors[index % _fallbackColors.length];
+  }
+
+  String? _localAsset(String name) {
+    final lower = name.toLowerCase();
+    for (final entry in _localAssetByKeyword.entries) {
+      if (lower.contains(entry.key)) return entry.value;
+    }
+    return null;
+  }
+
+  List<List<WelfareServiceModel>> _splitColumns(
+    List<WelfareServiceModel> items,
+  ) {
+    final cols = List.generate(3, (_) => <WelfareServiceModel>[]);
+    for (var i = 0; i < items.length; i++) {
+      cols[i % 3].add(items[i]);
+    }
+    return cols;
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final listAsync = ref.watch(welfareListProvider);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
       child: Column(
@@ -1164,52 +1161,88 @@ class _WelfareGridSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final colWidth = (constraints.maxWidth - _figmaGap * 2) / 3;
-              final scale = colWidth / _figmaCol;
-              final midOffset = _figmaMidOffset * scale;
-              final gap = _figmaGap * scale;
-
-              Widget buildCol(List<_WelfareCardData> items) {
-                return Column(
-                  children: [
-                    for (var i = 0; i < items.length; i++) ...[
-                      if (i > 0) SizedBox(height: gap),
-                      _WelfareServiceCard(
-                        data: items[i],
-                        width: colWidth,
-                        scale: scale,
-                      ),
-                    ],
-                  ],
+          AsyncContent(
+            asyncValue: listAsync,
+            onRetry: () => ref.invalidate(welfareListProvider),
+            builder: (page) {
+              final services = page.items;
+              if (services.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  child: Text(
+                    'No welfare services available yet.',
+                    textAlign: TextAlign.center,
+                    style: kEmptyStateM,
+                  ),
                 );
               }
 
-              return Padding(
-                padding: EdgeInsets.only(bottom: 40 * scale),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: colWidth,
-                      child: Padding(
-                        padding: EdgeInsets.only(top: midOffset),
-                        child: buildCol(_col1),
-                      ),
+              final preview = services.take(6).toList();
+              final columns = _splitColumns(preview);
+
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final colWidth = (constraints.maxWidth - _figmaGap * 2) / 3;
+                  final scale = colWidth / _figmaCol;
+                  final midOffset = _figmaMidOffset * scale;
+                  final gap = _figmaGap * scale;
+
+                  Widget buildCol(
+                    List<WelfareServiceModel> items,
+                    int columnIndex,
+                  ) {
+                    return Column(
+                      children: [
+                        for (var i = 0; i < items.length; i++) ...[
+                          if (i > 0) SizedBox(height: gap),
+                          _WelfareServiceCard(
+                            service: items[i],
+                            width: colWidth,
+                            scale: scale,
+                            height:
+                                _fallbackHeights[(columnIndex + i * 3) %
+                                    _fallbackHeights.length] *
+                                scale,
+                            bgColor: _cardColor(
+                              items[i],
+                              columnIndex + i * 3,
+                            ),
+                            fallbackAsset: _localAsset(items[i].name),
+                          ),
+                        ],
+                      ],
+                    );
+                  }
+
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: 40 * scale),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: colWidth,
+                          child: Padding(
+                            padding: EdgeInsets.only(top: midOffset),
+                            child: buildCol(columns[0], 0),
+                          ),
+                        ),
+                        SizedBox(width: gap),
+                        SizedBox(
+                          width: colWidth,
+                          child: buildCol(columns[1], 1),
+                        ),
+                        SizedBox(width: gap),
+                        SizedBox(
+                          width: colWidth,
+                          child: Padding(
+                            padding: EdgeInsets.only(top: midOffset),
+                            child: buildCol(columns[2], 2),
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(width: gap),
-                    SizedBox(width: colWidth, child: buildCol(_col2)),
-                    SizedBox(width: gap),
-                    SizedBox(
-                      width: colWidth,
-                      child: Padding(
-                        padding: EdgeInsets.only(top: midOffset),
-                        child: buildCol(_col3),
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                },
               );
             },
           ),
@@ -1219,51 +1252,48 @@ class _WelfareGridSection extends StatelessWidget {
   }
 }
 
-class _WelfareCardData {
-  final String key;
-  final String title;
-  final String imagePath;
-  final Color bgColor;
-  final double height;
-  final Rect imageRect;
-
-  const _WelfareCardData({
-    required this.key,
-    required this.title,
-    required this.imagePath,
-    required this.bgColor,
-    required this.height,
-    required this.imageRect,
-  });
-}
-
 class _WelfareServiceCard extends StatelessWidget {
-  final _WelfareCardData data;
+  final WelfareServiceModel service;
   final double width;
   final double scale;
+  final double height;
+  final Color bgColor;
+  final String? fallbackAsset;
 
   const _WelfareServiceCard({
-    required this.data,
+    required this.service,
     required this.width,
     required this.scale,
+    required this.height,
+    required this.bgColor,
+    this.fallbackAsset,
   });
+
+  Widget _image() {
+    final icon = service.icon;
+    if (icon != null && icon.startsWith('http')) {
+      return Image.network(
+        icon,
+        fit: BoxFit.contain,
+        errorBuilder: (_, _, _) => fallbackAsset != null
+            ? Image.asset(fallbackAsset!, fit: BoxFit.contain)
+            : const Icon(Icons.volunteer_activism_outlined, color: kMutedText),
+      );
+    }
+    if (fallbackAsset != null) {
+      return Image.asset(fallbackAsset!, fit: BoxFit.contain);
+    }
+    return const Icon(Icons.volunteer_activism_outlined, color: kMutedText);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final height = data.height * scale;
-    final imageRect = Rect.fromLTWH(
-      data.imageRect.left * scale,
-      data.imageRect.top * scale,
-      data.imageRect.width * scale,
-      data.imageRect.height * scale,
-    );
-
     return GestureDetector(
       onTap: () {
         HapticHelper.impact(HapticImpact.light);
         NavigationService().pushNamed(
           'WelfareDetails',
-          arguments: {'serviceId': data.key},
+          arguments: {'welfareId': service.id},
         );
       },
       child: SizedBox(
@@ -1275,7 +1305,7 @@ class _WelfareServiceCard extends StatelessWidget {
             Positioned.fill(
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: data.bgColor,
+                  color: bgColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
@@ -1285,8 +1315,10 @@ class _WelfareServiceCard extends StatelessWidget {
               left: 4,
               right: 4,
               child: Text(
-                data.title,
+                service.name,
                 textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: kCaption12SB.copyWith(
                   color: kTextColor,
                   height: 1.2,
@@ -1295,11 +1327,11 @@ class _WelfareServiceCard extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: imageRect.left,
-              top: imageRect.top,
-              width: imageRect.width,
-              height: imageRect.height,
-              child: Image.asset(data.imagePath, fit: BoxFit.contain),
+              left: 8 * scale,
+              right: 8 * scale,
+              top: 36 * scale,
+              bottom: 8 * scale,
+              child: _image(),
             ),
           ],
         ),

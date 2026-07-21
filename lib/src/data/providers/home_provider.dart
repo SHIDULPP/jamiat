@@ -4,6 +4,7 @@ import 'package:jamiat/src/data/models/user_model.dart';
 import 'package:jamiat/src/data/providers/campaign_provider.dart';
 import 'package:jamiat/src/data/providers/donation_provider.dart';
 import 'package:jamiat/src/data/providers/news_provider.dart';
+import 'package:jamiat/src/data/providers/welfare_provider.dart';
 
 final homeStatsProvider =
     FutureProvider<
@@ -25,6 +26,7 @@ Future<void> refreshHomeData(WidgetRef ref) async {
   ref.invalidate(featuredCampaignsProvider);
   ref.invalidate(newsListProvider);
   ref.invalidate(homeStatsProvider);
+  ref.invalidate(welfareListProvider);
 
   await Future.wait([
     _ignoreErrors(ref.read(userProfileProvider.future)),
@@ -32,6 +34,7 @@ Future<void> refreshHomeData(WidgetRef ref) async {
     _ignoreErrors(ref.read(featuredCampaignsProvider.future)),
     _ignoreErrors(ref.read(newsListProvider.future)),
     _ignoreErrors(ref.read(homeStatsProvider.future)),
+    _ignoreErrors(ref.read(welfareListProvider.future)),
   ]);
 }
 
