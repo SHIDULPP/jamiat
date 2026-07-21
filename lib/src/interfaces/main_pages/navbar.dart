@@ -35,21 +35,9 @@ class _NavTab {
 
 class _NavBarState extends ConsumerState<NavBar> {
   static const List<_NavTab> _allTabs = [
-    _NavTab(
-      pageIndex: 0,
-      icon: 'assets/svg/home_icon.svg',
-      label: 'Home',
-    ),
-    _NavTab(
-      pageIndex: 1,
-      icon: 'assets/svg/donate.svg',
-      label: 'Donate',
-    ),
-    _NavTab(
-      pageIndex: 2,
-      icon: 'assets/svg/market_icon.svg',
-      label: 'Market',
-    ),
+    _NavTab(pageIndex: 0, icon: 'assets/svg/home_icon.svg', label: 'Home'),
+    _NavTab(pageIndex: 1, icon: 'assets/svg/donate.svg', label: 'Donate'),
+    _NavTab(pageIndex: 2, icon: 'assets/svg/market_icon.svg', label: 'Market'),
     _NavTab(
       pageIndex: 3,
       icon: 'assets/svg/profile_icon.svg',
@@ -79,10 +67,15 @@ class _NavBarState extends ConsumerState<NavBar> {
 
   @override
   Widget build(BuildContext context) {
-    final isJamiatMember = ref.watch(userProfileProvider).maybeWhen(
-          data: (user) => user.role == 'jamiat_member',
-          orElse: () => false,
-        );
+    final profileAsync = ref.watch(userProfileProvider);
+    final isJamiatMember = profileAsync.maybeWhen(
+      data: (user) => user.role == 'jamiat_member',
+      orElse: () => false,
+    );
+    final profileImageUrl = profileAsync.maybeWhen(
+      data: (user) => user.image,
+      orElse: () => null,
+    );
     final tabs = _tabsForRole(isJamiatMember);
     final selectedIndex = ref.watch(selectedIndexProvider);
 
@@ -95,8 +88,7 @@ class _NavBarState extends ConsumerState<NavBar> {
       });
     });
 
-    final pageIndex =
-        !isJamiatMember && selectedIndex == 2 ? 0 : selectedIndex;
+    final pageIndex = !isJamiatMember && selectedIndex == 2 ? 0 : selectedIndex;
 
     return PopScope(
       canPop: pageIndex == 0,
@@ -148,14 +140,10 @@ class _NavBarState extends ConsumerState<NavBar> {
                             AnimatedScale(
                               duration: const Duration(milliseconds: 200),
                               scale: isSelected ? 1.15 : 1.0,
-                              child: SvgPicture.asset(
-                                tab.icon,
-                                width: 24,
-                                height: 24,
-                                colorFilter: ColorFilter.mode(
-                                  color,
-                                  BlendMode.srcIn,
-                                ),
+                              child: _NavBarIcon(
+                                tab: tab,
+                                color: color,
+                                profileImageUrl: profileImageUrl,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -176,5 +164,47 @@ class _NavBarState extends ConsumerState<NavBar> {
         ),
       ),
     );
+  }
+}
+
+class _NavBarIcon extends StatelessWidget {
+  const _NavBarIcon({
+    required this.tab,
+    required this.color,
+    this.profileImageUrl,
+  });
+
+  final _NavTab tab;
+  final Color color;
+  final String? profileImageUrl;
+
+  static const double _profileSize = 26;
+
+  @override
+  Widget build(BuildContext context) {
+    if (tab.pageIndex != 3) {
+      return SvgPicture.asset(
+        tab.icon,
+        width: 24,
+        height: 24,
+        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+      );
+    }
+
+    final image = profileImageUrl;
+    if (image != null && image.startsWith('http')) {
+      return ClipOval(
+        child: Image.network(
+          image,
+          width: _profileSize,
+          height: _profileSize,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) =>
+              Icon(Icons.person_outline, size: 24, color: color),
+        ),
+      );
+    }
+
+    return Icon(Icons.person_outline, size: 24, color: color);
   }
 }
