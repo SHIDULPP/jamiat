@@ -74,9 +74,14 @@ class HomePage extends ConsumerWidget {
       backgroundColor: kWhite,
       body: SafeArea(
         bottom: false,
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
+        child: RefreshIndicator(
+          color: kPrimaryColor,
+          onRefresh: () => refreshHomeData(ref),
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            slivers: [
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -366,7 +371,7 @@ class HomePage extends ConsumerWidget {
                     final newsAsync = ref.watch(newsListProvider);
                     return AsyncContent(
                       asyncValue: newsAsync,
-                      onRetry: () => ref.invalidate(newsListProvider),
+                      onRetry: () => refreshHomeData(ref),
                       builder: (page) {
                         final items = page.items.take(5).toList();
                         if (items.isEmpty) {
@@ -540,6 +545,7 @@ class HomePage extends ConsumerWidget {
             const SliverToBoxAdapter(child: SizedBox(height: 48)),
           ],
         ),
+        ),
       ),
       floatingActionButton: _ContributeButton(
         onTap: () {
@@ -651,7 +657,7 @@ class _ContributionsCard extends ConsumerWidget {
       ),
       child: AsyncContent(
         asyncValue: statsAsync,
-        onRetry: () => ref.invalidate(homeStatsProvider),
+        onRetry: () => refreshHomeData(ref),
         builder: (stats) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -852,7 +858,7 @@ class _ActiveCampaignsSection extends ConsumerWidget {
       height: _cardHeight,
       child: AsyncContent(
         asyncValue: campaignsAsync,
-        onRetry: () => ref.invalidate(featuredCampaignsProvider),
+        onRetry: () => refreshHomeData(ref),
         builder: (campaigns) {
           if (campaigns.isEmpty) {
             return Center(
