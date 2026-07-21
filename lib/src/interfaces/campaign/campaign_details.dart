@@ -335,6 +335,9 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
                 iconColor: _getCategoryIconColor(displayCat),
                 isAutopay: false,
                 campaignId: donateCampaignId,
+                categoryLabel: displayCat,
+                raised: displayRaised,
+                goal: displayGoal,
               );
             },
             style: ElevatedButton.styleFrom(

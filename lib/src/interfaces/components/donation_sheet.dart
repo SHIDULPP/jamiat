@@ -11,6 +11,8 @@ import 'package:jamiat/src/data/providers/donation_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/data/services/razorpay_service.dart';
+import 'package:jamiat/src/data/utils/category_mapper.dart';
+import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 class DonationSheet extends ConsumerStatefulWidget {
@@ -20,6 +22,9 @@ class DonationSheet extends ConsumerStatefulWidget {
   final Color iconColor;
   final bool isAutopay;
   final String? campaignId;
+  final String? categoryLabel;
+  final num? raised;
+  final num? goal;
 
   const DonationSheet({
     super.key,
@@ -29,6 +34,9 @@ class DonationSheet extends ConsumerStatefulWidget {
     required this.iconColor,
     this.isAutopay = false,
     this.campaignId,
+    this.categoryLabel,
+    this.raised,
+    this.goal,
   });
 
   static Future<void> show({
@@ -39,6 +47,9 @@ class DonationSheet extends ConsumerStatefulWidget {
     required Color iconColor,
     bool isAutopay = false,
     String? campaignId,
+    String? categoryLabel,
+    num? raised,
+    num? goal,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -51,6 +62,9 @@ class DonationSheet extends ConsumerStatefulWidget {
         iconColor: iconColor,
         isAutopay: isAutopay,
         campaignId: campaignId,
+        categoryLabel: categoryLabel,
+        raised: raised,
+        goal: goal,
       ),
     );
   }
@@ -336,6 +350,23 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final campaignId = widget.campaignId;
+    final campaign = (campaignId != null && campaignId.isNotEmpty)
+        ? ref.watch(campaignDetailProvider(campaignId)).value
+        : null;
+
+    final title = campaign?.title ?? widget.categoryTitle;
+    final categoryLabel =
+        widget.categoryLabel ??
+        (campaign != null ? CategoryMapper.toUi(campaign.category) : null);
+    final raised = campaign?.collectedAmount ?? widget.raised;
+    final goal = campaign?.targetAmount ?? widget.goal;
+    final hasTarget = goal != null && goal > 0;
+    final progress = hasTarget
+        ? (raised ?? 0) / goal
+        : 0.0;
+    final clampedProgress = progress.clamp(0.0, 1.0);
+    final percent = (clampedProgress * 100).round();
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
@@ -361,34 +392,100 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
                 ),
               ),
               const SizedBox(height: 20),
-              Row(
-                children: [
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: widget.iconBgColor,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        widget.icon,
-                        color: widget.iconColor,
-                        size: 24,
+              if (hasTarget) ...[
+                if (categoryLabel != null && categoryLabel.isNotEmpty) ...[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEEEEEE),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        categoryLabel,
+                        style: kCaption12M.copyWith(color: kTextColor),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      widget.isAutopay
-                          ? 'Set up Autopay'
-                          : widget.categoryTitle,
-                      style: kStyle(kSemiBold, 20, color: kTextColor),
-                    ),
-                  ),
+                  const SizedBox(height: 12),
                 ],
-              ),
+                Text(
+                  widget.isAutopay ? 'Set up Autopay' : title,
+                  style: kStyle(kSemiBold, 20, color: kTextColor),
+                ),
+                const SizedBox(height: 14),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(kPillRadius),
+                  child: LinearProgressIndicator(
+                    value: clampedProgress.toDouble(),
+                    minHeight: 8,
+                    backgroundColor: kGreyLight,
+                    color: kPrimaryColor,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: formatRupee(raised ?? 0),
+                              style: kBodyTitleSB.copyWith(fontSize: 15),
+                            ),
+                            TextSpan(
+                              text: ' / of ${formatRupee(goal)}',
+                              style: kCaption12R.copyWith(
+                                color: kSecondaryTextColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '$percent%',
+                      style: kBodyTitleSB.copyWith(
+                        fontSize: 15,
+                        color: kPrimaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                Row(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: widget.iconBgColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          widget.icon,
+                          color: widget.iconColor,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        widget.isAutopay ? 'Set up Autopay' : title,
+                        style: kStyle(kSemiBold, 20, color: kTextColor),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 16),
               const Divider(color: kLineGrey, height: 1),
               const SizedBox(height: 20),
