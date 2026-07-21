@@ -65,7 +65,9 @@ class HomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isJamiatMember = ref.watch(userProfileProvider).maybeWhen(
+    final isJamiatMember = ref
+        .watch(userProfileProvider)
+        .maybeWhen(
           data: (user) => user.role == 'jamiat_member',
           orElse: () => false,
         );
@@ -74,477 +76,528 @@ class HomePage extends ConsumerWidget {
       backgroundColor: kWhite,
       body: SafeArea(
         bottom: false,
-        child: RefreshIndicator(
-          color: kPrimaryColor,
-          onRefresh: () => refreshHomeData(ref),
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
-            slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  kScreenPaddingH,
-                  8,
-                  kScreenPaddingH,
-                  0,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const _HomeHeader(),
-                    const SizedBox(height: 20),
-                    const _ContributionsCard(),
-                    if (isJamiatMember) ...[
-                      const SizedBox(height: 24),
-                      Text('Quick Access', style: kSectionTitleSB),
-                      const SizedBox(height: 12),
-                    ],
-                  ],
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingH,
+                8,
+                kScreenPaddingH,
+                0,
               ),
+              child: const _HomeHeader(),
             ),
-            if (isJamiatMember) const _QuickAccessList(),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  kScreenPaddingH,
-                  24,
-                  kScreenPaddingH,
-                  12,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text('Active Campaigns', style: kSectionTitleSB),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        HapticHelper.impact(HapticImpact.light);
-                        NavigationService().pushNamed('DonationList');
-                      },
-                      child: Text('See all', style: kLinkM),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SliverToBoxAdapter(child: _ActiveCampaignsSection()),
-
-            // Jamiat Market Place promo — Figma 2248:718
-            if (isJamiatMember)
-              SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: kScreenPaddingH,
-                  vertical: 20,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: ColoredBox(
-                    color: const Color(0xFFF4F4F4),
-                    child: Stack(
-                      clipBehavior: Clip.hardEdge,
-                      children: [
-                        Positioned(
-                          right: -9,
-                          top: 0,
-                          bottom: 0,
-                          width: 168,
-                          child: Center(
-                            child: SizedBox(
-                              width: 168,
-                              height: 112,
-                              child: Image.asset(
-                                'assets/pngs/market_banner.png',
-                                fit: BoxFit.cover,
-                                alignment: Alignment.center,
-                              ),
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Jamiat Market Place',
-                                style: kLabel15SB.copyWith(height: 1.2),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Discover exclusive deals & items',
-                                style: kCaption12R.copyWith(
-                                  color: kTextColor,
-                                  height: 1.2,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              GestureDetector(
-                                onTap: () {
-                                  HapticHelper.impact(HapticImpact.light);
-                                  ref
-                                      .read(selectedIndexProvider.notifier)
-                                      .updateIndex(2);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: kPrimaryColor,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    'Explore',
-                                    style: kCaption12M.copyWith(
-                                      color: kWhite,
-                                      height: 1.2,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+            Expanded(
+              child: RefreshIndicator(
+                color: kPrimaryColor,
+                onRefresh: () => refreshHomeData(ref),
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
                   ),
-                ),
-              ),
-            ),
-
-            // Redesigned: Welfare Grid Section
-            if (isJamiatMember)
-              const SliverToBoxAdapter(child: _WelfareGridSection()),
-
-            // Medical Relief Fund banner — Figma 2248:756 / Frame 2001
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: kScreenPaddingH,
-                  vertical: 20,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: ColoredBox(
-                    color: const Color(0xFFFEF9E7),
-                    child: Stack(
-                      clipBehavior: Clip.hardEdge,
-                      children: [
-                        // Decorative wavy vectors on the right
-                        Positioned(
-                          right: -30,
-                          top: -20,
-                          width: 180,
-                          height: 140,
-                          child: Opacity(
-                            opacity: 0.85,
-                            child: Image.asset(
-                              'assets/pngs/medical_deco_1.png',
-                              fit: BoxFit.contain,
-                            ),
-                          ),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          kScreenPaddingH,
+                          20,
+                          kScreenPaddingH,
+                          0,
                         ),
-                        Positioned(
-                          right: -20,
-                          bottom: -50,
-                          width: 140,
-                          height: 170,
-                          child: Opacity(
-                            opacity: 0.75,
-                            child: Image.asset(
-                              'assets/pngs/medical_deco_3.png',
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ),
-                        // Content
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: kWhite,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  'Medical Relief Fund',
-                                  style: kCaption12M.copyWith(
-                                    color: kTextColor,
-                                    height: 1.2,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              SizedBox(
-                                width: 210,
-                                child: Text(
-                                  'Millions lack healthcare; fund life-\nsaving medicine today.',
-                                  style: kBodyTitleSB.copyWith(
-                                    color: kTextColor,
-                                    fontSize: 17,
-                                    height: 1.2,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-                              GestureDetector(
-                                onTap: () {
-                                  HapticHelper.impact(HapticImpact.light);
-                                  NavigationService().pushNamed(
-                                    'DonationList',
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 10,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: kSecondaryColor,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    'Donate Now',
-                                    style: kCaption12M.copyWith(
-                                      color: kTextColor,
-                                      height: 1.2,
-                                    ),
-                                  ),
-                                ),
-                              ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const _ContributionsCard(),
+                            if (isJamiatMember) ...[
+                              const SizedBox(height: 24),
+                              Text('Quick Access', style: kSectionTitleSB),
+                              const SizedBox(height: 12),
                             ],
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Latest News — Figma Frame 43 (370 × 172)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  kScreenPaddingH,
-                  16,
-                  kScreenPaddingH,
-                  8,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text('Latest News', style: kSectionTitleSB),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        HapticHelper.impact(HapticImpact.light);
-                        NavigationService().pushNamed('NewsList');
-                      },
-                      child: Text(
-                        'See all',
-                        style: kCaption12M.copyWith(color: kPrimaryColor),
                       ),
                     ),
+                    if (isJamiatMember) const _QuickAccessList(),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          kScreenPaddingH,
+                          24,
+                          kScreenPaddingH,
+                          12,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Active Campaigns',
+                                style: kSectionTitleSB,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                HapticHelper.impact(HapticImpact.light);
+                                NavigationService().pushNamed('DonationList');
+                              },
+                              child: Text('See all', style: kLinkM),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SliverToBoxAdapter(child: _ActiveCampaignsSection()),
+
+                    // Jamiat Market Place promo — Figma 2248:718
+                    if (isJamiatMember)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: kScreenPaddingH,
+                            vertical: 20,
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: ColoredBox(
+                              color: const Color(0xFFF4F4F4),
+                              child: Stack(
+                                clipBehavior: Clip.hardEdge,
+                                children: [
+                                  Positioned(
+                                    right: -9,
+                                    top: 0,
+                                    bottom: 0,
+                                    width: 168,
+                                    child: Center(
+                                      child: SizedBox(
+                                        width: 168,
+                                        height: 112,
+                                        child: Image.asset(
+                                          'assets/pngs/market_banner.png',
+                                          fit: BoxFit.cover,
+                                          alignment: Alignment.center,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'Jamiat Market Place',
+                                          style: kLabel15SB.copyWith(
+                                            height: 1.2,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Discover exclusive deals & items',
+                                          style: kCaption12R.copyWith(
+                                            color: kTextColor,
+                                            height: 1.2,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 10),
+                                        GestureDetector(
+                                          onTap: () {
+                                            HapticHelper.impact(
+                                              HapticImpact.light,
+                                            );
+                                            ref
+                                                .read(
+                                                  selectedIndexProvider
+                                                      .notifier,
+                                                )
+                                                .updateIndex(2);
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 8,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: kPrimaryColor,
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              'Explore',
+                                              style: kCaption12M.copyWith(
+                                                color: kWhite,
+                                                height: 1.2,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    // Redesigned: Welfare Grid Section
+                    if (isJamiatMember)
+                      const SliverToBoxAdapter(child: _WelfareGridSection()),
+
+                    // Medical Relief Fund banner — Figma 2248:756 / Frame 2001
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: kScreenPaddingH,
+                          vertical: 20,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: ColoredBox(
+                            color: const Color(0xFFFEF9E7),
+                            child: Stack(
+                              clipBehavior: Clip.hardEdge,
+                              children: [
+                                // Decorative wavy vectors on the right
+                                Positioned(
+                                  right: -30,
+                                  top: -20,
+                                  width: 180,
+                                  height: 140,
+                                  child: Opacity(
+                                    opacity: 0.85,
+                                    child: Image.asset(
+                                      'assets/pngs/medical_deco_1.png',
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  right: -20,
+                                  bottom: -50,
+                                  width: 140,
+                                  height: 170,
+                                  child: Opacity(
+                                    opacity: 0.75,
+                                    child: Image.asset(
+                                      'assets/pngs/medical_deco_3.png',
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
+                                ),
+                                // Content
+                                Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: kWhite,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'Medical Relief Fund',
+                                          style: kCaption12M.copyWith(
+                                            color: kTextColor,
+                                            height: 1.2,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      SizedBox(
+                                        width: 210,
+                                        child: Text(
+                                          'Millions lack healthcare; fund life-\nsaving medicine today.',
+                                          style: kBodyTitleSB.copyWith(
+                                            color: kTextColor,
+                                            fontSize: 17,
+                                            height: 1.2,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 14),
+                                      GestureDetector(
+                                        onTap: () {
+                                          HapticHelper.impact(
+                                            HapticImpact.light,
+                                          );
+                                          NavigationService().pushNamed(
+                                            'DonationList',
+                                          );
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 20,
+                                            vertical: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: kSecondaryColor,
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'Donate Now',
+                                            style: kCaption12M.copyWith(
+                                              color: kTextColor,
+                                              height: 1.2,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Latest News — Figma Frame 43 (370 × 172)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          kScreenPaddingH,
+                          16,
+                          kScreenPaddingH,
+                          8,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Latest News',
+                                style: kSectionTitleSB,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                HapticHelper.impact(HapticImpact.light);
+                                NavigationService().pushNamed('NewsList');
+                              },
+                              child: Text(
+                                'See all',
+                                style: kCaption12M.copyWith(
+                                  color: kPrimaryColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: 146,
+                        child: Consumer(
+                          builder: (context, ref, _) {
+                            final newsAsync = ref.watch(newsListProvider);
+                            return AsyncContent(
+                              asyncValue: newsAsync,
+                              onRetry: () => refreshHomeData(ref),
+                              builder: (page) {
+                                final items = page.items.take(5).toList();
+                                if (items.isEmpty) {
+                                  return Center(
+                                    child: Text(
+                                      'No news yet',
+                                      style: kEmptyStateM,
+                                    ),
+                                  );
+                                }
+                                return ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: kScreenPaddingH,
+                                  ),
+                                  itemCount: items.length,
+                                  separatorBuilder: (_, _) =>
+                                      const SizedBox(width: 8),
+                                  itemBuilder: (context, index) {
+                                    final item = items[index];
+                                    return GestureDetector(
+                                      onTap: () {
+                                        HapticHelper.impact(HapticImpact.light);
+                                        NavigationService().pushNamed(
+                                          'NewsDetail',
+                                          arguments: {'newsId': item.id},
+                                        );
+                                      },
+                                      child: Container(
+                                        width: 323,
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: kWhite,
+                                          borderRadius: BorderRadius.circular(
+                                            14,
+                                          ),
+                                          border: Border.all(color: kBorder),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              item.subTitle ?? 'Announcement',
+                                              style: kCaption12R.copyWith(
+                                                color: kMutedText,
+                                                height: 1.2,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              item.title,
+                                              style: kLabel15SB.copyWith(
+                                                height: 1.2,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Expanded(
+                                              child: Text(
+                                                item.description,
+                                                style: kCaption12R.copyWith(
+                                                  color: kTextColor,
+                                                  height: 1.2,
+                                                ),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            Text(
+                                              _formatNewsDate(item.createdAt),
+                                              style: kCaption10R.copyWith(
+                                                color: kMutedText,
+                                                height: 1.2,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+
+                    // Empowerment Programs banner — Figma Frame 46
+                    // Asset already includes light-blue left + soft fade into photo
+                    if (isJamiatMember)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: kScreenPaddingH,
+                            vertical: 24,
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: AspectRatio(
+                              aspectRatio: 370 / 212,
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.asset(
+                                    'assets/pngs/empowerment_image.png',
+                                    fit: BoxFit.cover,
+                                    alignment: Alignment.center,
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Explore our',
+                                          style: kBodyTitleR.copyWith(
+                                            color: kWhite,
+                                            height: 1.2,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Empowerment\nPrograms',
+                                          style: kHeadTitleSB.copyWith(
+                                            color: kWhite,
+                                            height: 1.15,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        SizedBox(
+                                          width: 168,
+                                          child: Text(
+                                            'for skill building, financial aid requests, and welfare services.',
+                                            style: kCaption12R.copyWith(
+                                              color: kWhite,
+                                              height: 1.2,
+                                            ),
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        GestureDetector(
+                                          onTap: () {
+                                            HapticHelper.impact(
+                                              HapticImpact.light,
+                                            );
+                                            NavigationService().pushNamed(
+                                              'EmpowermentPrograms',
+                                            );
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 10,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: kPrimaryColor,
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              'Explore Programs',
+                                              style: kCaption12M.copyWith(
+                                                color: kWhite,
+                                                height: 1.2,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 48)),
                   ],
                 ),
               ),
             ),
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: 146,
-                child: Consumer(
-                  builder: (context, ref, _) {
-                    final newsAsync = ref.watch(newsListProvider);
-                    return AsyncContent(
-                      asyncValue: newsAsync,
-                      onRetry: () => refreshHomeData(ref),
-                      builder: (page) {
-                        final items = page.items.take(5).toList();
-                        if (items.isEmpty) {
-                          return Center(
-                            child: Text('No news yet', style: kEmptyStateM),
-                          );
-                        }
-                        return ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: kScreenPaddingH,
-                          ),
-                          itemCount: items.length,
-                          separatorBuilder: (_, _) => const SizedBox(width: 8),
-                          itemBuilder: (context, index) {
-                            final item = items[index];
-                            return GestureDetector(
-                              onTap: () {
-                                HapticHelper.impact(HapticImpact.light);
-                                NavigationService().pushNamed(
-                                  'NewsDetail',
-                                  arguments: {'newsId': item.id},
-                                );
-                              },
-                              child: Container(
-                                width: 323,
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: kWhite,
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: kBorder),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      item.subTitle ?? 'Announcement',
-                                      style: kCaption12R.copyWith(
-                                        color: kMutedText,
-                                        height: 1.2,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      item.title,
-                                      style: kLabel15SB.copyWith(height: 1.2),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Expanded(
-                                      child: Text(
-                                        item.description,
-                                        style: kCaption12R.copyWith(
-                                          color: kTextColor,
-                                          height: 1.2,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    Text(
-                                      _formatNewsDate(item.createdAt),
-                                      style: kCaption10R.copyWith(
-                                        color: kMutedText,
-                                        height: 1.2,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ),
-
-            // Empowerment Programs banner — Figma Frame 46
-            // Asset already includes light-blue left + soft fade into photo
-            if (isJamiatMember)
-              SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: kScreenPaddingH,
-                  vertical: 24,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: AspectRatio(
-                    aspectRatio: 370 / 212,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.asset(
-                          'assets/pngs/empowerment_image.png',
-                          fit: BoxFit.cover,
-                          alignment: Alignment.center,
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Explore our',
-                                style: kBodyTitleR.copyWith(
-                                  color: kWhite,
-                                  height: 1.2,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Empowerment\nPrograms',
-                                style: kHeadTitleSB.copyWith(
-                                  color: kWhite,
-                                  height: 1.15,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              SizedBox(
-                                width: 168,
-                                child: Text(
-                                  'for skill building, financial aid requests, and welfare services.',
-                                  style: kCaption12R.copyWith(
-                                    color: kWhite,
-                                    height: 1.2,
-                                  ),
-                                ),
-                              ),
-                              const Spacer(),
-                              GestureDetector(
-                                onTap: () {
-                                  HapticHelper.impact(HapticImpact.light);
-                                  NavigationService().pushNamed(
-                                    'EmpowermentPrograms',
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 10,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: kPrimaryColor,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    'Explore Programs',
-                                    style: kCaption12M.copyWith(
-                                      color: kWhite,
-                                      height: 1.2,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 48)),
           ],
-        ),
         ),
       ),
       floatingActionButton: _ContributeButton(
@@ -1113,8 +1166,7 @@ class _WelfareGridSection extends StatelessWidget {
           const SizedBox(height: 24),
           LayoutBuilder(
             builder: (context, constraints) {
-              final colWidth =
-                  (constraints.maxWidth - _figmaGap * 2) / 3;
+              final colWidth = (constraints.maxWidth - _figmaGap * 2) / 3;
               final scale = colWidth / _figmaCol;
               final midOffset = _figmaMidOffset * scale;
               final gap = _figmaGap * scale;
@@ -1147,10 +1199,7 @@ class _WelfareGridSection extends StatelessWidget {
                       ),
                     ),
                     SizedBox(width: gap),
-                    SizedBox(
-                      width: colWidth,
-                      child: buildCol(_col2),
-                    ),
+                    SizedBox(width: colWidth, child: buildCol(_col2)),
                     SizedBox(width: gap),
                     SizedBox(
                       width: colWidth,
@@ -1250,10 +1299,7 @@ class _WelfareServiceCard extends StatelessWidget {
               top: imageRect.top,
               width: imageRect.width,
               height: imageRect.height,
-              child: Image.asset(
-                data.imagePath,
-                fit: BoxFit.contain,
-              ),
+              child: Image.asset(data.imagePath, fit: BoxFit.contain),
             ),
           ],
         ),
