@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/models/event_model.dart';
@@ -85,10 +86,11 @@ class EventTicketScreen extends ConsumerWidget {
                         color: kWhite,
                         border: Border.all(color: kBorder, width: 1.25),
                       ),
-                      child: const Icon(
-                        Icons.download_outlined,
-                        color: kTextColor,
-                        size: 20,
+                      alignment: Alignment.center,
+                      child: SvgPicture.asset(
+                        'assets/svg/donwload_icon.svg',
+                        width: 17,
+                        height: 17,
                       ),
                     ),
                   ),

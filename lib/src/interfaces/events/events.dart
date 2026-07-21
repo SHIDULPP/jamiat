@@ -101,6 +101,13 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                   ),
                   PopupMenuButton<String>(
                     padding: EdgeInsets.zero,
+                    offset: const Offset(0, 44),
+                    color: kWhite,
+                    elevation: 8,
+                    shadowColor: kBlack.withValues(alpha: 0.18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     icon: Container(
                       width: 40,
                       height: 40,
@@ -116,20 +123,50 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                       ),
                     ),
                     onSelected: (value) {
+                      HapticHelper.impact(HapticImpact.light);
                       if (value == 'tickets') {
                         NavigationService().pushNamed('MyTickets');
                       } else {
                         NavigationService().pushNamed('SavedEvents');
                       }
                     },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(
+                    itemBuilder: (_) => [
+                      PopupMenuItem<String>(
                         value: 'tickets',
-                        child: Text('My Tickets'),
+                        height: 48,
+                        child: Text(
+                          'My Tickets',
+                          style: kStyle(
+                            kMedium,
+                            15,
+                            color: const Color(0xFF888888),
+                          ),
+                        ),
                       ),
-                      PopupMenuItem(
+                      PopupMenuItem<String>(
+                        enabled: false,
+                        height: 1,
+                        padding: EdgeInsets.zero,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: kBorder.withValues(alpha: 0.9),
+                          ),
+                        ),
+                      ),
+                      PopupMenuItem<String>(
                         value: 'saved',
-                        child: Text('Saved events'),
+                        height: 48,
+                        child: Text(
+                          'Saved',
+                          style: kStyle(
+                            kMedium,
+                            15,
+                            color: const Color(0xFF888888),
+                          ),
+                        ),
                       ),
                     ],
                   ),
