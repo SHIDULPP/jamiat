@@ -222,12 +222,20 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       body: SafeArea(
         child: AsyncContent(
           asyncValue: profileAsync,
-          onRetry: () => ref.invalidate(userProfileProvider),
+          onRetry: () {
+            ref.invalidate(userProfileProvider);
+            ref.invalidate(donationHistoryProvider);
+          },
           builder: (user) {
             final isJamiatMember = user.role == 'jamiat_member';
-            final donationCount =
-                historyAsync.value?.summary.participatedCampaigns;
-            final totalDonated = historyAsync.value?.summary.totalDonated;
+            final totalPayments = historyAsync.maybeWhen(
+              data: (history) => history.summary.totalPayments,
+              orElse: () => null,
+            );
+            final totalDonated = historyAsync.maybeWhen(
+              data: (history) => history.summary.totalDonated,
+              orElse: () => null,
+            );
 
             return SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
@@ -400,8 +408,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           child: Column(
                             children: [
                               _buildStatCard(
-                                title: 'DONATIONS',
-                                value: '${donationCount ?? '—'}',
+                                title: 'PAYMENTS',
+                                value: totalPayments?.toString() ?? '—',
                               ),
                               const SizedBox(height: 10),
                               _buildStatCard(

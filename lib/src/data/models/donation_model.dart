@@ -52,16 +52,22 @@ class DonationHistorySummary {
   const DonationHistorySummary({
     required this.totalDonated,
     required this.participatedCampaigns,
+    required this.totalPayments,
   });
 
   final num totalDonated;
   final int participatedCampaigns;
+  final int totalPayments;
 
-  factory DonationHistorySummary.fromJson(Map<String, dynamic> json) {
+  factory DonationHistorySummary.fromJson(
+    Map<String, dynamic> json, {
+    int totalPayments = 0,
+  }) {
     return DonationHistorySummary(
       totalDonated: json['total_donated'] ?? 0,
       participatedCampaigns:
           (json['participated_campaigns'] as num?)?.toInt() ?? 0,
+      totalPayments: (json['total_payments'] as num?)?.toInt() ?? totalPayments,
     );
   }
 }

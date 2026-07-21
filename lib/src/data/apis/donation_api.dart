@@ -76,11 +76,19 @@ class DonationApi {
       ({DonationHistorySummary summary, List<DonationModel> donations})
     >
   >
-  getHistory({int pageNo = 1, int limit = 20}) async {
+  getHistory({
+    int pageNo = 1,
+    int limit = 20,
+    String status = 'success',
+  }) async {
     final response = await _api.get(
       '/donation/history',
       requireAuth: true,
-      queryParams: {'page_no': '$pageNo', 'limit': '$limit'},
+      queryParams: {
+        'page_no': '$pageNo',
+        'limit': '$limit',
+        if (status.isNotEmpty) 'status': status,
+      },
     );
 
     if (!response.success) {
@@ -95,7 +103,16 @@ class DonationApi {
       return ApiResponse.error('Invalid history response', response.statusCode);
     }
 
-    final summary = DonationHistorySummary.fromJson(data);
+    final summaryJson = data['summary'];
+    final summary = summaryJson is Map
+        ? DonationHistorySummary.fromJson(
+            Map<String, dynamic>.from(summaryJson),
+            totalPayments: nestedTotalCount(response.data),
+          )
+        : DonationHistorySummary.fromJson(
+            data,
+            totalPayments: nestedTotalCount(response.data),
+          );
     final donations = (data['donations'] as List? ?? const [])
         .whereType<Map>()
         .map((e) => DonationModel.fromJson(Map<String, dynamic>.from(e)))

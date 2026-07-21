@@ -208,5 +208,56 @@ void main() {
       expect(capturedBody, contains('razorpay_payment_id'));
       expect(capturedBody, contains('razorpay_signature'));
     });
+
+    test('getHistory parses nested summary and total_count', () async {
+      final client = MockClient((request) async {
+        expect(request.url.path, endsWith('/donation/history'));
+        expect(request.url.queryParameters['page_no'], '1');
+        expect(request.url.queryParameters['limit'], '20');
+        expect(request.url.queryParameters['status'], 'success');
+        return http.Response(
+          '''
+          {
+            "status": 200,
+            "message": "ok",
+            "data": {
+              "summary": {
+                "total_donated": 1500,
+                "participated_campaigns": 3
+              },
+              "donations": [
+                {
+                  "_id": "d1",
+                  "amount": 500,
+                  "status": "success",
+                  "campaign_name": "Education"
+                }
+              ]
+            },
+            "total_count": 5
+          }
+          ''',
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+
+      final api = DonationApi(
+        ApiProvider(
+          baseUrl: 'http://127.0.0.1:3005/api/v1',
+          apiKey: 'test-key',
+          secureStorage: _TestSecureStorage(),
+          client: client,
+        ),
+      );
+
+      final response = await api.getHistory();
+      expect(response.success, isTrue);
+      expect(response.data!.summary.totalDonated, 1500);
+      expect(response.data!.summary.participatedCampaigns, 3);
+      expect(response.data!.summary.totalPayments, 5);
+      expect(response.data!.donations, hasLength(1));
+      expect(response.data!.donations.first.campaignName, 'Education');
+    });
   });
 }
