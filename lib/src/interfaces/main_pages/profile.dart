@@ -224,12 +224,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           asyncValue: profileAsync,
           onRetry: () => ref.invalidate(userProfileProvider),
           builder: (user) {
+            final isJamiatMember = user.role == 'jamiat_member';
             final donationCount =
                 historyAsync.value?.summary.participatedCampaigns;
             final totalDonated = historyAsync.value?.summary.totalDonated;
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: EdgeInsets.fromLTRB(
+                24,
+                16,
+                24,
+                isJamiatMember ? 16 : 110,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -297,30 +303,41 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                               _pickAndUploadAvatar();
                                             },
                                       child: Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: const BoxDecoration(
-                                          color: kWhite,
+                                        width: 32,
+                                        height: 32,
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: isJamiatMember
+                                              ? kWhite
+                                              : kTextColor,
                                           shape: BoxShape.circle,
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black12,
-                                              blurRadius: 4,
-                                              offset: Offset(0, 2),
-                                            ),
-                                          ],
+                                          boxShadow: isJamiatMember
+                                              ? const [
+                                                  BoxShadow(
+                                                    color: Colors.black12,
+                                                    blurRadius: 4,
+                                                    offset: Offset(0, 2),
+                                                  ),
+                                                ]
+                                              : null,
                                         ),
                                         child: _isUploadingAvatar
-                                            ? const SizedBox(
-                                                width: 14,
-                                                height: 14,
+                                            ? SizedBox(
+                                                width: 16,
+                                                height: 16,
                                                 child:
                                                     CircularProgressIndicator(
                                                       strokeWidth: 2,
+                                                      color: isJamiatMember
+                                                          ? kTextColor
+                                                          : kWhite,
                                                     ),
                                               )
-                                            : const Icon(
+                                            : Icon(
                                                 Icons.camera_alt,
-                                                color: kTextColor,
+                                                color: isJamiatMember
+                                                    ? kTextColor
+                                                    : kWhite,
                                                 size: 14,
                                               ),
                                       ),
@@ -337,34 +354,43 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Text(
-                                    user.role == 'normal_member'
-                                        ? 'Jamiat Member'
-                                        : user.role,
-                                    style: kCaption12R.copyWith(
-                                      color: kSecondaryTextColor,
+                              if (isJamiatMember) ...[
+                                Row(
+                                  children: [
+                                    Text(
+                                      user.role == 'normal_member'
+                                          ? 'Jamiat Member'
+                                          : user.role,
+                                      style: kCaption12R.copyWith(
+                                        color: kSecondaryTextColor,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  if (user.status == 'active')
-                                    const Icon(
-                                      Icons.verified,
-                                      color: kSecondaryColor,
-                                      size: 14,
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                user.phone.isNotEmpty
-                                    ? user.phone
-                                    : 'ID : ${user.id}',
-                                style: kCaption12R.copyWith(
-                                  color: kSecondaryTextColor,
+                                    const SizedBox(width: 4),
+                                    if (user.status == 'active')
+                                      const Icon(
+                                        Icons.verified,
+                                        color: kSecondaryColor,
+                                        size: 14,
+                                      ),
+                                  ],
                                 ),
-                              ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  user.phone.isNotEmpty
+                                      ? user.phone
+                                      : 'ID : ${user.id}',
+                                  style: kCaption12R.copyWith(
+                                    color: kSecondaryTextColor,
+                                  ),
+                                ),
+                              ] else ...[
+                                Text(
+                                  'ID : ${user.id}',
+                                  style: kCaption12R.copyWith(
+                                    color: kSecondaryTextColor,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -391,84 +417,163 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: kScreenBg,
-                      borderRadius: BorderRadius.circular(kCardRadiusLg),
-                    ),
-                    child: Column(
-                      children: [
-                        _buildMenuItem(
-                          icon: Icons.volunteer_activism_outlined,
-                          title: 'Donation history',
-                          chevronColor: kSecondaryTextColor,
-                          onTap: () =>
-                              NavigationService().pushNamed('DonationHistory'),
-                        ),
-                        _buildDivider(),
-                        _buildMenuItem(
-                          icon: Icons.local_activity_outlined,
-                          title: 'Events',
-                          chevronColor: kSecondaryTextColor,
-                          onTap: () => NavigationService().pushNamed('Events'),
-                        ),
-                        _buildDivider(),
-                        _buildMenuItem(
-                          icon: Icons.inventory_2_outlined,
-                          title: 'Saved campaigns',
-                          chevronColor: kSecondaryTextColor,
-                          onTap: () =>
-                              NavigationService().pushNamed('SavedDonations'),
-                        ),
-                        _buildDivider(),
-                        _buildMenuItem(
-                          icon: Icons.autorenew_outlined,
-                          title: 'Autopay',
-                          chevronColor: kSecondaryTextColor,
-                          onTap: () =>
-                              NavigationService().pushNamed('AutopayView'),
-                        ),
-                        _buildDivider(),
-                        _buildMenuItem(
-                          icon: Icons.person_outline,
-                          title: 'Edit Profile',
-                          chevronColor: kSecondaryTextColor,
-                          onTap: () => NavigationService().pushNamed(
-                            'Registration',
-                            arguments: {'editMode': true},
+                  if (isJamiatMember)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: kScreenBg,
+                        borderRadius: BorderRadius.circular(kCardRadiusLg),
+                      ),
+                      child: Column(
+                        children: [
+                          _buildMenuItem(
+                            icon: Icons.volunteer_activism_outlined,
+                            title: 'Donation history',
+                            chevronColor: kSecondaryTextColor,
+                            onTap: () => NavigationService().pushNamed(
+                              'DonationHistory',
+                            ),
                           ),
-                        ),
-                        _buildDivider(),
-                        _buildMenuItem(
-                          icon: Icons.headset_mic_outlined,
-                          title: 'Help & Support',
-                          chevronColor: kPrimaryColor,
-                          onTap: () {},
-                        ),
-                        _buildDivider(),
-                        _buildMenuItem(
-                          icon: Icons.article_outlined,
-                          title: 'Terms and Conditions',
-                          chevronColor: kPrimaryColor,
-                          onTap: () {},
-                        ),
-                        _buildDivider(),
-                        _buildMenuItem(
-                          icon: Icons.shield_outlined,
-                          title: 'Privacy Policy',
-                          chevronColor: kPrimaryColor,
-                          onTap: () {},
-                        ),
-                        _buildDivider(),
-                        _buildMenuItem(
-                          icon: Icons.logout,
-                          title: 'Log out',
-                          chevronColor: kRed,
-                          onTap: () => _logout(context),
-                        ),
-                      ],
+                          _buildDivider(),
+                          _buildMenuItem(
+                            icon: Icons.local_activity_outlined,
+                            title: 'Events',
+                            chevronColor: kSecondaryTextColor,
+                            onTap: () =>
+                                NavigationService().pushNamed('Events'),
+                          ),
+                          _buildDivider(),
+                          _buildMenuItem(
+                            icon: Icons.inventory_2_outlined,
+                            title: 'Saved campaigns',
+                            chevronColor: kSecondaryTextColor,
+                            onTap: () =>
+                                NavigationService().pushNamed('SavedDonations'),
+                          ),
+                          _buildDivider(),
+                          _buildMenuItem(
+                            icon: Icons.autorenew_outlined,
+                            title: 'Autopay',
+                            chevronColor: kSecondaryTextColor,
+                            onTap: () =>
+                                NavigationService().pushNamed('AutopayView'),
+                          ),
+                          _buildDivider(),
+                          _buildMenuItem(
+                            icon: Icons.person_outline,
+                            title: 'Edit Profile',
+                            chevronColor: kSecondaryTextColor,
+                            onTap: () => NavigationService().pushNamed(
+                              'Registration',
+                              arguments: {'editMode': true},
+                            ),
+                          ),
+                          _buildDivider(),
+                          _buildMenuItem(
+                            icon: Icons.headset_mic_outlined,
+                            title: 'Help & Support',
+                            chevronColor: kPrimaryColor,
+                            onTap: () {},
+                          ),
+                          _buildDivider(),
+                          _buildMenuItem(
+                            icon: Icons.article_outlined,
+                            title: 'Terms and Conditions',
+                            chevronColor: kPrimaryColor,
+                            onTap: () {},
+                          ),
+                          _buildDivider(),
+                          _buildMenuItem(
+                            icon: Icons.shield_outlined,
+                            title: 'Privacy Policy',
+                            chevronColor: kPrimaryColor,
+                            onTap: () {},
+                          ),
+                          _buildDivider(),
+                          _buildMenuItem(
+                            icon: Icons.logout,
+                            title: 'Log out',
+                            chevronColor: kRed,
+                            onTap: () => _logout(context),
+                          ),
+                        ],
+                      ),
+                    )
+                  else ...[
+                    Container(
+                      decoration: BoxDecoration(
+                        color: kScreenBg,
+                        borderRadius: BorderRadius.circular(kCardRadiusLg),
+                      ),
+                      child: Column(
+                        children: [
+                          _buildMenuItem(
+                            icon: Icons.volunteer_activism_outlined,
+                            title: 'Donation history',
+                            chevronColor: kSecondaryTextColor,
+                            onTap: () => NavigationService().pushNamed(
+                              'DonationHistory',
+                            ),
+                          ),
+                          _buildDivider(),
+                          _buildMenuItem(
+                            icon: Icons.autorenew_outlined,
+                            title: 'Autopay',
+                            chevronColor: kSecondaryTextColor,
+                            onTap: () =>
+                                NavigationService().pushNamed('AutopayView'),
+                          ),
+                          _buildDivider(),
+                          _buildMenuItem(
+                            icon: Icons.person_outline,
+                            title: 'Edit Profile',
+                            chevronColor: kSecondaryTextColor,
+                            onTap: () => NavigationService().pushNamed(
+                              'Registration',
+                              arguments: {'editMode': true},
+                            ),
+                          ),
+                          _buildDivider(),
+                          _buildMenuItem(
+                            icon: Icons.headset_mic_outlined,
+                            title: 'Help & Support',
+                            chevronColor: kPrimaryColor,
+                            onTap: () {},
+                          ),
+                          _buildDivider(),
+                          _buildMenuItem(
+                            icon: Icons.article_outlined,
+                            title: 'Terms and Conditions',
+                            chevronColor: kPrimaryColor,
+                            onTap: () {},
+                          ),
+                          _buildDivider(),
+                          _buildMenuItem(
+                            icon: Icons.shield_outlined,
+                            title: 'Privacy Policy',
+                            chevronColor: kPrimaryColor,
+                            onTap: () {},
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 24),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: kScreenBg,
+                        borderRadius: BorderRadius.circular(kCardRadiusLg),
+                      ),
+                      child: Column(
+                        children: [
+                          _buildMenuItem(
+                            icon: Icons.logout,
+                            title: 'Log out',
+                            chevronColor: kRed,
+                            onTap: () => _logout(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                 ],
               ),

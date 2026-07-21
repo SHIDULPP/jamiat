@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:jamiat/src/data/apis/user_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/router/nav_router.dart';
@@ -20,7 +21,47 @@ class NavBar extends ConsumerStatefulWidget {
   ConsumerState<NavBar> createState() => _NavBarState();
 }
 
+class _NavTab {
+  final int pageIndex;
+  final String icon;
+  final String label;
+
+  const _NavTab({
+    required this.pageIndex,
+    required this.icon,
+    required this.label,
+  });
+}
+
 class _NavBarState extends ConsumerState<NavBar> {
+  static const List<_NavTab> _allTabs = [
+    _NavTab(
+      pageIndex: 0,
+      icon: 'assets/svg/home_icon.svg',
+      label: 'Home',
+    ),
+    _NavTab(
+      pageIndex: 1,
+      icon: 'assets/svg/donate.svg',
+      label: 'Donate',
+    ),
+    _NavTab(
+      pageIndex: 2,
+      icon: 'assets/svg/market_icon.svg',
+      label: 'Market',
+    ),
+    _NavTab(
+      pageIndex: 3,
+      icon: 'assets/svg/profile_icon.svg',
+      label: 'Profile',
+    ),
+  ];
+
+  List<_NavTab> _tabsForRole(bool isJamiatMember) {
+    if (isJamiatMember) return _allTabs;
+    return _allTabs.where((tab) => tab.pageIndex != 2).toList();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -36,30 +77,38 @@ class _NavBarState extends ConsumerState<NavBar> {
     ProfilePage(),
   ];
 
-  static const List<String> _icons = [
-    'assets/svg/home_icon.svg',
-    'assets/svg/donate.svg',
-    'assets/svg/market_icon.svg',
-    'assets/svg/profile_icon.svg',
-  ];
-
-  static const List<String> _labels = ['Home', 'Donate', 'Market', 'Profile'];
-
   @override
   Widget build(BuildContext context) {
+    final isJamiatMember = ref.watch(userProfileProvider).maybeWhen(
+          data: (user) => user.role == 'jamiat_member',
+          orElse: () => false,
+        );
+    final tabs = _tabsForRole(isJamiatMember);
     final selectedIndex = ref.watch(selectedIndexProvider);
 
+    ref.listen(userProfileProvider, (previous, next) {
+      next.whenData((user) {
+        if (user.role != 'jamiat_member' &&
+            ref.read(selectedIndexProvider) == 2) {
+          ref.read(selectedIndexProvider.notifier).updateIndex(0);
+        }
+      });
+    });
+
+    final pageIndex =
+        !isJamiatMember && selectedIndex == 2 ? 0 : selectedIndex;
+
     return PopScope(
-      canPop: selectedIndex == 0,
+      canPop: pageIndex == 0,
       onPopInvokedWithResult: (didPop, result) {
         log('inside navbar popscope', name: 'NavBar');
-        if (selectedIndex != 0) {
+        if (pageIndex != 0) {
           ref.read(selectedIndexProvider.notifier).updateIndex(0);
         }
       },
       child: Scaffold(
         backgroundColor: kWhite,
-        body: _pages.elementAt(selectedIndex),
+        body: _pages.elementAt(pageIndex),
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
             color: kWhite,
@@ -78,18 +127,19 @@ class _NavBarState extends ConsumerState<NavBar> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Row(
-                  children: List.generate(_labels.length, (index) {
-                    final isSelected = selectedIndex == index;
+                  children: List.generate(tabs.length, (index) {
+                    final tab = tabs[index];
+                    final isSelected = selectedIndex == tab.pageIndex;
                     final color = isSelected ? kPrimaryColor : kIconMuted;
 
                     return Expanded(
                       child: GestureDetector(
                         onTap: () {
-                          if (selectedIndex == index) return;
+                          if (selectedIndex == tab.pageIndex) return;
                           HapticHelper.impact(HapticImpact.light);
                           ref
                               .read(selectedIndexProvider.notifier)
-                              .updateIndex(index);
+                              .updateIndex(tab.pageIndex);
                         },
                         behavior: HitTestBehavior.opaque,
                         child: Column(
@@ -99,7 +149,7 @@ class _NavBarState extends ConsumerState<NavBar> {
                               duration: const Duration(milliseconds: 200),
                               scale: isSelected ? 1.15 : 1.0,
                               child: SvgPicture.asset(
-                                _icons[index],
+                                tab.icon,
                                 width: 24,
                                 height: 24,
                                 colorFilter: ColorFilter.mode(
@@ -110,7 +160,7 @@ class _NavBarState extends ConsumerState<NavBar> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              _labels[index],
+                              tab.label,
                               style: (isSelected ? kNavLabelM : kNavLabelR)
                                   .copyWith(color: color),
                             ),
