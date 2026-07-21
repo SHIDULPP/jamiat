@@ -15,6 +15,7 @@ class CampaignModel {
     this.totalDonorCount,
     this.isCompleted,
     this.status,
+    this.targetDate,
   });
 
   final String id;
@@ -32,6 +33,7 @@ class CampaignModel {
   final int? totalDonorCount;
   final bool? isCompleted;
   final String? status;
+  final DateTime? targetDate;
 
   factory CampaignModel.fromJson(Map<String, dynamic> json) {
     return CampaignModel(
@@ -50,6 +52,9 @@ class CampaignModel {
       totalDonorCount: (json['total_donor_count'] as num?)?.toInt(),
       isCompleted: json['is_completed'] == true,
       status: json['status']?.toString(),
+      targetDate: json['target_date'] != null
+          ? DateTime.tryParse(json['target_date'].toString())
+          : null,
     );
   }
 }

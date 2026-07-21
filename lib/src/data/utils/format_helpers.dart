@@ -75,3 +75,22 @@ String formatDonationDateTime(DateTime date) {
   final period = date.hour >= 12 ? 'pm' : 'am';
   return '$day $month, ${date.year} • $hour:$minute $period';
 }
+
+const _monthLabelsFull = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+String formatTargetDate(DateTime date) {
+  return '${date.day} ${_monthLabelsFull[date.month - 1]}, ${date.year}';
+}

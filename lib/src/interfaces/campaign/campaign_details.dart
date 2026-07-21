@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jamiat/src/data/apis/campaign_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
@@ -160,11 +161,33 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
     }
   }
 
+  Widget _headerCircleButton({
+    required Widget child,
+    required VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: kWhite,
+          border: Border.all(color: kBorder, width: 1.25),
+        ),
+        alignment: Alignment.center,
+        child: child,
+      ),
+    );
+  }
+
   Widget _coverImage(String? url) {
     if (url != null && url.startsWith('http')) {
       return Image.network(
         url,
         fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
         errorBuilder: (_, _, _) => Container(
           color: kScreenBg,
           child: const Icon(Icons.image_outlined, color: kMutedText, size: 40),
@@ -174,6 +197,8 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
     return Image.asset(
       url ?? 'assets/jpgs/campaign_education.jpg',
       fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
       errorBuilder: (_, _, _) => Container(
         color: kScreenBg,
         child: const Icon(Icons.image_outlined, color: kMutedText, size: 40),
@@ -191,107 +216,102 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
     required num displayGoal,
     required int displayDaysLeft,
     required String? donateCampaignId,
+    DateTime? targetDate,
   }) {
     final progress = displayGoal <= 0
         ? 0.0
         : (displayRaised / displayGoal).clamp(0.0, 1.0);
+    final percent = (progress * 100).round();
     final categoryLabel = CategoryMapper.toUi(displayCategory);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          height: 190,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(kCardRadiusLg),
-            boxShadow: [
-              BoxShadow(
-                color: kBlack.withValues(alpha: 0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+        AspectRatio(
+          aspectRatio: 370 / 220,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: _coverImage(displayImage),
           ),
-          clipBehavior: Clip.antiAlias,
-          child: _coverImage(displayImage),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
         if (displayCategory != null) ...[
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: _getCategoryBgColor(categoryLabel),
-              borderRadius: BorderRadius.circular(100),
+              color: const Color(0xFFEEEEEE),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               categoryLabel,
-              style: kCaption10SB.copyWith(
-                color: _getCategoryIconColor(categoryLabel),
-                fontWeight: kBold,
-              ),
+              style: kCaption12M.copyWith(color: kTextColor),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
         ],
-        Text(displayTitle, style: kSectionTitleSB.copyWith(fontSize: 20)),
+        Text(
+          displayTitle,
+          style: kSectionTitleSB.copyWith(fontSize: 22, height: 1.25),
+        ),
         const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: kScreenBg,
-            borderRadius: BorderRadius.circular(kCardRadiusLg),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(kPillRadius),
+          child: LinearProgressIndicator(
+            value: progress.toDouble(),
+            minHeight: 8,
+            backgroundColor: kGreyLight,
+            color: kSecondaryColor,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(kPillRadius),
-                child: LinearProgressIndicator(
-                  value: progress.toDouble(),
-                  minHeight: 8,
-                  backgroundColor: kGreyLight,
-                  color: kSecondaryColor,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        ),
+        const SizedBox(height: 12),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        formatRupee(displayRaised),
-                        style: kBodyTitleSB.copyWith(fontSize: 16),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'raised of ${formatRupee(displayGoal)}',
-                        style: kCaption12R.copyWith(color: kSecondaryTextColor),
-                      ),
-                    ],
+                  Text(
+                    formatRupee(displayRaised),
+                    style: kBodyTitleSB.copyWith(fontSize: 16),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '${(progress * 100).round()}%',
-                        style: kBodyTitleSB.copyWith(fontSize: 16),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '$displayDaysLeft days left',
-                        style: kCaption12M.copyWith(color: kDaysLeftWarning),
-                      ),
-                    ],
+                  const SizedBox(height: 2),
+                  Text(
+                    'of ${formatRupee(displayGoal)}',
+                    style: kCaption12R.copyWith(color: kSecondaryTextColor),
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text('$percent%', style: kBodyTitleSB.copyWith(fontSize: 16)),
+                const SizedBox(height: 2),
+                Text(
+                  '$displayDaysLeft days left',
+                  style: kCaption12R.copyWith(color: kSecondaryTextColor),
+                ),
+              ],
+            ),
+          ],
         ),
-        const SizedBox(height: 20),
+        if (targetDate != null) ...[
+          const SizedBox(height: 16),
+          Text.rich(
+            TextSpan(
+              style: kCaption14R.copyWith(color: kSecondaryTextColor),
+              children: [
+                const TextSpan(text: 'Target Date: '),
+                TextSpan(
+                  text: formatTargetDate(targetDate),
+                  style: kCaption14M.copyWith(color: kTextColor),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 16),
         Text(
           displayDescription,
           style: kBodyTitleR.copyWith(
@@ -300,75 +320,39 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
             fontSize: 14,
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
         SafeArea(
           top: false,
-          child: Column(
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  HapticHelper.impact(HapticImpact.medium);
-                  final displayCat = categoryLabel;
-                  DonationSheet.show(
-                    context: context,
-                    categoryTitle: displayTitle,
-                    icon: _getCategoryIcon(displayCat),
-                    iconBgColor: _getCategoryBgColor(displayCat),
-                    iconColor: _getCategoryIconColor(displayCat),
-                    isAutopay: false,
-                    campaignId: donateCampaignId,
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kPrimaryColor,
-                  foregroundColor: kWhite,
-                  minimumSize: const Size.fromHeight(54),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: Text(
-                  'Donate Now',
-                  style: kButtonLabelSB.copyWith(fontSize: 16),
-                ),
+          child: ElevatedButton(
+            onPressed: () {
+              HapticHelper.impact(HapticImpact.medium);
+              final displayCat = categoryLabel;
+              DonationSheet.show(
+                context: context,
+                categoryTitle: displayTitle,
+                icon: _getCategoryIcon(displayCat),
+                iconBgColor: _getCategoryBgColor(displayCat),
+                iconColor: _getCategoryIconColor(displayCat),
+                isAutopay: false,
+                campaignId: donateCampaignId,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kPrimaryColor,
+              foregroundColor: kWhite,
+              minimumSize: const Size.fromHeight(54),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
               ),
-              if (donateCampaignId != null && donateCampaignId.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                OutlinedButton(
-                  onPressed: () {
-                    HapticHelper.impact(HapticImpact.medium);
-                    final displayCat = categoryLabel;
-                    DonationSheet.show(
-                      context: context,
-                      categoryTitle: displayTitle,
-                      icon: _getCategoryIcon(displayCat),
-                      iconBgColor: _getCategoryBgColor(displayCat),
-                      iconColor: _getCategoryIconColor(displayCat),
-                      isAutopay: true,
-                      campaignId: donateCampaignId,
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: kPrimaryColor,
-                    minimumSize: const Size.fromHeight(52),
-                    side: const BorderSide(color: kPrimaryColor),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: Text(
-                    'Set up Autopay',
-                    style: kButtonLabelSB.copyWith(
-                      fontSize: 15,
-                      color: kPrimaryColor,
-                    ),
-                  ),
-                ),
-              ],
-            ],
+            ),
+            child: Text(
+              'Donate Now',
+              style: kButtonLabelSB.copyWith(fontSize: 16),
+            ),
           ),
         ),
+        const SizedBox(height: 16),
       ],
     );
   }
@@ -444,48 +428,47 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isBookmarked = hasCampaignId
+        ? (ref
+                  .watch(campaignDetailProvider(widget.campaignId!))
+                  .value
+                  ?.isBookmarked ??
+              false)
+        : false;
+
     return Scaffold(
       backgroundColor: kWhite,
       body: SafeArea(
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
               child: Row(
                 children: [
-                  GestureDetector(
+                  _headerCircleButton(
                     onTap: () {
                       HapticHelper.impact(HapticImpact.light);
                       Navigator.pop(context);
                     },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: kTextColor,
-                        size: 20,
-                      ),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      color: kTextColor,
+                      size: 20,
                     ),
                   ),
-                  const SizedBox(width: 16),
                   Expanded(
                     child: Text(
                       isCampaignMode ? 'Campaign details' : 'Donation details',
+                      textAlign: TextAlign.center,
                       style: kHeadTitleB.copyWith(
                         color: kTextColor,
-                        fontSize: 22,
+                        fontSize: 20,
                       ),
                     ),
                   ),
                   if (hasCampaignId) ...[
-                    IconButton(
-                      onPressed: _shareLoading
+                    _headerCircleButton(
+                      onTap: _shareLoading
                           ? null
                           : () {
                               HapticHelper.impact(HapticImpact.light);
@@ -499,16 +482,25 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
                                 campaign?.title ?? widget.title,
                               );
                             },
-                      icon: _shareLoading
+                      child: _shareLoading
                           ? const SizedBox(
-                              width: 18,
-                              height: 18,
+                              width: 16,
+                              height: 16,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Icon(Icons.share_outlined, color: kTextColor),
+                          : SvgPicture.asset(
+                              'assets/svg/share.svg',
+                              width: 18,
+                              height: 18,
+                              colorFilter: const ColorFilter.mode(
+                                kTextColor,
+                                BlendMode.srcIn,
+                              ),
+                            ),
                     ),
-                    IconButton(
-                      onPressed: _bookmarkLoading
+                    const SizedBox(width: 8),
+                    _headerCircleButton(
+                      onTap: _bookmarkLoading
                           ? null
                           : () {
                               HapticHelper.impact(HapticImpact.light);
@@ -521,28 +513,24 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
                                 _toggleBookmark(campaign);
                               }
                             },
-                      icon: _bookmarkLoading
+                      child: _bookmarkLoading
                           ? const SizedBox(
-                              width: 18,
-                              height: 18,
+                              width: 16,
+                              height: 16,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : Icon(
-                              (ref
-                                          .watch(
-                                            campaignDetailProvider(
-                                              widget.campaignId!,
-                                            ),
-                                          )
-                                          .value
-                                          ?.isBookmarked ??
-                                      false)
-                                  ? Icons.bookmark
-                                  : Icons.bookmark_border,
-                              color: kTextColor,
+                          : SvgPicture.asset(
+                              'assets/svg/bookmark.svg',
+                              width: 18,
+                              height: 18,
+                              colorFilter: ColorFilter.mode(
+                                isBookmarked ? kPrimaryColor : kTextColor,
+                                BlendMode.srcIn,
+                              ),
                             ),
                     ),
-                  ],
+                  ] else
+                    const SizedBox(width: 40),
                 ],
               ),
             ),
@@ -567,6 +555,7 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
                           displayGoal: campaign.targetAmount,
                           displayDaysLeft: campaign.remainingDays ?? 0,
                           donateCampaignId: campaign.id,
+                          targetDate: campaign.targetDate,
                         ),
                       ),
                     )
@@ -604,7 +593,7 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
                       icon: _getCategoryIcon(widget.title),
                       iconBgColor: _getCategoryBgColor(widget.title),
                       iconColor: _getCategoryIconColor(widget.title),
-                      isAutopay: true,
+                      isAutopay: false,
                       campaignId: widget.campaignId,
                     );
                   },
