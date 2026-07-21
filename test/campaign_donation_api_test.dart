@@ -230,7 +230,8 @@ void main() {
                   "_id": "d1",
                   "amount": 500,
                   "status": "success",
-                  "campaign_name": "Education"
+                  "campaign_name": "Education",
+                  "cover_image": "https://cdn.example.com/campaign.jpg"
                 }
               ]
             },
@@ -258,6 +259,10 @@ void main() {
       expect(response.data!.summary.totalPayments, 5);
       expect(response.data!.donations, hasLength(1));
       expect(response.data!.donations.first.campaignName, 'Education');
+      expect(
+        response.data!.donations.first.coverImage,
+        'https://cdn.example.com/campaign.jpg',
+      );
     });
   });
 }

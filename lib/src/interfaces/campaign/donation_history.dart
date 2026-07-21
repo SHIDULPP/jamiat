@@ -35,10 +35,72 @@ class DonationHistoryScreen extends ConsumerWidget {
     );
   }
 
+  Widget _campaignImage(String? url) {
+    final imageUrl = url?.trim();
+    if (imageUrl != null &&
+        imageUrl.isNotEmpty &&
+        (imageUrl.startsWith('http://') ||
+            imageUrl.startsWith('https://') ||
+            imageUrl.startsWith('//'))) {
+      final resolvedUrl = imageUrl.startsWith('//')
+          ? 'https:$imageUrl'
+          : imageUrl;
+      return Image.network(
+        resolvedUrl,
+        width: 64,
+        height: 64,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            width: 64,
+            height: 64,
+            color: kScreenBg,
+            alignment: Alignment.center,
+            child: const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        },
+        errorBuilder: (_, _, _) => _campaignImagePlaceholder(),
+      );
+    }
+    return _campaignImagePlaceholder();
+  }
+
+  Widget _campaignImagePlaceholder() {
+    return Container(
+      width: 64,
+      height: 64,
+      color: kScreenBg,
+      child: const Icon(
+        Icons.volunteer_activism_outlined,
+        color: kMutedText,
+        size: 24,
+      ),
+    );
+  }
+
+  String _transactionLabel(DonationModel donation) {
+    final transactionId = donation.transactionId;
+    if (transactionId != null && transactionId.isNotEmpty) {
+      return transactionId.length > 12
+          ? transactionId.substring(0, 12).toUpperCase()
+          : transactionId.toUpperCase();
+    }
+    return donation.id.length > 12
+        ? donation.id.substring(0, 12).toUpperCase()
+        : donation.id.toUpperCase();
+  }
+
   Widget _buildHistoryCard(DonationModel donation) {
-    final dateLabel = donation.paidAt != null
-        ? formatDateLabel(donation.paidAt)
-        : '';
+    final displayDate = donation.displayDate;
+    final dateTimeLabel = displayDate != null
+        ? formatDonationDateTime(displayDate)
+        : donation.status;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -48,20 +110,11 @@ class DonationHistoryScreen extends ConsumerWidget {
         border: Border.all(color: kBorder),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Container(
-              width: 64,
-              height: 64,
-              color: kScreenBg,
-              child: const Icon(
-                Icons.volunteer_activism_outlined,
-                color: kMutedText,
-                size: 24,
-              ),
-            ),
+            child: _campaignImage(donation.coverImage),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -78,9 +131,7 @@ class DonationHistoryScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    donation.id.length > 12
-                        ? donation.id.substring(0, 12).toUpperCase()
-                        : donation.id.toUpperCase(),
+                    _transactionLabel(donation),
                     style: kStyle(kMedium, 10, color: kSecondaryTextColor),
                   ),
                 ),
@@ -88,34 +139,72 @@ class DonationHistoryScreen extends ConsumerWidget {
                 Text(
                   donation.campaignName ?? 'Donation',
                   style: kBodyTitleB.copyWith(color: kTextColor, fontSize: 15),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  dateLabel.isEmpty ? donation.status : dateLabel,
+                  dateTimeLabel,
                   style: kCaption12R.copyWith(color: kSecondaryTextColor),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            formatRupee(donation.amount),
-            style: kBodyTitleB.copyWith(color: kTextColor, fontSize: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                formatRupee(donation.amount),
+                style: kBodyTitleB.copyWith(color: kTextColor, fontSize: 16),
+              ),
+              if (donation.hasAutopay) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Autopay',
+                  style: kCaption12M.copyWith(color: kPrimaryColor),
+                ),
+              ],
+            ],
           ),
         ],
       ),
     );
   }
 
-  Map<String, List<DonationModel>> _groupByDate(List<DonationModel> donations) {
-    final map = <String, List<DonationModel>>{};
-    for (final d in donations) {
-      final key = d.paidAt != null ? formatDateLabel(d.paidAt) : 'Recent';
-      map.putIfAbsent(key, () => []).add(d);
+  List<({String label, List<DonationModel> donations})> _groupByDate(
+    List<DonationModel> donations,
+  ) {
+    final dated = <DateTime, List<DonationModel>>{};
+    final undated = <DonationModel>[];
+
+    for (final donation in donations) {
+      final date = donation.displayDate;
+      if (date == null) {
+        undated.add(donation);
+        continue;
+      }
+      final dayKey = DateTime(date.year, date.month, date.day);
+      dated.putIfAbsent(dayKey, () => []).add(donation);
     }
-    return map;
+
+    final groups = dated.entries.toList()
+      ..sort((a, b) => b.key.compareTo(a.key));
+
+    final result = groups
+        .map(
+          (entry) => (
+            label: formatDonationGroupLabel(entry.key),
+            donations: entry.value,
+          ),
+        )
+        .toList();
+
+    if (undated.isNotEmpty) {
+      result.add((label: 'Recent', donations: undated));
+    }
+
+    return result;
   }
 
   @override
@@ -195,8 +284,8 @@ class DonationHistoryScreen extends ConsumerWidget {
                       ),
                     )
                   else
-                    ...grouped.entries.map((entry) {
-                      final groupTotal = entry.value.fold<num>(
+                    ...grouped.map((group) {
+                      final groupTotal = group.donations.fold<num>(
                         0,
                         (sum, d) => sum + d.amount,
                       );
@@ -207,7 +296,7 @@ class DonationHistoryScreen extends ConsumerWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                entry.key,
+                                group.label,
                                 style: kBodyTitleB.copyWith(
                                   color: kTextColor,
                                   fontSize: 16,
@@ -220,7 +309,7 @@ class DonationHistoryScreen extends ConsumerWidget {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          ...entry.value.map(_buildHistoryCard),
+                          ...group.donations.map(_buildHistoryCard),
                           const SizedBox(height: 24),
                         ],
                       );

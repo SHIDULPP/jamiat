@@ -41,3 +41,37 @@ String formatDateLabel(DateTime? date) {
   final month = date.month.toString().padLeft(2, '0');
   return '$day/$month/${date.year}';
 }
+
+const _monthLabels = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+String formatDonationGroupLabel(DateTime date) {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final target = DateTime(date.year, date.month, date.day);
+  final diff = today.difference(target).inDays;
+  if (diff == 0) return 'Today';
+  if (diff == 1) return 'Yesterday';
+  return '${_monthLabels[date.month - 1]} ${date.day}';
+}
+
+String formatDonationDateTime(DateTime date) {
+  final day = date.day.toString().padLeft(2, '0');
+  final month = _monthLabels[date.month - 1];
+  final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
+  final minute = date.minute.toString().padLeft(2, '0');
+  final period = date.hour >= 12 ? 'pm' : 'am';
+  return '$day $month, ${date.year} • $hour:$minute $period';
+}
