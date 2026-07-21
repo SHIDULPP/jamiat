@@ -116,6 +116,7 @@ class EventTicketModel {
     required this.status,
     this.displayStatus,
     this.qrImage,
+    this.qrToken,
     this.eventId,
     this.eventTitle,
     this.eventDate,
@@ -129,6 +130,7 @@ class EventTicketModel {
   final String status;
   final String? displayStatus;
   final String? qrImage;
+  final String? qrToken;
   final String? eventId;
   final String? eventTitle;
   final DateTime? eventDate;
@@ -154,6 +156,7 @@ class EventTicketModel {
       status: (json['status'] ?? '').toString(),
       displayStatus: json['display_status']?.toString(),
       qrImage: json['qr_image']?.toString(),
+      qrToken: json['qr_token']?.toString(),
       eventId: (eventMap['_id'] ?? eventMap['id'])?.toString(),
       eventTitle: eventMap['title']?.toString(),
       eventDate: eventMap['start_date'] != null
