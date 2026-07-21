@@ -39,8 +39,11 @@ class CategoryMapper {
 
   static const donateTabCategories = [
     allLabel,
+    'General Campaign',
     'General Funding',
     'Zakat',
     'Orphan',
+    'Building Mosque',
+    'Medical Relief',
   ];
 }
