@@ -94,3 +94,40 @@ const _monthLabelsFull = [
 String formatTargetDate(DateTime date) {
   return '${date.day} ${_monthLabelsFull[date.month - 1]}, ${date.year}';
 }
+
+String _formatTimeAmPm(DateTime date) {
+  final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
+  final minute = date.minute.toString().padLeft(2, '0');
+  final period = date.hour >= 12 ? 'pm' : 'am';
+  return '$hour:$minute $period';
+}
+
+/// e.g. `07 Jun, 2026 • 10:45 am - 3:30pm`
+String formatEventDateTimeRange(DateTime? start, [DateTime? end]) {
+  if (start == null) return '';
+  final day = start.day.toString().padLeft(2, '0');
+  final month = _monthLabels[start.month - 1];
+  final datePart = '$day $month, ${start.year}';
+  if (end == null) {
+    return '$datePart • ${_formatTimeAmPm(start)}';
+  }
+  return '$datePart • ${_formatTimeAmPm(start)} - ${_formatTimeAmPm(end)}';
+}
+
+/// e.g. `20 Jun 2026`
+String formatEventShortDate(DateTime? date) {
+  if (date == null) return '';
+  final day = date.day.toString().padLeft(2, '0');
+  final month = _monthLabels[date.month - 1];
+  return '$day $month ${date.year}';
+}
+
+/// e.g. `May 2026`
+String formatEventMonthYear(DateTime date) {
+  return '${_monthLabelsFull[date.month - 1]} ${date.year}';
+}
+
+String formatEventTime(DateTime? date) {
+  if (date == null) return '';
+  return _formatTimeAmPm(date);
+}

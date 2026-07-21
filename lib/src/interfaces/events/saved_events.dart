@@ -1,18 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jamiat/src/data/apis/event_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
+import 'package:jamiat/src/data/models/event_model.dart';
 import 'package:jamiat/src/data/providers/event_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
-import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
+import 'package:jamiat/src/interfaces/events/event_card.dart';
 
-class SavedEventsScreen extends ConsumerWidget {
+class SavedEventsScreen extends ConsumerStatefulWidget {
   const SavedEventsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SavedEventsScreen> createState() => _SavedEventsScreenState();
+}
+
+class _SavedEventsScreenState extends ConsumerState<SavedEventsScreen> {
+  final Map<String, bool> _bookmarkOverrides = {};
+  String? _bookmarkLoadingId;
+
+  bool _isBookmarked(EventModel event) {
+    return _bookmarkOverrides[event.id] ?? event.isBookmarked;
+  }
+
+  Future<void> _toggleBookmark(EventModel event) async {
+    if (_bookmarkLoadingId != null) return;
+    final currentlyBookmarked = _isBookmarked(event);
+    setState(() => _bookmarkLoadingId = event.id);
+    try {
+      final api = ref.read(eventApiProvider);
+      final res = currentlyBookmarked
+          ? await api.removeBookmark(event.id)
+          : await api.bookmarkEvent(event.id);
+      if (!mounted) return;
+      if (!res.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(res.message ?? 'Bookmark failed')),
+        );
+        return;
+      }
+      setState(() => _bookmarkOverrides[event.id] = !currentlyBookmarked);
+      ref.invalidate(savedEventsProvider);
+      ref.invalidate(eventsListProvider);
+      ref.invalidate(eventDetailProvider(event.id));
+    } finally {
+      if (mounted) setState(() => _bookmarkLoadingId = null);
+    }
+  }
+
+  void _shareEvent(EventModel event) {
+    HapticHelper.impact(HapticImpact.light);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Thanks for sharing ${event.title}')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final savedAsync = ref.watch(savedEventsProvider);
 
     return Scaffold(
@@ -46,7 +92,7 @@ class SavedEventsScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: 16),
                   Text(
-                    'Saved Events',
+                    'Saved events',
                     style: kHeadTitleB.copyWith(
                       color: kTextColor,
                       fontSize: 22,
@@ -65,51 +111,36 @@ class SavedEventsScreen extends ConsumerWidget {
                       child: Text('No saved events', style: kEmptyStateM),
                     );
                   }
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    itemCount: events.length,
-                    itemBuilder: (context, index) {
-                      final event = events[index];
-                      return GestureDetector(
-                        onTap: () {
-                          NavigationService().pushNamed(
-                            'EventDetails',
-                            arguments: {'eventId': event.id},
-                          );
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: kWhite,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: kBorder),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(event.title, style: kBodyTitleB),
-                              const SizedBox(height: 6),
-                              Text(
-                                '${event.type} • ${formatDateLabel(event.startDate)}',
-                                style: kCaption12R.copyWith(
-                                  color: kSecondaryTextColor,
-                                ),
-                              ),
-                              if (event.venue != null) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  event.venue!,
-                                  style: kCaption12R.copyWith(
-                                    color: kMutedText,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      );
+                  return RefreshIndicator(
+                    color: kPrimaryColor,
+                    onRefresh: () async {
+                      ref.invalidate(savedEventsProvider);
+                      await ref.read(savedEventsProvider.future);
                     },
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      itemCount: events.length,
+                      itemBuilder: (context, index) {
+                        final event = events[index];
+                        return EventListCard(
+                          event: event,
+                          isBookmarked: _isBookmarked(event),
+                          isBookmarkLoading: _bookmarkLoadingId == event.id,
+                          onTap: () {
+                            HapticHelper.impact(HapticImpact.light);
+                            NavigationService().pushNamed(
+                              'EventDetails',
+                              arguments: {'eventId': event.id},
+                            );
+                          },
+                          onBookmark: () {
+                            HapticHelper.impact(HapticImpact.light);
+                            _toggleBookmark(event);
+                          },
+                          onShare: () => _shareEvent(event),
+                        );
+                      },
+                    ),
                   );
                 },
               ),

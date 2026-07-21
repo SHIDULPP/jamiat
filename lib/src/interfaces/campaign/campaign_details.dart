@@ -215,7 +215,6 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
     required num displayRaised,
     required num displayGoal,
     required int displayDaysLeft,
-    required String? donateCampaignId,
     DateTime? targetDate,
   }) {
     final progress = displayGoal <= 0
@@ -320,42 +319,7 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
             fontSize: 14,
           ),
         ),
-        const SizedBox(height: 28),
-        SafeArea(
-          top: false,
-          child: ElevatedButton(
-            onPressed: () {
-              HapticHelper.impact(HapticImpact.medium);
-              final displayCat = categoryLabel;
-              DonationSheet.show(
-                context: context,
-                categoryTitle: displayTitle,
-                icon: _getCategoryIcon(displayCat),
-                iconBgColor: _getCategoryBgColor(displayCat),
-                iconColor: _getCategoryIconColor(displayCat),
-                isAutopay: false,
-                campaignId: donateCampaignId,
-                categoryLabel: displayCat,
-                raised: displayRaised,
-                goal: displayGoal,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: kPrimaryColor,
-              foregroundColor: kWhite,
-              minimumSize: const Size.fromHeight(54),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            child: Text(
-              'Donate Now',
-              style: kButtonLabelSB.copyWith(fontSize: 16),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
       ],
     );
   }
@@ -426,6 +390,52 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
         ),
         const SizedBox(height: 24),
       ],
+    );
+  }
+
+  Widget _donateButton({
+    required String title,
+    required String? category,
+    required String? campaignId,
+    required num raised,
+    required num goal,
+  }) {
+    final displayCat = CategoryMapper.toUi(category);
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+        child: ElevatedButton(
+          onPressed: () {
+            HapticHelper.impact(HapticImpact.medium);
+            DonationSheet.show(
+              context: context,
+              categoryTitle: title,
+              icon: _getCategoryIcon(displayCat),
+              iconBgColor: _getCategoryBgColor(displayCat),
+              iconColor: _getCategoryIconColor(displayCat),
+              isAutopay: false,
+              campaignId: campaignId,
+              categoryLabel: displayCat,
+              raised: raised,
+              goal: goal,
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: kPrimaryColor,
+            foregroundColor: kWhite,
+            minimumSize: const Size.fromHeight(54),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          child: Text(
+            'Donate Now',
+            style: kButtonLabelSB.copyWith(fontSize: 16),
+          ),
+        ),
+      ),
     );
   }
 
@@ -557,7 +567,6 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
                           displayRaised: campaign.collectedAmount,
                           displayGoal: campaign.targetAmount,
                           displayDaysLeft: campaign.remainingDays ?? 0,
-                          donateCampaignId: campaign.id,
                           targetDate: campaign.targetDate,
                         ),
                       ),
@@ -574,7 +583,6 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
                               displayRaised: widget.raised ?? 0,
                               displayGoal: widget.goal ?? 0,
                               displayDaysLeft: widget.daysLeft ?? 0,
-                              donateCampaignId: widget.campaignId,
                             )
                           : _buildCategoryMode(context),
                     ),
@@ -582,40 +590,62 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: hasCampaignId || isCampaignMode
-          ? null
-          : SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-                child: ElevatedButton(
-                  onPressed: () {
-                    HapticHelper.impact(HapticImpact.medium);
-                    DonationSheet.show(
-                      context: context,
-                      categoryTitle: widget.title,
-                      icon: _getCategoryIcon(widget.title),
-                      iconBgColor: _getCategoryBgColor(widget.title),
-                      iconColor: _getCategoryIconColor(widget.title),
-                      isAutopay: false,
-                      campaignId: widget.campaignId,
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kPrimaryColor,
-                    foregroundColor: kWhite,
-                    minimumSize: const Size.fromHeight(54),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: Text(
-                    'Donate Now',
-                    style: kButtonLabelSB.copyWith(fontSize: 16),
-                  ),
+      bottomNavigationBar: () {
+        if (hasCampaignId) {
+          final campaign = ref
+              .watch(campaignDetailProvider(widget.campaignId!))
+              .value;
+          if (campaign == null) return null;
+          return _donateButton(
+            title: campaign.title,
+            category: campaign.category,
+            campaignId: campaign.id,
+            raised: campaign.collectedAmount,
+            goal: campaign.targetAmount,
+          );
+        }
+        if (isCampaignMode) {
+          return _donateButton(
+            title: widget.title,
+            category: widget.category,
+            campaignId: widget.campaignId,
+            raised: widget.raised ?? 0,
+            goal: widget.goal ?? 0,
+          );
+        }
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+            child: ElevatedButton(
+              onPressed: () {
+                HapticHelper.impact(HapticImpact.medium);
+                DonationSheet.show(
+                  context: context,
+                  categoryTitle: widget.title,
+                  icon: _getCategoryIcon(widget.title),
+                  iconBgColor: _getCategoryBgColor(widget.title),
+                  iconColor: _getCategoryIconColor(widget.title),
+                  isAutopay: false,
+                  campaignId: widget.campaignId,
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kPrimaryColor,
+                foregroundColor: kWhite,
+                minimumSize: const Size.fromHeight(54),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
+              child: Text(
+                'Donate Now',
+                style: kButtonLabelSB.copyWith(fontSize: 16),
+              ),
             ),
+          ),
+        );
+      }(),
     );
   }
 }

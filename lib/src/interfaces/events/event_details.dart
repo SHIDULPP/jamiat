@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jamiat/src/data/apis/event_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
@@ -9,6 +10,7 @@ import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
+import 'package:jamiat/src/interfaces/events/event_card.dart';
 
 class EventDetailsScreen extends ConsumerStatefulWidget {
   final String? eventId;
@@ -38,29 +40,21 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
   bool _bookmarkLoading = false;
   bool _registerLoading = false;
 
-  Widget _cover(String? url) {
-    if (url != null && url.startsWith('http')) {
-      return Image.network(
-        url,
-        height: 220,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Container(
-          height: 220,
-          color: kScreenBg,
-          child: const Icon(Icons.image_outlined, color: kMutedText, size: 40),
+  Widget _headerCircleButton({
+    required Widget child,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: kWhite,
+          border: Border.all(color: kBorder, width: 1.25),
         ),
-      );
-    }
-    return Image.asset(
-      url ?? widget.image,
-      height: 220,
-      width: double.infinity,
-      fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => Container(
-        height: 220,
-        color: kScreenBg,
-        child: const Icon(Icons.image_outlined, color: kMutedText, size: 40),
+        child: Center(child: child),
       ),
     );
   }
@@ -88,43 +82,221 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
     }
   }
 
-  Future<void> _register(EventModel event) async {
-    if (_registerLoading || event.isRegistered == true) return;
+  Future<void> _registerOrViewTicket(EventModel event) async {
+    if (event.isRegistered == true) {
+      final ticketId = event.myTicketId;
+      if (ticketId != null && ticketId.isNotEmpty) {
+        NavigationService().pushNamed(
+          'EventTicket',
+          arguments: {'ticketId': ticketId},
+        );
+      } else {
+        NavigationService().pushNamed('MyTickets');
+      }
+      return;
+    }
+
+    if (_registerLoading) return;
     setState(() => _registerLoading = true);
     try {
       final res = await ref.read(eventApiProvider).registerForEvent(event.id);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            res.success
-                ? 'Registered successfully'
-                : (res.message ?? 'Registration failed'),
-          ),
-        ),
-      );
-      if (res.success) {
-        ref.invalidate(eventDetailProvider(event.id));
-        ref.invalidate(myTicketsProvider('upcoming'));
-        ref.invalidate(myTicketsProvider('past'));
-        final ticketId = res.data?.id;
-        if (ticketId != null && ticketId.isNotEmpty) {
-          NavigationService().pushNamed(
-            'EventTicket',
-            arguments: {'ticketId': ticketId},
-          );
-        } else {
-          NavigationService().pushNamed('MyTickets');
-        }
+      if (!res.success || res.data == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(res.message ?? 'Registration failed')),
+        );
+        return;
       }
+      ref.invalidate(eventDetailProvider(event.id));
+      ref.invalidate(myTicketsProvider('upcoming'));
+      ref.invalidate(myTicketsProvider('past'));
+      ref.invalidate(eventsListProvider);
+      NavigationService().pushNamed(
+        'EventTicket',
+        arguments: {'ticketId': res.data!.id},
+      );
     } finally {
       if (mounted) setState(() => _registerLoading = false);
     }
   }
 
+  String? _resolvePersonImageUrl(String? raw) {
+    final imageUrl = raw?.trim();
+    if (imageUrl == null || imageUrl.isEmpty) return null;
+    if (imageUrl.startsWith('//')) return 'https:$imageUrl';
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+    return null;
+  }
+
+  Widget _personAvatar(String? rawUrl) {
+    const size = 48.0;
+    final url = _resolvePersonImageUrl(rawUrl);
+
+    Widget placeholder() => Container(
+      width: size,
+      height: size,
+      color: kScreenBg,
+      alignment: Alignment.center,
+      child: const Icon(Icons.person_outline, color: kMutedText, size: 22),
+    );
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: url == null
+          ? placeholder()
+          : Image.network(
+              url,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+              filterQuality: FilterQuality.medium,
+              cacheWidth: (size * 3).round(),
+              cacheHeight: (size * 3).round(),
+              loadingBuilder: (context, child, progress) {
+                if (progress == null) return child;
+                return Container(
+                  width: size,
+                  height: size,
+                  color: kScreenBg,
+                  alignment: Alignment.center,
+                  child: const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                );
+              },
+              errorBuilder: (_, _, _) => placeholder(),
+            ),
+    );
+  }
+
+  Widget _personTile(EventPerson person, {String? fallbackRole}) {
+    final role = person.designation?.isNotEmpty == true
+        ? person.designation!
+        : (fallbackRole ?? '');
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        children: [
+          _personAvatar(person.image),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(person.name, style: kBodyTitleSB.copyWith(fontSize: 15)),
+                if (role.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    role,
+                    style: kCaption12R.copyWith(color: kSecondaryTextColor),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _metaRow({required IconData icon, required String text}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: kMutedText),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: kCaption14R.copyWith(color: kSecondaryTextColor),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBody(EventModel event) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: SizedBox(
+              height: 200,
+              width: double.infinity,
+              child: eventCoverImage(event.coverImage),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            event.title,
+            style: kSectionTitleSB.copyWith(fontSize: 22),
+          ),
+          const SizedBox(height: 12),
+          _metaRow(
+            icon: Icons.calendar_today_outlined,
+            text: formatEventDateTimeRange(event.startDate, event.endDate),
+          ),
+          if (event.venue != null && event.venue!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _metaRow(
+              icon: Icons.location_on_outlined,
+              text: event.venue!,
+            ),
+          ],
+          if (event.type == 'Online' &&
+              event.onlineLink != null &&
+              event.onlineLink!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _metaRow(
+              icon: Icons.link,
+              text: event.onlineLink!,
+            ),
+          ],
+          const SizedBox(height: 24),
+          Text('About Event', style: kSectionTitleSB),
+          const SizedBox(height: 8),
+          Text(
+            event.description,
+            style: kBodyTitleR.copyWith(color: kText2Color, height: 1.5),
+          ),
+          if (event.guests.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            Text('Guests', style: kSectionTitleSB),
+            const SizedBox(height: 12),
+            ...event.guests.map(_personTile),
+          ],
+          if (event.coordinators.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text('Event Coordinators', style: kSectionTitleSB),
+            const SizedBox(height: 12),
+            ...event.coordinators.map(
+              (p) => _personTile(p, fallbackRole: 'Event Coordinator'),
+            ),
+          ],
+          const SizedBox(height: 80),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasId = widget.eventId != null && widget.eventId!.isNotEmpty;
+    final eventAsync = hasId
+        ? ref.watch(eventDetailProvider(widget.eventId!))
+        : null;
+    final event = eventAsync?.value;
+    final isBookmarked = event?.isBookmarked ?? widget.isBookmarked;
+    final showRegister =
+        event == null || event.registrationEnabled == true;
 
     return Scaffold(
       backgroundColor: kWhite,
@@ -132,172 +304,85 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
               child: Row(
                 children: [
-                  GestureDetector(
+                  _headerCircleButton(
                     onTap: () {
                       HapticHelper.impact(HapticImpact.light);
                       Navigator.pop(context);
                     },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: kTextColor,
-                        size: 20,
-                      ),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      color: kTextColor,
+                      size: 20,
                     ),
                   ),
-                  const SizedBox(width: 16),
                   Expanded(
                     child: Text(
-                      'Event details',
+                      'Event Details',
+                      textAlign: TextAlign.center,
                       style: kHeadTitleB.copyWith(
                         color: kTextColor,
-                        fontSize: 22,
+                        fontSize: 20,
                       ),
                     ),
                   ),
-                  if (hasId)
-                    IconButton(
-                      onPressed: _bookmarkLoading
+                  if (hasId) ...[
+                    _headerCircleButton(
+                      onTap: () {
+                        HapticHelper.impact(HapticImpact.light);
+                        final title = event?.title ?? widget.title;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Thanks for sharing $title')),
+                        );
+                      },
+                      child: SvgPicture.asset(
+                        'assets/svg/share.svg',
+                        width: 18,
+                        height: 18,
+                        colorFilter: const ColorFilter.mode(
+                          kTextColor,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _headerCircleButton(
+                      onTap: _bookmarkLoading
                           ? null
                           : () {
                               HapticHelper.impact(HapticImpact.light);
-                              final event = ref
-                                  .read(eventDetailProvider(widget.eventId!))
-                                  .value;
                               if (event != null) _toggleBookmark(event);
                             },
-                      icon: _bookmarkLoading
+                      child: _bookmarkLoading
                           ? const SizedBox(
-                              width: 18,
-                              height: 18,
+                              width: 16,
+                              height: 16,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : Icon(
-                              (ref
-                                          .watch(
-                                            eventDetailProvider(
-                                              widget.eventId!,
-                                            ),
-                                          )
-                                          .value
-                                          ?.isBookmarked ??
-                                      widget.isBookmarked)
-                                  ? Icons.bookmark
-                                  : Icons.bookmark_border,
+                          : SvgPicture.asset(
+                              'assets/svg/bookmark.svg',
+                              width: 18,
+                              height: 18,
+                              colorFilter: ColorFilter.mode(
+                                isBookmarked ? kPrimaryColor : kTextColor,
+                                BlendMode.srcIn,
+                              ),
                             ),
                     ),
+                  ] else
+                    const SizedBox(width: 40),
                 ],
               ),
             ),
             Expanded(
               child: hasId
                   ? AsyncContent(
-                      asyncValue: ref.watch(
-                        eventDetailProvider(widget.eventId!),
-                      ),
+                      asyncValue: eventAsync!,
                       onRetry: () =>
                           ref.invalidate(eventDetailProvider(widget.eventId!)),
-                      builder: (event) => SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: _cover(event.coverImage),
-                            ),
-                            const SizedBox(height: 16),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: kScreenBg,
-                                borderRadius: BorderRadius.circular(100),
-                              ),
-                              child: Text(event.type, style: kCaption10SB),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              event.title,
-                              style: kSectionTitleSB.copyWith(fontSize: 20),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              formatDateLabel(event.startDate),
-                              style: kCaption12R.copyWith(
-                                color: kSecondaryTextColor,
-                              ),
-                            ),
-                            if (event.venue != null) ...[
-                              const SizedBox(height: 6),
-                              Text(
-                                event.venue!,
-                                style: kCaption12R.copyWith(
-                                  color: kSecondaryTextColor,
-                                ),
-                              ),
-                            ],
-                            const SizedBox(height: 16),
-                            Text(
-                              event.description,
-                              style: kBodyTitleR.copyWith(
-                                color: kText2Color,
-                                height: 1.5,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            if (event.registrationEnabled == true)
-                              ElevatedButton(
-                                onPressed:
-                                    (event.isRegistered == true ||
-                                        _registerLoading)
-                                    ? null
-                                    : () {
-                                        HapticHelper.impact(
-                                          HapticImpact.medium,
-                                        );
-                                        _register(event);
-                                      },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: kPrimaryColor,
-                                  foregroundColor: kWhite,
-                                  minimumSize: const Size.fromHeight(52),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                ),
-                                child: _registerLoading
-                                    ? const SizedBox(
-                                        width: 22,
-                                        height: 22,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2.5,
-                                          color: kWhite,
-                                        ),
-                                      )
-                                    : Text(
-                                        event.isRegistered == true
-                                            ? 'Already registered'
-                                            : 'Register',
-                                        style: kButtonLabelSB,
-                                      ),
-                              ),
-                            const SizedBox(height: 24),
-                          ],
-                        ),
-                      ),
+                      builder: _buildBody,
                     )
                   : SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -306,12 +391,16 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(16),
-                            child: _cover(widget.image),
+                            child: SizedBox(
+                              height: 200,
+                              width: double.infinity,
+                              child: eventCoverImage(widget.image),
+                            ),
                           ),
                           const SizedBox(height: 16),
                           Text(
                             widget.title,
-                            style: kSectionTitleSB.copyWith(fontSize: 20),
+                            style: kSectionTitleSB.copyWith(fontSize: 22),
                           ),
                           const SizedBox(height: 8),
                           Text(widget.date, style: kCaption12R),
@@ -323,6 +412,48 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: hasId && showRegister && event != null
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                child: ElevatedButton(
+                  onPressed: _registerLoading
+                      ? null
+                      : () {
+                          HapticHelper.impact(HapticImpact.medium);
+                          _registerOrViewTicket(event);
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kPrimaryColor,
+                    foregroundColor: kWhite,
+                    disabledBackgroundColor: kPrimaryColor.withValues(
+                      alpha: 0.6,
+                    ),
+                    minimumSize: const Size.fromHeight(52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: _registerLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: kWhite,
+                          ),
+                        )
+                      : Text(
+                          event.isRegistered == true
+                              ? 'View Ticket'
+                              : 'Register',
+                          style: kButtonLabelSB,
+                        ),
+                ),
+              ),
+            )
+          : null,
     );
   }
 }

@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
+import 'package:jamiat/src/data/models/event_model.dart';
 import 'package:jamiat/src/data/providers/event_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
+import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
 
 class MyTicketsScreen extends ConsumerStatefulWidget {
@@ -17,10 +19,27 @@ class MyTicketsScreen extends ConsumerStatefulWidget {
 class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
   bool _isUpcomingSelected = true;
 
+  Map<String, List<EventTicketModel>> _groupByMonth(
+    List<EventTicketModel> tickets,
+  ) {
+    final map = <String, List<EventTicketModel>>{};
+    for (final ticket in tickets) {
+      final date = ticket.eventDate ?? DateTime.now();
+      final key = formatEventMonthYear(date);
+      map.putIfAbsent(key, () => []).add(ticket);
+    }
+    return map;
+  }
+
   @override
   Widget build(BuildContext context) {
     final tab = _isUpcomingSelected ? 'upcoming' : 'past';
     final ticketsAsync = ref.watch(myTicketsProvider(tab));
+    final upcomingAsync = ref.watch(myTicketsProvider('upcoming'));
+    final pastAsync = ref.watch(myTicketsProvider('past'));
+
+    final upcomingCount = upcomingAsync.value?.length;
+    final pastCount = pastAsync.value?.length;
 
     return Scaffold(
       backgroundColor: kWhite,
@@ -66,13 +85,19 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
                 children: [
-                  _tabChip('Upcoming', _isUpcomingSelected, () {
-                    setState(() => _isUpcomingSelected = true);
-                  }),
+                  _tabChip(
+                    label: 'Upcoming',
+                    count: upcomingCount,
+                    active: _isUpcomingSelected,
+                    onTap: () => setState(() => _isUpcomingSelected = true),
+                  ),
                   const SizedBox(width: 10),
-                  _tabChip('Past', !_isUpcomingSelected, () {
-                    setState(() => _isUpcomingSelected = false);
-                  }),
+                  _tabChip(
+                    label: 'Past',
+                    count: pastCount,
+                    active: !_isUpcomingSelected,
+                    onTap: () => setState(() => _isUpcomingSelected = false),
+                  ),
                 ],
               ),
             ),
@@ -84,61 +109,54 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
                 builder: (tickets) {
                   if (tickets.isEmpty) {
                     return Center(
-                      child: Text('No tickets found', style: kEmptyStateM),
+                      child: Text(
+                        _isUpcomingSelected
+                            ? 'No upcoming tickets'
+                            : 'No past tickets',
+                        style: kEmptyStateM,
+                      ),
                     );
                   }
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    itemCount: tickets.length,
-                    itemBuilder: (context, index) {
-                      final ticket = tickets[index];
-                      return GestureDetector(
-                        onTap: () {
-                          NavigationService().pushNamed(
-                            'EventTicket',
-                            arguments: {
-                              'ticketId': ticket.id,
-                              'title': ticket.eventTitle ?? 'Event',
-                              'date': ticket.eventDate ?? '',
-                              'venue': ticket.venue ?? '',
-                            },
-                          );
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: kScreenBg,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                ticket.eventTitle ?? 'Event',
-                                style: kBodyTitleB,
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                '${ticket.ticketCode} • ${ticket.status}',
-                                style: kCaption12R.copyWith(
-                                  color: kSecondaryTextColor,
-                                ),
-                              ),
-                              if (ticket.venue != null) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  ticket.venue!,
-                                  style: kCaption12R.copyWith(
-                                    color: kMutedText,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      );
+
+                  final grouped = _groupByMonth(tickets);
+                  final sections = grouped.entries.toList();
+
+                  return RefreshIndicator(
+                    color: kPrimaryColor,
+                    onRefresh: () async {
+                      ref.invalidate(myTicketsProvider('upcoming'));
+                      ref.invalidate(myTicketsProvider('past'));
+                      await ref.read(myTicketsProvider(tab).future);
                     },
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      itemCount: sections.length,
+                      itemBuilder: (context, sectionIndex) {
+                        final entry = sections[sectionIndex];
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: EdgeInsets.only(
+                                top: sectionIndex == 0 ? 0 : 8,
+                                bottom: 10,
+                              ),
+                              child: Text(
+                                entry.key,
+                                style: kCaption14M.copyWith(
+                                  color: kMutedText,
+                                ),
+                              ),
+                            ),
+                            ...entry.value.map(
+                              (ticket) => _isUpcomingSelected
+                                  ? _UpcomingTicketCard(ticket: ticket)
+                                  : _PastTicketCard(ticket: ticket),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
                   );
                 },
               ),
@@ -149,24 +167,258 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
     );
   }
 
-  Widget _tabChip(String label, bool active, VoidCallback onTap) {
+  Widget _tabChip({
+    required String label,
+    required bool active,
+    required VoidCallback onTap,
+    int? count,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 38,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFFFBBF24) : kWhite,
+          color: active ? kSecondaryColor : kWhite,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: active ? Colors.transparent : kBorder),
+          border: Border.all(
+            color: active ? Colors.transparent : const Color(0xFFFDE68A),
+          ),
         ),
         alignment: Alignment.center,
-        child: Text(
-          label,
-          style: kCaption14M.copyWith(
-            color: active ? const Color(0xFF451A03) : kMutedText,
-            fontWeight: kBold,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: kCaption14M.copyWith(
+                color: active ? const Color(0xFF451A03) : kMutedText,
+                fontWeight: kBold,
+              ),
+            ),
+            if (count != null) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: active
+                      ? kWhite.withValues(alpha: 0.9)
+                      : kScreenBg,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: Text(
+                  '$count',
+                  style: kCaption10SB.copyWith(
+                    color: active ? const Color(0xFF451A03) : kMutedText,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _UpcomingTicketCard extends StatelessWidget {
+  const _UpcomingTicketCard({required this.ticket});
+
+  final EventTicketModel ticket;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticHelper.impact(HapticImpact.light);
+        NavigationService().pushNamed(
+          'EventTicket',
+          arguments: {'ticketId': ticket.id},
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        decoration: BoxDecoration(
+          color: kWhite,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: kCardBorder),
+          boxShadow: [
+            BoxShadow(
+              color: kBlack.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+              color: const Color(0xFFFFF8E7),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    ticket.eventTitle ?? 'Event',
+                    style: kBodyTitleSB.copyWith(fontSize: 16),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    ticket.passType,
+                    style: kCaption12R.copyWith(color: kMutedText),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Date',
+                          style: kCaption12R.copyWith(
+                            color: kSecondaryTextColor,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          formatEventShortDate(ticket.eventDate),
+                          style: kCaption14M,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Ticket ID',
+                          style: kCaption12R.copyWith(
+                            color: kSecondaryTextColor,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(ticket.ticketCode, style: kCaption14M),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: kScreenBg,
+              child: Row(
+                children: [
+                  const Icon(Icons.qr_code_2, size: 28, color: kTextColor),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Tap to show QR', style: kCaption14M),
+                        Text(
+                          'Present to program coordinators',
+                          style: kCaption12R.copyWith(
+                            color: kSecondaryTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: kMutedText),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PastTicketCard extends StatelessWidget {
+  const _PastTicketCard({required this.ticket});
+
+  final EventTicketModel ticket;
+
+  @override
+  Widget build(BuildContext context) {
+    final attended = ticket.isAttended;
+    final statusLabel = attended ? 'Attended' : 'Missed';
+    final statusColor = attended ? kPrimaryColor : kRed;
+    final statusBg = attended ? kLightGreen : kRedSoftBg;
+
+    return GestureDetector(
+      onTap: () {
+        HapticHelper.impact(HapticImpact.light);
+        NavigationService().pushNamed(
+          'EventTicket',
+          arguments: {'ticketId': ticket.id},
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        decoration: BoxDecoration(
+          color: kWhite,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: kCardBorder),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+              color: kScreenBg,
+              child: Text(
+                ticket.eventTitle ?? 'Event',
+                style: kBodyTitleSB.copyWith(fontSize: 16),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      [
+                        formatEventShortDate(ticket.eventDate),
+                        if (ticket.venue != null && ticket.venue!.isNotEmpty)
+                          ticket.venue!,
+                      ].join(' • '),
+                      style: kCaption12R.copyWith(color: kSecondaryTextColor),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusBg,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      statusLabel,
+                      style: kCaption12M.copyWith(color: statusColor),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

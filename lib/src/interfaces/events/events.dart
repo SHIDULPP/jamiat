@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jamiat/src/data/apis/event_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/models/event_model.dart';
 import 'package:jamiat/src/data/providers/event_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
-import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
+import 'package:jamiat/src/interfaces/events/event_card.dart';
 
 class EventsScreen extends ConsumerStatefulWidget {
   const EventsScreen({super.key});
@@ -19,6 +20,8 @@ class EventsScreen extends ConsumerStatefulWidget {
 class _EventsScreenState extends ConsumerState<EventsScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  final Map<String, bool> _bookmarkOverrides = {};
+  String? _bookmarkLoadingId;
 
   @override
   void dispose() {
@@ -32,159 +35,50 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     return items.where((e) {
       return e.title.toLowerCase().contains(query) ||
           e.type.toLowerCase().contains(query) ||
-          (e.venue?.toLowerCase().contains(query) ?? false);
+          (e.venue?.toLowerCase().contains(query) ?? false) ||
+          e.description.toLowerCase().contains(query);
     }).toList();
   }
 
-  String _dateLabel(EventModel event) {
-    if (event.startDate == null) return '';
-    return formatDateLabel(event.startDate);
+  bool _isBookmarked(EventModel event) {
+    return _bookmarkOverrides[event.id] ?? event.isBookmarked;
   }
 
-  Widget _cover(String? url) {
-    if (url != null && url.startsWith('http')) {
-      return Image.network(
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Container(
-          color: kScreenBg,
-          child: const Icon(Icons.image_outlined, color: kMutedText, size: 40),
-        ),
-      );
+  Future<void> _toggleBookmark(EventModel event) async {
+    if (_bookmarkLoadingId != null) return;
+    final currentlyBookmarked = _isBookmarked(event);
+    setState(() => _bookmarkLoadingId = event.id);
+    try {
+      final api = ref.read(eventApiProvider);
+      final res = currentlyBookmarked
+          ? await api.removeBookmark(event.id)
+          : await api.bookmarkEvent(event.id);
+      if (!mounted) return;
+      if (!res.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(res.message ?? 'Bookmark failed')),
+        );
+        return;
+      }
+      setState(() => _bookmarkOverrides[event.id] = !currentlyBookmarked);
+      ref.invalidate(savedEventsProvider);
+      ref.invalidate(eventDetailProvider(event.id));
+    } finally {
+      if (mounted) setState(() => _bookmarkLoadingId = null);
     }
-    return Image.asset(
-      url ?? 'assets/jpgs/campaign_education.jpg',
-      fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => Container(
-        color: kScreenBg,
-        child: const Icon(Icons.image_outlined, color: kMutedText, size: 40),
-      ),
-    );
   }
 
-  Widget _buildEventCard(EventModel event) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        color: kWhite,
-        borderRadius: BorderRadius.circular(kCardRadiusLg),
-        border: Border.all(color: kBorder),
-        boxShadow: [
-          BoxShadow(
-            color: kBlack.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            HapticHelper.impact(HapticImpact.light);
-            NavigationService().pushNamed(
-              'EventDetails',
-              arguments: {'eventId': event.id},
-            );
-          },
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                height: 180,
-                width: double.infinity,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    _cover(event.coverImage),
-                    Positioned(
-                      top: 12,
-                      left: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: kBlack.withValues(alpha: 0.45),
-                          borderRadius: BorderRadius.circular(kPillRadius),
-                        ),
-                        child: Text(
-                          event.type,
-                          style: kCaption10M.copyWith(color: kWhite),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      event.title,
-                      style: kBodyTitleSB.copyWith(fontSize: 16),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.calendar_today_outlined,
-                          size: 14,
-                          color: kMutedText,
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            _dateLabel(event),
-                            style: kCaption12R.copyWith(
-                              color: kSecondaryTextColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (event.venue != null) ...[
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on_outlined,
-                            size: 14,
-                            color: kMutedText,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              event.venue!,
-                              style: kCaption12R.copyWith(
-                                color: kSecondaryTextColor,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+  void _shareEvent(EventModel event) {
+    HapticHelper.impact(HapticImpact.light);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Thanks for sharing ${event.title}')),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final eventsAsync = ref.watch(eventsListProvider);
+    final upcomingTicketsAsync = ref.watch(myTicketsProvider('upcoming'));
 
     return Scaffold(
       backgroundColor: kWhite,
@@ -196,27 +90,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
             children: [
               Row(
                 children: [
-                  GestureDetector(
-                    onTap: () {
-                      HapticHelper.impact(HapticImpact.light);
-                      Navigator.pop(context);
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: kTextColor,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
                   Expanded(
                     child: Text(
                       'Events',
@@ -227,6 +100,21 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                     ),
                   ),
                   PopupMenuButton<String>(
+                    padding: EdgeInsets.zero,
+                    icon: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: kWhite,
+                        border: Border.all(color: kBorder, width: 1.25),
+                      ),
+                      child: const Icon(
+                        Icons.more_vert,
+                        color: kTextColor,
+                        size: 20,
+                      ),
+                    ),
                     onSelected: (value) {
                       if (value == 'tickets') {
                         NavigationService().pushNamed('MyTickets');
@@ -239,39 +127,147 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                         value: 'tickets',
                         child: Text('My Tickets'),
                       ),
-                      PopupMenuItem(value: 'saved', child: Text('Saved')),
+                      PopupMenuItem(
+                        value: 'saved',
+                        child: Text('Saved events'),
+                      ),
                     ],
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-              Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  color: kWhite,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: kBorder),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    const Icon(Icons.search, color: kMutedText, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (v) => setState(() => _searchQuery = v),
-                        decoration: const InputDecoration(
-                          hintText: 'Search events',
-                          border: InputBorder.none,
-                          isDense: true,
-                        ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: kSearchFieldBg,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.search, color: kMutedText, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: (v) =>
+                                  setState(() => _searchQuery = v),
+                              decoration: InputDecoration(
+                                hintText: 'Search for events...',
+                                hintStyle: kCaption14R.copyWith(
+                                  color: kSecondaryTextColor,
+                                ),
+                                border: InputBorder.none,
+                                isDense: true,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 10),
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: kSearchFieldBg,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
+                      onPressed: () {
+                        HapticHelper.impact(HapticImpact.light);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Filters coming soon'),
+                          ),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.tune_rounded,
+                        color: kTextColor,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () {
+                  HapticHelper.impact(HapticImpact.light);
+                  NavigationService().pushNamed('MyTickets');
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: kQuickEventsBg,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFFFE8C7)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: kSecondaryColor.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.confirmation_number_outlined,
+                          color: Color(0xFFB45309),
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'My Tickets',
+                              style: kCaption12R.copyWith(
+                                color: kSecondaryTextColor,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              upcomingTicketsAsync.when(
+                                data: (tickets) {
+                                  final count = tickets.length;
+                                  if (count == 0) {
+                                    return 'No upcoming events registered';
+                                  }
+                                  return '$count upcoming event${count == 1 ? '' : 's'} registered';
+                                },
+                                loading: () => 'Loading tickets...',
+                                error: (_, _) => 'View your tickets',
+                              ),
+                              style: kBodyTitleSB.copyWith(fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right,
+                        color: kMutedText,
+                        size: 22,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text('Upcoming events', style: kSectionTitleSB),
+              const SizedBox(height: 12),
               Expanded(
                 child: AsyncContent(
                   asyncValue: eventsAsync,
@@ -283,9 +279,36 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                         child: Text('No events found', style: kEmptyStateM),
                       );
                     }
-                    return ListView.builder(
-                      itemCount: events.length,
-                      itemBuilder: (_, i) => _buildEventCard(events[i]),
+                    return RefreshIndicator(
+                      color: kPrimaryColor,
+                      onRefresh: () async {
+                        ref.invalidate(eventsListProvider);
+                        ref.invalidate(myTicketsProvider('upcoming'));
+                        await ref.read(eventsListProvider.future);
+                      },
+                      child: ListView.builder(
+                        itemCount: events.length,
+                        itemBuilder: (_, i) {
+                          final event = events[i];
+                          return EventListCard(
+                            event: event,
+                            isBookmarked: _isBookmarked(event),
+                            isBookmarkLoading: _bookmarkLoadingId == event.id,
+                            onTap: () {
+                              HapticHelper.impact(HapticImpact.light);
+                              NavigationService().pushNamed(
+                                'EventDetails',
+                                arguments: {'eventId': event.id},
+                              );
+                            },
+                            onBookmark: () {
+                              HapticHelper.impact(HapticImpact.light);
+                              _toggleBookmark(event);
+                            },
+                            onShare: () => _shareEvent(event),
+                          );
+                        },
+                      ),
                     );
                   },
                 ),

@@ -20,11 +20,12 @@ class ApiResponse<T> {
     );
   }
 
-  factory ApiResponse.error(String message, [int? statusCode]) {
+  factory ApiResponse.error(String message, [int? statusCode, T? data]) {
     return ApiResponse(
       success: false,
       statusCode: statusCode,
       message: message,
+      data: data,
     );
   }
 }

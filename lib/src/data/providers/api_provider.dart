@@ -315,6 +315,7 @@ class ApiProvider {
     return ApiResponse.error(
       message ?? 'Request failed. Please try again.',
       response.statusCode,
+      decoded,
     );
   }
 

@@ -11,7 +11,7 @@ class EventApi {
 
   Future<ApiResponse<PaginatedResponse<EventModel>>> listEvents({
     int pageNo = 1,
-    int limit = 10,
+    int limit = 20,
     String? search,
   }) async {
     final response = await _api.get(
@@ -111,32 +111,40 @@ class EventApi {
       const {},
       requireAuth: true,
     );
+    final data = nestedData(response.data);
+    // Backend returns the existing ticket on "already registered" (400).
+    if (data != null && data['ticket_code'] != null) {
+      return ApiResponse.success(
+        EventTicketModel.fromJson(data),
+        response.statusCode ?? 200,
+        message: response.message,
+      );
+    }
     if (!response.success) {
       return ApiResponse.error(
         response.message ?? 'Registration failed',
         response.statusCode,
       );
     }
-    final data = nestedData(response.data);
-    if (data == null) {
-      return ApiResponse.error(
-        'Invalid registration response',
-        response.statusCode,
-      );
-    }
-    return ApiResponse.success(
-      EventTicketModel.fromJson(data),
-      response.statusCode ?? 200,
+    return ApiResponse.error(
+      'Invalid registration response',
+      response.statusCode,
     );
   }
 
   Future<ApiResponse<List<EventTicketModel>>> getMyTickets({
     String tab = 'upcoming',
+    int pageNo = 1,
+    int limit = 100,
   }) async {
     final response = await _api.get(
       '/event/my-tickets',
       requireAuth: true,
-      queryParams: {'tab': tab},
+      queryParams: {
+        'tab': tab,
+        'page_no': '$pageNo',
+        'limit': '$limit',
+      },
     );
     if (!response.success) {
       return ApiResponse.error(
