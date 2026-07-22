@@ -28,8 +28,7 @@ class DonationListScreen extends ConsumerStatefulWidget {
   const DonationListScreen({super.key});
 
   @override
-  ConsumerState<DonationListScreen> createState() =>
-      _DonationListScreenState();
+  ConsumerState<DonationListScreen> createState() => _DonationListScreenState();
 }
 
 class _DonationListScreenState extends ConsumerState<DonationListScreen> {
@@ -248,10 +247,9 @@ class _DonationListScreenState extends ConsumerState<DonationListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final role = ref.watch(userProfileProvider).maybeWhen(
-          data: (user) => user.role,
-          orElse: () => 'normal_member',
-        );
+    final role = ref
+        .watch(userProfileProvider)
+        .maybeWhen(data: (user) => user.role, orElse: () => 'normal_member');
     final filteredCategories = _getFilteredCategories(role);
 
     return Scaffold(
@@ -315,7 +313,8 @@ class _DonationListScreenState extends ConsumerState<DonationListScreen> {
                   24,
                 ),
                 itemCount: filteredCategories.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   return _buildCategoryCard(filteredCategories[index]);
                 },

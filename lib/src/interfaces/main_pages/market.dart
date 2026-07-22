@@ -2,20 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
-
-class _ProductItem {
-  final String title;
-  final String price;
-  final String imagePath;
-  final String category;
-
-  const _ProductItem({
-    required this.title,
-    required this.price,
-    required this.imagePath,
-    required this.category,
-  });
-}
+import 'package:jamiat/src/data/services/navigation_services.dart';
+import 'package:jamiat/src/interfaces/market/market_product_card.dart';
+import 'package:jamiat/src/interfaces/market/market_product_data.dart';
 
 class MarketPage extends StatefulWidget {
   const MarketPage({super.key});
@@ -25,35 +14,8 @@ class MarketPage extends StatefulWidget {
 }
 
 class _MarketPageState extends State<MarketPage> {
-  late TextEditingController _searchController;
+  late final TextEditingController _searchController;
   String _selectedCategory = 'All';
-
-  final List<_ProductItem> _products = const [
-    _ProductItem(
-      title: 'Tasbih - handcrafted sandalwoods',
-      price: '₹ 380',
-      imagePath: 'assets/pngs/product_tasbih.png',
-      category: 'Clothing',
-    ),
-    _ProductItem(
-      title: 'Fiqh essentials - scholar edition',
-      price: '₹ 450',
-      imagePath: 'assets/pngs/product_fiqh.png',
-      category: 'Books',
-    ),
-    _ProductItem(
-      title: 'Pure Cambodian Oud Oil',
-      price: '₹ 200',
-      imagePath: 'assets/pngs/product_oud.png',
-      category: 'Clothing',
-    ),
-    _ProductItem(
-      title: 'Orthopedic Memory Foam Prayer Mat',
-      price: '₹ 500',
-      imagePath: 'assets/pngs/product_prayermat.png',
-      category: 'Clothing',
-    ),
-  ];
 
   @override
   void initState() {
@@ -67,10 +29,10 @@ class _MarketPageState extends State<MarketPage> {
     super.dispose();
   }
 
-  List<_ProductItem> _getFilteredProducts() {
+  List<MarketProduct> _filteredProducts() {
     final query = _searchController.text.toLowerCase().trim();
 
-    return _products.where((product) {
+    return marketProducts.where((product) {
       final matchesCategory =
           _selectedCategory == 'All' || product.category == _selectedCategory;
       final matchesSearch =
@@ -79,21 +41,32 @@ class _MarketPageState extends State<MarketPage> {
     }).toList();
   }
 
+  void _openDetails(String productId) {
+    NavigationService().pushNamed(
+      'MarketProductDetail',
+      arguments: {'productId': productId},
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  void _toggleBookmark(String productId) {
+    MarketSavedProducts.toggle(productId);
+    setState(() {});
+  }
+
   Widget _buildCategoryList() {
-    final categories = ['All', 'Books', 'Clothing', 'Services', 'Medical'];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: categories.map((category) {
+        children: marketCategories.map((category) {
           final isSelected = _selectedCategory == category;
           return Padding(
             padding: const EdgeInsets.only(right: 10),
             child: GestureDetector(
               onTap: () {
                 HapticHelper.impact(HapticImpact.light);
-                setState(() {
-                  _selectedCategory = category;
-                });
+                setState(() => _selectedCategory = category);
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(
@@ -139,9 +112,7 @@ class _MarketPageState extends State<MarketPage> {
       child: TextField(
         controller: _searchController,
         style: kBodyTitleR.copyWith(color: kTextColor),
-        onChanged: (val) {
-          setState(() {});
-        },
+        onChanged: (_) => setState(() {}),
         decoration: InputDecoration(
           prefixIcon: const Icon(Icons.search, color: kSecondaryTextColor),
           hintText: 'Search for product & services',
@@ -167,7 +138,7 @@ class _MarketPageState extends State<MarketPage> {
     );
   }
 
-  Widget _buildProductGrid(List<_ProductItem> filteredProducts) {
+  Widget _buildProductGrid(List<MarketProduct> filteredProducts) {
     if (filteredProducts.isEmpty) {
       return Center(
         child: Padding(
@@ -182,93 +153,19 @@ class _MarketPageState extends State<MarketPage> {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.72,
+        childAspectRatio: kMarketCardAspectRatio,
         crossAxisSpacing: 14,
         mainAxisSpacing: 14,
       ),
       itemCount: filteredProducts.length,
       itemBuilder: (context, index) {
         final product = filteredProducts[index];
-        return Container(
-          decoration: BoxDecoration(
-            color: kScreenBg,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Product Image
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
-                  ),
-                  child: Image.asset(
-                    product.imagePath,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              // Details container
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: kBodyTitleM.copyWith(
-                        color: kTextColor,
-                        fontSize: 14,
-                        height: 1.25,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      product.price,
-                      style: kBodyTitleB.copyWith(
-                        color: kTextColor,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    // View Details Button
-                    GestureDetector(
-                      onTap: () {
-                        HapticHelper.impact(HapticImpact.light);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Details for ${product.title}'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        decoration: BoxDecoration(
-                          color: kPrimaryColor,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'View Details',
-                            style: kButtonLabelSB.copyWith(
-                              color: kWhite,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+        return MarketProductCard(
+          product: product,
+          showBookmark: true,
+          isBookmarked: MarketSavedProducts.isSaved(product.id),
+          onBookmark: () => _toggleBookmark(product.id),
+          onViewDetails: () => _openDetails(product.id),
         );
       },
     );
@@ -276,7 +173,7 @@ class _MarketPageState extends State<MarketPage> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredProducts = _getFilteredProducts();
+    final filteredProducts = _filteredProducts();
 
     return Scaffold(
       backgroundColor: kWhite,
@@ -286,7 +183,6 @@ class _MarketPageState extends State<MarketPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top Bar
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -323,16 +219,10 @@ class _MarketPageState extends State<MarketPage> {
                       ),
                     ],
                   ),
-                  // Shopping cart badge
                   GestureDetector(
                     onTap: () {
                       HapticHelper.impact(HapticImpact.light);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Cart clicked'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
+                      NavigationService().pushNamed('SavedProducts');
                     },
                     child: Container(
                       width: 40,
@@ -352,16 +242,10 @@ class _MarketPageState extends State<MarketPage> {
                 ],
               ),
               const SizedBox(height: 24),
-
-              // Search Bar
               _buildSearchField(),
               const SizedBox(height: 18),
-
-              // Filter Chips
               _buildCategoryList(),
               const SizedBox(height: 24),
-
-              // Product Grid
               _buildProductGrid(filteredProducts),
               const SizedBox(height: 24),
             ],
