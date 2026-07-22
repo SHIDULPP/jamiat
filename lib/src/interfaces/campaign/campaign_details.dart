@@ -227,7 +227,7 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AspectRatio(
-          aspectRatio: 370 / 220,
+          aspectRatio: 16 / 9,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: _coverImage(displayImage),

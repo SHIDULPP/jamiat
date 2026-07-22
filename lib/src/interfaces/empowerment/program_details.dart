@@ -74,27 +74,22 @@ class ProgramDetailsScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (program.image != null &&
-                            program.image!.startsWith('http'))
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: Image.network(
-                              program.image!,
-                              height: 200,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-                          )
-                        else
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: Image.asset(
-                              'assets/jpgs/campaign_welfare.jpg',
-                              height: 200,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: AspectRatio(
+                            aspectRatio: 16 / 9,
+                            child: program.image != null &&
+                                    program.image!.startsWith('http')
+                                ? Image.network(
+                                    program.image!,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Image.asset(
+                                    'assets/jpgs/campaign_welfare.jpg',
+                                    fit: BoxFit.cover,
+                                  ),
                           ),
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           program.title,

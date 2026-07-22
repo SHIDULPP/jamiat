@@ -13,29 +13,33 @@ class NewsDetailScreen extends ConsumerWidget {
   const NewsDetailScreen({super.key, required this.newsId});
 
   Widget _banner(String? url) {
-    if (url != null && url.startsWith('http')) {
-      return Image.network(
-        url,
-        height: 220,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Container(
-          height: 220,
-          color: kScreenBg,
-          child: const Icon(Icons.image_outlined, color: kMutedText, size: 40),
-        ),
-      );
-    }
-    return Image.asset(
-      url ?? 'assets/jpgs/campaign_education.jpg',
-      height: 220,
-      width: double.infinity,
-      fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => Container(
-        height: 220,
-        color: kScreenBg,
-        child: const Icon(Icons.image_outlined, color: kMutedText, size: 40),
-      ),
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: url != null && url.startsWith('http')
+          ? Image.network(
+              url,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => Container(
+                color: kScreenBg,
+                child: const Icon(
+                  Icons.image_outlined,
+                  color: kMutedText,
+                  size: 40,
+                ),
+              ),
+            )
+          : Image.asset(
+              url ?? 'assets/jpgs/campaign_education.jpg',
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => Container(
+                color: kScreenBg,
+                child: const Icon(
+                  Icons.image_outlined,
+                  color: kMutedText,
+                  size: 40,
+                ),
+              ),
+            ),
     );
   }
 

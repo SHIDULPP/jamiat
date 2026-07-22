@@ -86,25 +86,21 @@ class _WelfareDetailsScreenState extends ConsumerState<WelfareDetailsScreen> {
   }
 
   Widget _heroImage(String? url) {
-    if (url != null && url.startsWith('http')) {
-      return Image.network(
-        url,
-        height: 200,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Image.asset(
-          'assets/jpgs/campaign_welfare.jpg',
-          height: 200,
-          width: double.infinity,
-          fit: BoxFit.cover,
-        ),
-      );
-    }
-    return Image.asset(
-      'assets/jpgs/campaign_welfare.jpg',
-      height: 200,
-      width: double.infinity,
-      fit: BoxFit.cover,
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: url != null && url.startsWith('http')
+          ? Image.network(
+              url,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => Image.asset(
+                'assets/jpgs/campaign_welfare.jpg',
+                fit: BoxFit.cover,
+              ),
+            )
+          : Image.asset(
+              'assets/jpgs/campaign_welfare.jpg',
+              fit: BoxFit.cover,
+            ),
     );
   }
 

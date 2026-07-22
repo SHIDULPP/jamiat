@@ -78,24 +78,21 @@ class _EmpowermentProgramsScreenState
   }
 
   Widget _image(String? url) {
-    if (url != null && url.startsWith('http')) {
-      return Image.network(
-        url,
-        height: 160,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Container(
-          height: 160,
-          color: kScreenBg,
-          child: const Icon(Icons.image_outlined, color: kMutedText),
-        ),
-      );
-    }
-    return Image.asset(
-      url ?? 'assets/jpgs/campaign_welfare.jpg',
-      height: 160,
-      width: double.infinity,
-      fit: BoxFit.cover,
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: url != null && url.startsWith('http')
+          ? Image.network(
+              url,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => Container(
+                color: kScreenBg,
+                child: const Icon(Icons.image_outlined, color: kMutedText),
+              ),
+            )
+          : Image.asset(
+              url ?? 'assets/jpgs/campaign_welfare.jpg',
+              fit: BoxFit.cover,
+            ),
     );
   }
 

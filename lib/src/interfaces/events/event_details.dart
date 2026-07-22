@@ -228,9 +228,8 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: SizedBox(
-              height: 200,
-              width: double.infinity,
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
               child: eventCoverImage(event.coverImage),
             ),
           ),
@@ -391,9 +390,8 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(16),
-                            child: SizedBox(
-                              height: 200,
-                              width: double.infinity,
+                            child: AspectRatio(
+                              aspectRatio: 16 / 9,
                               child: eventCoverImage(widget.image),
                             ),
                           ),
