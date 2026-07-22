@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:jamiat/src/data/apis/auth_api.dart';
 import 'package:jamiat/src/data/apis/upload_api.dart';
@@ -12,9 +14,25 @@ import 'package:jamiat/src/data/models/user_model.dart';
 import 'package:jamiat/src/data/providers/donation_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
+import 'package:jamiat/src/data/services/profile_qr_share_service.dart';
 import 'package:jamiat/src/data/services/secure_storage_service.dart';
 import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+
+class _ProfileMenuItem {
+  const _ProfileMenuItem({
+    required this.icon,
+    required this.title,
+    required this.chevronColor,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final Color chevronColor;
+  final VoidCallback onTap;
+}
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -25,6 +43,8 @@ class ProfilePage extends ConsumerStatefulWidget {
 
 class _ProfilePageState extends ConsumerState<ProfilePage> {
   bool _isUploadingAvatar = false;
+  bool _isSharingQr = false;
+  final ProfileQrShareService _qrShareService = const ProfileQrShareService();
 
   Future<void> _logout(BuildContext context) async {
     final shouldLogout = await showDialog<bool>(
@@ -109,15 +129,47 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   void _showMessage(String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
 
+  Future<void> _shareProfileQr(UserModel user) async {
+    if (_isSharingQr) return;
+    HapticHelper.impact(HapticImpact.light);
+    setState(() => _isSharingQr = true);
+
+    try {
+      final result = await _qrShareService.shareProfileQr(
+        context: context,
+        user: user,
+      );
+      if (!mounted) return;
+
+      if (result.status == ProfileQrShareStatus.cancelled) return;
+      if (!result.isSuccess) {
+        _showMessage(result.message ?? 'Failed to share QR code');
+      }
+    } finally {
+      if (mounted) setState(() => _isSharingQr = false);
+    }
+  }
+
+  Uint8List? _decodeQrImage(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final payload = raw.contains(',') ? raw.split(',').last : raw;
+      return base64Decode(payload);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Widget _buildStatCard({required String title, required String value}) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
       decoration: BoxDecoration(
         color: kWhite,
         borderRadius: BorderRadius.circular(kCardRadiusMd),
@@ -143,35 +195,30 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     );
   }
 
-  Widget _buildMenuItem({
-    required IconData icon,
-    required String title,
-    required Color chevronColor,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildMenuItem(_ProfileMenuItem item) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
           HapticHelper.impact(HapticImpact.light);
-          onTap();
+          item.onTap();
         },
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
           child: Row(
             children: [
-              Icon(icon, color: kPrimaryColor, size: 20),
+              Icon(item.icon, color: kPrimaryColor, size: 20),
               const SizedBox(width: 16),
               Expanded(
                 child: Text(
-                  title,
+                  item.title,
                   style: kBodyTitleM.copyWith(
                     color: kTextColor,
                     fontWeight: kMedium,
                   ),
                 ),
               ),
-              Icon(Icons.chevron_right, color: chevronColor, size: 22),
+              Icon(Icons.chevron_right, color: item.chevronColor, size: 22),
             ],
           ),
         ),
@@ -212,6 +259,363 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     );
   }
 
+  Widget _cameraButton() {
+    return GestureDetector(
+      onTap: _isUploadingAvatar
+          ? null
+          : () {
+              HapticHelper.impact(HapticImpact.light);
+              _pickAndUploadAvatar();
+            },
+      child: Container(
+        width: 32,
+        height: 32,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(
+          color: kTextColor,
+          shape: BoxShape.circle,
+        ),
+        child: _isUploadingAvatar
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: kWhite,
+                ),
+              )
+            : const Icon(Icons.camera_alt, color: kWhite, size: 14),
+      ),
+    );
+  }
+
+  Widget _qrSection(UserModel user) {
+    final qrBytes = _decodeQrImage(user.qrCode);
+
+    return Container(
+      width: 112,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: kWhite,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kBorder.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 88,
+            height: 88,
+            child: qrBytes != null
+                ? Image.memory(qrBytes, fit: BoxFit.contain)
+                : QrImageView(
+                    data: user.id,
+                    backgroundColor: kWhite,
+                    eyeStyle: const QrEyeStyle(
+                      eyeShape: QrEyeShape.square,
+                      color: kTextColor,
+                    ),
+                    dataModuleStyle: const QrDataModuleStyle(
+                      dataModuleShape: QrDataModuleShape.square,
+                      color: kTextColor,
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: _isSharingQr
+                ? null
+                : () => _shareProfileQr(user),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Share',
+                  style: kCaption12M.copyWith(
+                    color: _isSharingQr ? kMutedText : kTextColor,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                if (_isSharingQr)
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  SvgPicture.asset(
+                    'assets/svg/share.svg',
+                    width: 14,
+                    height: 14,
+                    colorFilter: const ColorFilter.mode(
+                      kTextColor,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _normalMemberHeader({
+    required UserModel user,
+    required String? donations,
+    required String? totalDonated,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: kScreenBg,
+        borderRadius: BorderRadius.circular(kCardRadiusLg),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            flex: 5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Stack(
+                  children: [
+                    _avatar(user),
+                    Positioned(bottom: 0, right: 0, child: _cameraButton()),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  user.displayName,
+                  style: kBodyTitleB.copyWith(
+                    color: kTextColor,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'ID : ${user.displayMemberId}',
+                  style: kCaption12R.copyWith(color: kSecondaryTextColor),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 5,
+            child: Column(
+              children: [
+                _buildStatCard(
+                  title: 'DONATIONS',
+                  value: donations ?? '—',
+                ),
+                const SizedBox(height: 10),
+                _buildStatCard(
+                  title: 'TOTAL DONATED',
+                  value: totalDonated ?? '—',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _jamiatMemberHeader({
+    required UserModel user,
+    required String? donations,
+    required String? totalDonated,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: kScreenBg,
+        borderRadius: BorderRadius.circular(kCardRadiusLg),
+      ),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Stack(
+                      children: [
+                        _avatar(user),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: _cameraButton(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      user.displayName,
+                      style: kBodyTitleB.copyWith(
+                        color: kTextColor,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Text(
+                          'Jamaith Member',
+                          style: kCaption12R.copyWith(
+                            color: kSecondaryTextColor,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        if (user.status == 'active')
+                          const Icon(
+                            Icons.verified,
+                            color: kSecondaryColor,
+                            size: 14,
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'ID : ${user.displayMemberId}',
+                      style: kCaption12R.copyWith(color: kSecondaryTextColor),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              _qrSection(user),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  title: 'DONATIONS',
+                  value: donations ?? '—',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildStatCard(
+                  title: 'TOTAL DONATED',
+                  value: totalDonated ?? '—',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<_ProfileMenuItem> _menuItems({
+    required bool isJamiatMember,
+    required BuildContext context,
+  }) {
+    const mutedChevron = kSecondaryTextColor;
+    const accentChevron = kPrimaryColor;
+
+    return [
+      _ProfileMenuItem(
+        icon: Icons.volunteer_activism_outlined,
+        title: 'Donation history',
+        chevronColor: mutedChevron,
+        onTap: () => NavigationService().pushNamed('DonationHistory'),
+      ),
+      if (isJamiatMember) ...[
+        _ProfileMenuItem(
+          icon: Icons.local_activity_outlined,
+          title: 'Events',
+          chevronColor: mutedChevron,
+          onTap: () => NavigationService().pushNamed('Events'),
+        ),
+        _ProfileMenuItem(
+          icon: Icons.inventory_2_outlined,
+          title: 'Saved products',
+          chevronColor: mutedChevron,
+          onTap: () => NavigationService().pushNamed('SavedProducts'),
+        ),
+        _ProfileMenuItem(
+          icon: Icons.chat_bubble_outline,
+          title: 'Enquiries',
+          chevronColor: mutedChevron,
+          onTap: () => _showMessage('Enquiries coming soon'),
+        ),
+      ],
+      _ProfileMenuItem(
+        icon: Icons.autorenew_outlined,
+        title: 'Autopay',
+        chevronColor: mutedChevron,
+        onTap: () => NavigationService().pushNamed('AutopayView'),
+      ),
+      _ProfileMenuItem(
+        icon: Icons.person_outline,
+        title: 'Edit Profile',
+        chevronColor: mutedChevron,
+        onTap: () => NavigationService().pushNamed(
+          'Registration',
+          arguments: {'editMode': true},
+        ),
+      ),
+      _ProfileMenuItem(
+        icon: Icons.headset_mic_outlined,
+        title: 'Help & Support',
+        chevronColor: accentChevron,
+        onTap: () {},
+      ),
+      _ProfileMenuItem(
+        icon: Icons.article_outlined,
+        title: 'Terms and Conditions',
+        chevronColor: accentChevron,
+        onTap: () {},
+      ),
+      _ProfileMenuItem(
+        icon: Icons.shield_outlined,
+        title: 'Privacy Policy',
+        chevronColor: accentChevron,
+        onTap: () {},
+      ),
+    ];
+  }
+
+  Widget _menuCard({
+    required List<_ProfileMenuItem> items,
+    bool includeLogout = false,
+    required BuildContext context,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: kScreenBg,
+        borderRadius: BorderRadius.circular(kCardRadiusLg),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            if (i > 0) _buildDivider(),
+            _buildMenuItem(items[i]),
+          ],
+          if (includeLogout) ...[
+            _buildDivider(),
+            _buildMenuItem(
+              _ProfileMenuItem(
+                icon: Icons.logout,
+                title: 'Log out',
+                chevronColor: kPrimaryColor,
+                onTap: () => _logout(context),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final profileAsync = ref.watch(userProfileProvider);
@@ -227,14 +631,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ref.invalidate(donationHistoryProvider);
           },
           builder: (user) {
-            final isJamiatMember = user.role == 'jamiat_member';
-            final totalPayments = historyAsync.maybeWhen(
-              data: (history) => history.summary.totalPayments,
+            final isJamiatMember = user.isJamiatMember;
+            final donations = historyAsync.maybeWhen(
+              data: (history) => history.summary.totalPayments.toString(),
               orElse: () => null,
             );
             final totalDonated = historyAsync.maybeWhen(
-              data: (history) => history.summary.totalDonated,
+              data: (history) => formatRupeeCompact(history.summary.totalDonated),
               orElse: () => null,
+            );
+            final menuItems = _menuItems(
+              isJamiatMember: isJamiatMember,
+              context: context,
             );
 
             return SingleChildScrollView(
@@ -281,305 +689,38 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: kScreenBg,
-                      borderRadius: BorderRadius.circular(kCardRadiusLg),
+                  if (isJamiatMember)
+                    _jamiatMemberHeader(
+                      user: user,
+                      donations: donations,
+                      totalDonated: totalDonated,
+                    )
+                  else
+                    _normalMemberHeader(
+                      user: user,
+                      donations: donations,
+                      totalDonated: totalDonated,
                     ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          flex: 5,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Stack(
-                                children: [
-                                  _avatar(user),
-                                  Positioned(
-                                    bottom: 0,
-                                    right: 0,
-                                    child: GestureDetector(
-                                      onTap: _isUploadingAvatar
-                                          ? null
-                                          : () {
-                                              HapticHelper.impact(
-                                                HapticImpact.light,
-                                              );
-                                              _pickAndUploadAvatar();
-                                            },
-                                      child: Container(
-                                        width: 32,
-                                        height: 32,
-                                        alignment: Alignment.center,
-                                        decoration: BoxDecoration(
-                                          color: isJamiatMember
-                                              ? kWhite
-                                              : kTextColor,
-                                          shape: BoxShape.circle,
-                                          boxShadow: isJamiatMember
-                                              ? const [
-                                                  BoxShadow(
-                                                    color: Colors.black12,
-                                                    blurRadius: 4,
-                                                    offset: Offset(0, 2),
-                                                  ),
-                                                ]
-                                              : null,
-                                        ),
-                                        child: _isUploadingAvatar
-                                            ? SizedBox(
-                                                width: 16,
-                                                height: 16,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: isJamiatMember
-                                                          ? kTextColor
-                                                          : kWhite,
-                                                    ),
-                                              )
-                                            : Icon(
-                                                Icons.camera_alt,
-                                                color: isJamiatMember
-                                                    ? kTextColor
-                                                    : kWhite,
-                                                size: 14,
-                                              ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                user.displayName,
-                                style: kBodyTitleB.copyWith(
-                                  color: kTextColor,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              if (isJamiatMember) ...[
-                                Row(
-                                  children: [
-                                    Text(
-                                      user.role == 'normal_member'
-                                          ? 'Jamiat Member'
-                                          : user.role,
-                                      style: kCaption12R.copyWith(
-                                        color: kSecondaryTextColor,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    if (user.status == 'active')
-                                      const Icon(
-                                        Icons.verified,
-                                        color: kSecondaryColor,
-                                        size: 14,
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  user.phone.isNotEmpty
-                                      ? user.phone
-                                      : 'ID : ${user.id}',
-                                  style: kCaption12R.copyWith(
-                                    color: kSecondaryTextColor,
-                                  ),
-                                ),
-                              ] else ...[
-                                Text(
-                                  'ID : ${user.id}',
-                                  style: kCaption12R.copyWith(
-                                    color: kSecondaryTextColor,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 5,
-                          child: Column(
-                            children: [
-                              _buildStatCard(
-                                title: 'PAYMENTS',
-                                value: totalPayments?.toString() ?? '—',
-                              ),
-                              const SizedBox(height: 10),
-                              _buildStatCard(
-                                title: 'TOTAL DONATED',
-                                value: totalDonated != null
-                                    ? formatRupeeCompact(totalDonated)
-                                    : '—',
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                   const SizedBox(height: 24),
                   if (isJamiatMember)
-                    Container(
-                      decoration: BoxDecoration(
-                        color: kScreenBg,
-                        borderRadius: BorderRadius.circular(kCardRadiusLg),
-                      ),
-                      child: Column(
-                        children: [
-                          _buildMenuItem(
-                            icon: Icons.volunteer_activism_outlined,
-                            title: 'Donation history',
-                            chevronColor: kSecondaryTextColor,
-                            onTap: () => NavigationService().pushNamed(
-                              'DonationHistory',
-                            ),
-                          ),
-                          _buildDivider(),
-                          _buildMenuItem(
-                            icon: Icons.local_activity_outlined,
-                            title: 'Events',
-                            chevronColor: kSecondaryTextColor,
-                            onTap: () =>
-                                NavigationService().pushNamed('Events'),
-                          ),
-                          _buildDivider(),
-                          _buildMenuItem(
-                            icon: Icons.inventory_2_outlined,
-                            title: 'Saved campaigns',
-                            chevronColor: kSecondaryTextColor,
-                            onTap: () =>
-                                NavigationService().pushNamed('SavedDonations'),
-                          ),
-                          _buildDivider(),
-                          _buildMenuItem(
-                            icon: Icons.autorenew_outlined,
-                            title: 'Autopay',
-                            chevronColor: kSecondaryTextColor,
-                            onTap: () =>
-                                NavigationService().pushNamed('AutopayView'),
-                          ),
-                          _buildDivider(),
-                          _buildMenuItem(
-                            icon: Icons.person_outline,
-                            title: 'Edit Profile',
-                            chevronColor: kSecondaryTextColor,
-                            onTap: () => NavigationService().pushNamed(
-                              'Registration',
-                              arguments: {'editMode': true},
-                            ),
-                          ),
-                          _buildDivider(),
-                          _buildMenuItem(
-                            icon: Icons.headset_mic_outlined,
-                            title: 'Help & Support',
-                            chevronColor: kPrimaryColor,
-                            onTap: () {},
-                          ),
-                          _buildDivider(),
-                          _buildMenuItem(
-                            icon: Icons.article_outlined,
-                            title: 'Terms and Conditions',
-                            chevronColor: kPrimaryColor,
-                            onTap: () {},
-                          ),
-                          _buildDivider(),
-                          _buildMenuItem(
-                            icon: Icons.shield_outlined,
-                            title: 'Privacy Policy',
-                            chevronColor: kPrimaryColor,
-                            onTap: () {},
-                          ),
-                          _buildDivider(),
-                          _buildMenuItem(
-                            icon: Icons.logout,
-                            title: 'Log out',
-                            chevronColor: kRed,
-                            onTap: () => _logout(context),
-                          ),
-                        ],
-                      ),
+                    _menuCard(
+                      items: menuItems,
+                      includeLogout: true,
+                      context: context,
                     )
                   else ...[
-                    Container(
-                      decoration: BoxDecoration(
-                        color: kScreenBg,
-                        borderRadius: BorderRadius.circular(kCardRadiusLg),
-                      ),
-                      child: Column(
-                        children: [
-                          _buildMenuItem(
-                            icon: Icons.volunteer_activism_outlined,
-                            title: 'Donation history',
-                            chevronColor: kSecondaryTextColor,
-                            onTap: () => NavigationService().pushNamed(
-                              'DonationHistory',
-                            ),
-                          ),
-                          _buildDivider(),
-                          _buildMenuItem(
-                            icon: Icons.autorenew_outlined,
-                            title: 'Autopay',
-                            chevronColor: kSecondaryTextColor,
-                            onTap: () =>
-                                NavigationService().pushNamed('AutopayView'),
-                          ),
-                          _buildDivider(),
-                          _buildMenuItem(
-                            icon: Icons.person_outline,
-                            title: 'Edit Profile',
-                            chevronColor: kSecondaryTextColor,
-                            onTap: () => NavigationService().pushNamed(
-                              'Registration',
-                              arguments: {'editMode': true},
-                            ),
-                          ),
-                          _buildDivider(),
-                          _buildMenuItem(
-                            icon: Icons.headset_mic_outlined,
-                            title: 'Help & Support',
-                            chevronColor: kPrimaryColor,
-                            onTap: () {},
-                          ),
-                          _buildDivider(),
-                          _buildMenuItem(
-                            icon: Icons.article_outlined,
-                            title: 'Terms and Conditions',
-                            chevronColor: kPrimaryColor,
-                            onTap: () {},
-                          ),
-                          _buildDivider(),
-                          _buildMenuItem(
-                            icon: Icons.shield_outlined,
-                            title: 'Privacy Policy',
-                            chevronColor: kPrimaryColor,
-                            onTap: () {},
-                          ),
-                        ],
-                      ),
-                    ),
+                    _menuCard(items: menuItems, context: context),
                     const SizedBox(height: 24),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: kScreenBg,
-                        borderRadius: BorderRadius.circular(kCardRadiusLg),
-                      ),
-                      child: Column(
-                        children: [
-                          _buildMenuItem(
-                            icon: Icons.logout,
-                            title: 'Log out',
-                            chevronColor: kRed,
-                            onTap: () => _logout(context),
-                          ),
-                        ],
-                      ),
+                    _menuCard(
+                      items: [
+                        _ProfileMenuItem(
+                          icon: Icons.logout,
+                          title: 'Log out',
+                          chevronColor: kPrimaryColor,
+                          onTap: () => _logout(context),
+                        ),
+                      ],
+                      context: context,
                     ),
                   ],
                   const SizedBox(height: 24),

@@ -17,6 +17,7 @@ class UserModel {
     this.country,
     this.pincode,
     this.dob,
+    this.qrCode,
   });
 
   final String id;
@@ -36,11 +37,22 @@ class UserModel {
   final String? country;
   final int? pincode;
   final DateTime? dob;
+  final String? qrCode;
 
   bool get canEnterApp => status == 'active' && isProfileComplete;
 
+  bool get isJamiatMember => role == 'jamiat_member';
+
   String get displayName =>
       (name != null && name!.trim().isNotEmpty) ? name!.trim() : 'Member';
+
+  String get displayMemberId {
+    final compact = id.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+    if (compact.length >= 6) {
+      return 'JM${compact.substring(compact.length - 7).toUpperCase()}';
+    }
+    return id;
+  }
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
@@ -63,6 +75,7 @@ class UserModel {
       dob: json['dob'] != null
           ? DateTime.tryParse(json['dob'].toString())
           : null,
+      qrCode: json['qr_code']?.toString(),
     );
   }
 }
