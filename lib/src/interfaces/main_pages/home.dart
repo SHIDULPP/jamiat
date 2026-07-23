@@ -140,7 +140,9 @@ class HomePage extends ConsumerWidget {
                             GestureDetector(
                               onTap: () {
                                 HapticHelper.impact(HapticImpact.light);
-                                NavigationService().pushNamed('DonationList');
+                                ref
+                                    .read(selectedIndexProvider.notifier)
+                                    .updateIndex(1);
                               },
                               child: Text('See all', style: kLinkM),
                             ),
@@ -335,9 +337,11 @@ class HomePage extends ConsumerWidget {
                                           HapticHelper.impact(
                                             HapticImpact.light,
                                           );
-                                          NavigationService().pushNamed(
-                                            'DonationList',
-                                          );
+                                          ref
+                                              .read(
+                                                selectedIndexProvider.notifier,
+                                              )
+                                              .updateIndex(1);
                                         },
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(

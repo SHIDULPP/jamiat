@@ -24,6 +24,7 @@ class CampaignDetailsScreen extends ConsumerStatefulWidget {
   final int? raised;
   final int? goal;
   final int? daysLeft;
+  final bool isAutopay;
 
   const CampaignDetailsScreen({
     super.key,
@@ -38,6 +39,7 @@ class CampaignDetailsScreen extends ConsumerStatefulWidget {
     this.raised,
     this.goal,
     this.daysLeft,
+    this.isAutopay = false,
   });
 
   @override
@@ -414,7 +416,7 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
               icon: _getCategoryIcon(displayCat),
               iconBgColor: _getCategoryBgColor(displayCat),
               iconColor: _getCategoryIconColor(displayCat),
-              isAutopay: false,
+              isAutopay: widget.isAutopay,
               campaignId: campaignId,
               categoryLabel: displayCat,
               raised: raised,
@@ -431,7 +433,7 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
             ),
           ),
           child: Text(
-            'Donate Now',
+            widget.isAutopay ? 'Set up Autopay' : 'Donate Now',
             style: kButtonLabelSB.copyWith(fontSize: 16),
           ),
         ),
@@ -625,7 +627,7 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
                   icon: _getCategoryIcon(widget.title),
                   iconBgColor: _getCategoryBgColor(widget.title),
                   iconColor: _getCategoryIconColor(widget.title),
-                  isAutopay: false,
+                  isAutopay: widget.isAutopay,
                   campaignId: widget.campaignId,
                 );
               },
@@ -639,7 +641,7 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
                 ),
               ),
               child: Text(
-                'Donate Now',
+                widget.isAutopay ? 'Set up Autopay' : 'Donate Now',
                 style: kButtonLabelSB.copyWith(fontSize: 16),
               ),
             ),

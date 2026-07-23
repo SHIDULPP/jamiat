@@ -73,3 +73,19 @@ final featuredCampaignsProvider = FutureProvider<List<CampaignModel>>((
   }
   return response.data!.items;
 });
+
+/// Active campaigns for a specific UI/API category label.
+final campaignsByCategoryProvider =
+    FutureProvider.family<List<CampaignModel>, String>((ref, category) async {
+      final response = await ref
+          .watch(campaignApiProvider)
+          .listCampaigns(
+            pageNo: 1,
+            limit: 50,
+            category: category,
+          );
+      if (!response.success || response.data == null) {
+        throw Exception(response.message ?? 'Failed to load campaigns');
+      }
+      return response.data!.items;
+    });

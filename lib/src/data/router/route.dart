@@ -6,6 +6,7 @@ import 'package:jamiat/src/interfaces/onboarding/role_selection.dart';
 import 'package:jamiat/src/interfaces/onboarding/registration.dart';
 import 'package:jamiat/src/interfaces/campaign/campaign_list.dart';
 import 'package:jamiat/src/interfaces/campaign/campaign_details.dart';
+import 'package:jamiat/src/interfaces/campaign/general_campaigns_list.dart';
 import 'package:jamiat/src/interfaces/campaign/donation_success.dart';
 import 'package:jamiat/src/interfaces/campaign/donations_view.dart';
 import 'package:jamiat/src/interfaces/campaign/autopay_view.dart';
@@ -165,6 +166,12 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
       transitionDuration = const Duration(milliseconds: 300);
       break;
 
+    case 'GeneralCampaignsList':
+      page = const GeneralCampaignsListScreen();
+      transitionToUse = TransitionType.slideFromRight;
+      transitionDuration = const Duration(milliseconds: 300);
+      break;
+
     case 'CampaignDetails':
       final args = settings?.arguments as Map<String, dynamic>?;
       page = CampaignDetailsScreen(
@@ -181,6 +188,7 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
         raised: args?['raised'] as int?,
         goal: args?['goal'] as int?,
         daysLeft: args?['daysLeft'] as int?,
+        isAutopay: args?['isAutopay'] as bool? ?? false,
       );
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);

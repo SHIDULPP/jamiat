@@ -159,6 +159,27 @@ class _AutopayViewScreenState extends ConsumerState<AutopayViewScreen> {
                       fontSize: 22,
                     ),
                   ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () {
+                      HapticHelper.impact(HapticImpact.light);
+                      NavigationService().pushNamed('DonationList');
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: kPrimaryColor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Set up',
+                        style: kCaption12M.copyWith(color: kWhite),
+                      ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 24),

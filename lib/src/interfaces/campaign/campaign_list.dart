@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:jamiat/src/data/apis/campaign_api.dart';
 import 'package:jamiat/src/data/apis/user_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
-import 'package:jamiat/src/data/router/nav_router.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 
@@ -14,6 +14,7 @@ class _DonationCategory {
   final String iconAsset;
   final Color iconBgColor;
   final IconData fallbackIcon;
+  final bool isGeneralCampaigns;
 
   const _DonationCategory({
     required this.title,
@@ -21,9 +22,14 @@ class _DonationCategory {
     required this.iconAsset,
     required this.iconBgColor,
     required this.fallbackIcon,
+    this.isGeneralCampaigns = false,
   });
 }
 
+/// Category picker for setting up autopay on a campaign.
+///
+/// - **General Campaign** opens a list of time-bound / targeted campaigns.
+/// - Other categories open that category’s ongoing campaign directly.
 class DonationListScreen extends ConsumerStatefulWidget {
   const DonationListScreen({super.key});
 
@@ -33,17 +39,20 @@ class DonationListScreen extends ConsumerStatefulWidget {
 
 class _DonationListScreenState extends ConsumerState<DonationListScreen> {
   static const _jamiatOnlyCategories = {'Zakat', 'Building Mosque'};
+  static const _generalCampaignTitle = 'General Campaign';
 
   late TextEditingController _searchController;
+  bool _openingCategory = false;
 
   final List<_DonationCategory> _categories = const [
     _DonationCategory(
-      title: 'General Campaign',
+      title: _generalCampaignTitle,
       description:
           'All active fundraisers, including specific, targeted campaigns.',
       iconAsset: 'assets/svg/generalcampaign.svg',
       iconBgColor: Color(0xFFFFF7ED),
       fallbackIcon: Icons.volunteer_activism_outlined,
+      isGeneralCampaigns: true,
     ),
     _DonationCategory(
       title: 'General Funding',
@@ -74,7 +83,7 @@ class _DonationListScreenState extends ConsumerState<DonationListScreen> {
       fallbackIcon: Icons.mosque,
     ),
     _DonationCategory(
-      title: 'Medical Releif',
+      title: 'Medical Relief',
       description:
           'Support underprivileged families facing urgent health crises.',
       iconAsset: 'assets/svg/medicalreif.svg',
@@ -112,12 +121,57 @@ class _DonationListScreenState extends ConsumerState<DonationListScreen> {
     }).toList();
   }
 
-  void _viewActive() {
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
+  }
+
+  Future<void> _openCategory(_DonationCategory item) async {
+    if (_openingCategory) return;
     HapticHelper.impact(HapticImpact.light);
-    if (Navigator.canPop(context)) {
-      Navigator.pop(context);
+
+    if (item.isGeneralCampaigns) {
+      NavigationService().pushNamed('GeneralCampaignsList');
+      return;
     }
-    ref.read(selectedIndexProvider.notifier).updateIndex(1);
+
+    setState(() => _openingCategory = true);
+    try {
+      final response = await ref
+          .read(campaignApiProvider)
+          .listCampaigns(pageNo: 1, limit: 1, category: item.title);
+
+      if (!mounted) return;
+
+      if (!response.success ||
+          response.data == null ||
+          response.data!.items.isEmpty) {
+        _showMessage('No active ${item.title} campaign available right now.');
+        return;
+      }
+
+      final campaign = response.data!.items.first;
+      NavigationService().pushNamed(
+        'CampaignDetails',
+        arguments: {
+          'campaignId': campaign.id,
+          'title': campaign.title,
+          'description': campaign.description,
+          'icon': item.fallbackIcon,
+          'iconBgColor': item.iconBgColor,
+          'iconColor': kTextColor,
+          'category': campaign.category,
+          'isAutopay': true,
+        },
+      );
+    } catch (e) {
+      _showMessage(e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _openingCategory = false);
+    }
   }
 
   Widget _buildBackButton() {
@@ -159,7 +213,7 @@ class _DonationListScreenState extends ConsumerState<DonationListScreen> {
               style: kBodyTitleR.copyWith(color: kTextColor),
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
-                hintText: 'Search for services',
+                hintText: 'Search for campaigns',
                 hintStyle: kBodyTitleR.copyWith(color: kSecondaryTextColor),
                 border: InputBorder.none,
                 isDense: true,
@@ -176,20 +230,7 @@ class _DonationListScreenState extends ConsumerState<DonationListScreen> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
-          HapticHelper.impact(HapticImpact.light);
-          NavigationService().pushNamed(
-            'CampaignDetails',
-            arguments: {
-              'title': item.title,
-              'description': item.description,
-              'icon': item.fallbackIcon,
-              'iconBgColor': item.iconBgColor,
-              'iconColor': kTextColor,
-              'category': item.title,
-            },
-          );
-        },
+        onTap: _openingCategory ? null : () => _openCategory(item),
         borderRadius: BorderRadius.circular(kCardRadiusMd),
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -238,6 +279,13 @@ class _DonationListScreenState extends ConsumerState<DonationListScreen> {
                   ],
                 ),
               ),
+              Icon(
+                item.isGeneralCampaigns
+                    ? Icons.chevron_right
+                    : Icons.autorenew,
+                color: kMutedText,
+                size: 22,
+              ),
             ],
           ),
         ),
@@ -255,71 +303,81 @@ class _DonationListScreenState extends ConsumerState<DonationListScreen> {
     return Scaffold(
       backgroundColor: kWhite,
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                kScreenPaddingH,
-                16,
-                kScreenPaddingH,
-                0,
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    kScreenPaddingH,
+                    16,
+                    kScreenPaddingH,
+                    0,
+                  ),
+                  child: Row(
                     children: [
                       _buildBackButton(),
-                      GestureDetector(
-                        onTap: _viewActive,
+                      const SizedBox(width: 16),
+                      Expanded(
                         child: Text(
-                          'View Active',
-                          style: kCaption14M.copyWith(
-                            color: kBlue,
-                            fontWeight: kBold,
+                          'Set up Autopay',
+                          style: kHeadTitleB.copyWith(
+                            color: kTextColor,
+                            fontSize: 22,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  Text(
-                    'Donations',
-                    style: kHeadTitleB.copyWith(
-                      color: kTextColor,
-                      fontSize: 22,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                kScreenPaddingH,
-                20,
-                kScreenPaddingH,
-                0,
-              ),
-              child: _buildSearchField(),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(
-                  kScreenPaddingH,
-                  0,
-                  kScreenPaddingH,
-                  24,
                 ),
-                itemCount: filteredCategories.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  return _buildCategoryCard(filteredCategories[index]);
-                },
-              ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    kScreenPaddingH,
+                    12,
+                    kScreenPaddingH,
+                    0,
+                  ),
+                  child: Text(
+                    'Choose a campaign to start recurring donations.',
+                    style: kCaption14R.copyWith(color: kSecondaryTextColor),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    kScreenPaddingH,
+                    20,
+                    kScreenPaddingH,
+                    0,
+                  ),
+                  child: _buildSearchField(),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(
+                      kScreenPaddingH,
+                      0,
+                      kScreenPaddingH,
+                      24,
+                    ),
+                    itemCount: filteredCategories.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      return _buildCategoryCard(filteredCategories[index]);
+                    },
+                  ),
+                ),
+              ],
             ),
+            if (_openingCategory)
+              const Positioned.fill(
+                child: ColoredBox(
+                  color: Color(0x33FFFFFF),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ),
           ],
         ),
       ),
