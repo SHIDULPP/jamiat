@@ -46,9 +46,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       return Scaffold(
         backgroundColor: kWhite,
         body: SafeArea(
-          child: Center(
-            child: Text('Product not found', style: kEmptyStateM),
-          ),
+          child: Center(child: Text('Product not found', style: kEmptyStateM)),
         ),
       );
     }

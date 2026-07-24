@@ -545,7 +545,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           icon: Icons.chat_bubble_outline,
           title: 'Enquiries',
           chevronColor: mutedChevron,
-          onTap: () => _showMessage('Enquiries coming soon'),
+          onTap: () => NavigationService().pushNamed('Enquiries'),
         ),
       ],
       _ProfileMenuItem(
