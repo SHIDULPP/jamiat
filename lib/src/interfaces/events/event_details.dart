@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jamiat/src/data/apis/event_api.dart';
+import 'package:jamiat/src/data/apis/user_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/models/event_model.dart';
@@ -272,13 +273,15 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
             const SizedBox(height: 12),
             ...event.guests.map(_personTile),
           ],
-          if (event.coordinators.isNotEmpty) ...[
+          if (event.coordinators.where((p) => p.name.isNotEmpty).isNotEmpty) ...[
             const SizedBox(height: 8),
             Text('Event Coordinators', style: kSectionTitleSB),
             const SizedBox(height: 12),
-            ...event.coordinators.map(
-              (p) => _personTile(p, fallbackRole: 'Event Coordinator'),
-            ),
+            ...event.coordinators
+                .where((p) => p.name.isNotEmpty)
+                .map(
+                  (p) => _personTile(p, fallbackRole: 'Event Coordinator'),
+                ),
           ],
           const SizedBox(height: 80),
         ],
@@ -294,8 +297,15 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
         : null;
     final event = eventAsync?.value;
     final isBookmarked = event?.isBookmarked ?? widget.isBookmarked;
+    final currentUserId = ref.watch(userProfileProvider).maybeWhen(
+      data: (user) => user.id,
+      orElse: () => null,
+    );
+    final isCoordinator =
+        event != null && event.isCoordinator(currentUserId);
     final showRegister =
-        event == null || event.registrationEnabled == true;
+        !isCoordinator && (event == null || event.registrationEnabled == true);
+    final showScanQr = isCoordinator;
 
     return Scaffold(
       backgroundColor: kWhite,
@@ -410,12 +420,23 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: hasId && showRegister && event != null
+      bottomNavigationBar: hasId && event != null && (showScanQr || showRegister)
           ? SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
                 child: ElevatedButton(
-                  onPressed: _registerLoading
+                  onPressed: showScanQr
+                      ? () {
+                          HapticHelper.impact(HapticImpact.medium);
+                          NavigationService().pushNamed(
+                            'EventQrScan',
+                            arguments: {
+                              'eventId': event.id,
+                              'eventTitle': event.title,
+                            },
+                          );
+                        }
+                      : _registerLoading
                       ? null
                       : () {
                           HapticHelper.impact(HapticImpact.medium);
@@ -433,7 +454,9 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
                     ),
                     elevation: 0,
                   ),
-                  child: _registerLoading
+                  child: showScanQr
+                      ? Text('Scan QR', style: kButtonLabelSB)
+                      : _registerLoading
                       ? const SizedBox(
                           width: 22,
                           height: 22,

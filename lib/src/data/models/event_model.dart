@@ -1,10 +1,12 @@
 class EventPerson {
   const EventPerson({
     required this.name,
+    this.id,
     this.designation,
     this.image,
   });
 
+  final String? id;
   final String name;
   final String? designation;
   final String? image;
@@ -13,6 +15,7 @@ class EventPerson {
     final rawImage = json['image'] ?? json['profile_image'] ?? json['photo'];
     final image = rawImage?.toString().trim();
     return EventPerson(
+      id: (json['_id'] ?? json['id'])?.toString(),
       name: (json['name'] ?? '').toString().trim(),
       designation: json['designation']?.toString().trim(),
       image: (image == null || image.isEmpty || image == 'null') ? null : image,
@@ -55,9 +58,32 @@ class EventModel {
   final List<EventPerson> guests;
   final List<EventPerson> coordinators;
 
+  bool isCoordinator(String? userId) {
+    if (userId == null || userId.isEmpty) return false;
+    return coordinators.any((c) => c.id == userId);
+  }
+
   factory EventModel.fromJson(Map<String, dynamic> json) {
     final guestsRaw = json['guests'];
     final coordinatorsRaw = json['coordinators'];
+
+    List<EventPerson> parsePeople(dynamic raw) {
+      if (raw is! List) return const [];
+      return raw
+          .map((e) {
+            if (e is Map) {
+              return EventPerson.fromJson(Map<String, dynamic>.from(e));
+            }
+            // Unpopulated ObjectId string
+            if (e != null) {
+              return EventPerson(id: e.toString(), name: '');
+            }
+            return null;
+          })
+          .whereType<EventPerson>()
+          .where((p) => p.id != null || p.name.isNotEmpty)
+          .toList();
+    }
 
     return EventModel(
       id: (json['_id'] ?? json['id'] ?? '').toString(),
@@ -83,28 +109,10 @@ class EventModel {
       }(),
       isRegistered: json['is_registered'] == true,
       myTicketId: json['my_ticket_id']?.toString(),
-      guests: guestsRaw is List
-          ? guestsRaw
-                .map(
-                  (e) => e is Map
-                      ? EventPerson.fromJson(Map<String, dynamic>.from(e))
-                      : null,
-                )
-                .whereType<EventPerson>()
-                .where((p) => p.name.isNotEmpty)
-                .toList()
-          : const [],
-      coordinators: coordinatorsRaw is List
-          ? coordinatorsRaw
-                .map(
-                  (e) => e is Map
-                      ? EventPerson.fromJson(Map<String, dynamic>.from(e))
-                      : null,
-                )
-                .whereType<EventPerson>()
-                .where((p) => p.name.isNotEmpty)
-                .toList()
-          : const [],
+      guests: parsePeople(guestsRaw)
+          .where((p) => p.name.isNotEmpty)
+          .toList(),
+      coordinators: parsePeople(coordinatorsRaw),
     );
   }
 }
@@ -167,6 +175,49 @@ class EventTicketModel {
           : null,
       venue: eventMap['venue']?.toString(),
       passType: (json['pass_type'] ?? 'General Entry Pass').toString(),
+    );
+  }
+}
+
+class EventScanResult {
+  const EventScanResult({
+    required this.alreadyAttended,
+    required this.ticketCode,
+    this.attendedAt,
+    this.attendeeName,
+    this.eventTitle,
+    this.message,
+  });
+
+  final bool alreadyAttended;
+  final String ticketCode;
+  final DateTime? attendedAt;
+  final String? attendeeName;
+  final String? eventTitle;
+  final String? message;
+
+  factory EventScanResult.fromJson(
+    Map<String, dynamic> json, {
+    String? message,
+  }) {
+    final user = json['user'];
+    final userMap = user is Map
+        ? Map<String, dynamic>.from(user)
+        : <String, dynamic>{};
+    final event = json['event'];
+    final eventMap = event is Map
+        ? Map<String, dynamic>.from(event)
+        : <String, dynamic>{};
+
+    return EventScanResult(
+      alreadyAttended: json['already_attended'] == true,
+      ticketCode: (json['ticket_code'] ?? '').toString(),
+      attendedAt: json['attended_at'] != null
+          ? DateTime.tryParse(json['attended_at'].toString())
+          : null,
+      attendeeName: userMap['name']?.toString(),
+      eventTitle: eventMap['title']?.toString(),
+      message: message,
     );
   }
 }

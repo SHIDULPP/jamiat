@@ -70,5 +70,7 @@
 	<string>Jamiat needs permission to save your event tickets to Photos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Jamiat needs access to Photos to save your event tickets into the Jamiat album.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Jamiat needs camera access so event coordinators can scan ticket QR codes for attendance.</string>
 </dict>
 </plist>

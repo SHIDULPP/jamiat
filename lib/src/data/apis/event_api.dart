@@ -178,6 +178,37 @@ class EventApi {
       response.statusCode ?? 200,
     );
   }
+
+  /// Coordinator check-in via ticket QR token.
+  /// `POST /event/scan` body: `{ qr_token }`.
+  Future<ApiResponse<EventScanResult>> scanTicket(String qrToken) async {
+    final response = await _api.post(
+      '/event/scan',
+      {'qr_token': qrToken},
+      requireAuth: true,
+    );
+
+    final data = nestedData(response.data);
+    if (data != null && data['ticket_code'] != null) {
+      return ApiResponse.success(
+        EventScanResult.fromJson(data, message: response.message),
+        response.statusCode ?? 200,
+        message: response.message,
+      );
+    }
+
+    if (!response.success) {
+      return ApiResponse.error(
+        response.message ?? 'Failed to scan ticket',
+        response.statusCode,
+      );
+    }
+
+    return ApiResponse.error(
+      'Invalid scan response',
+      response.statusCode,
+    );
+  }
 }
 
 final eventApiProvider = Provider<EventApi>(

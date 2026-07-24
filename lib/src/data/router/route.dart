@@ -15,6 +15,7 @@ import 'package:jamiat/src/interfaces/campaign/donation_history.dart';
 import 'package:jamiat/src/interfaces/campaign/saved_donations.dart';
 import 'package:jamiat/src/interfaces/events/events.dart';
 import 'package:jamiat/src/interfaces/events/event_details.dart';
+import 'package:jamiat/src/interfaces/events/event_qr_scan.dart';
 import 'package:jamiat/src/interfaces/events/ticket.dart';
 import 'package:jamiat/src/interfaces/events/tickets_list.dart';
 import 'package:jamiat/src/interfaces/events/saved_events.dart';
@@ -273,6 +274,16 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
         image:
             args?['image'] as String? ?? 'assets/jpgs/campaign_education.jpg',
         isBookmarked: args?['isBookmarked'] as bool? ?? false,
+      );
+      transitionToUse = TransitionType.slideFromRight;
+      transitionDuration = const Duration(milliseconds: 300);
+      break;
+
+    case 'EventQrScan':
+      final args = settings?.arguments as Map<String, dynamic>?;
+      page = EventQrScanScreen(
+        eventId: (args?['eventId'] ?? '').toString(),
+        eventTitle: args?['eventTitle'] as String?,
       );
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);
