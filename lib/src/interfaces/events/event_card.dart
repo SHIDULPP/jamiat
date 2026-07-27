@@ -171,6 +171,27 @@ class EventListCard extends StatelessWidget {
                         ],
                       ),
                     ],
+                    if (event.hasEnded) ...[
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 40,
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: kGrey,
+                            disabledBackgroundColor: kGrey,
+                            disabledForegroundColor: kWhite,
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(kCardRadiusSm),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text('Completed', style: kButtonLabelSB),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

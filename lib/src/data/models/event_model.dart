@@ -63,6 +63,77 @@ class EventModel {
     return coordinators.any((c) => c.id == userId);
   }
 
+  /// True when the event's calendar day (or multi-day range) is over.
+  ///
+  /// Uses [startDate] as the event day. [endDate] is only used when it falls
+  /// on the same day or within 14 days after start (real multi-day events).
+  /// Far-future end dates are ignored so registration closes after the event day.
+  bool get hasEnded {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final start = startDate?.toLocal();
+    final end = endDate?.toLocal();
+
+    DateTime? lastMoment;
+    if (start != null && end != null) {
+      final startDay = DateTime(start.year, start.month, start.day);
+      final endDay = DateTime(end.year, end.month, end.day);
+      final spanDays = endDay.difference(startDay).inDays;
+      if (spanDays >= 0 && spanDays <= 14) {
+        lastMoment = end.isAfter(start) ? end : start;
+      } else {
+        // Missing/invalid end (before start or far future) → event day = start
+        lastMoment = start;
+      }
+    } else {
+      lastMoment = end ?? start;
+    }
+
+    if (lastMoment == null) return false;
+
+    final lastDay = DateTime(
+      lastMoment.year,
+      lastMoment.month,
+      lastMoment.day,
+    );
+    if (lastDay.isBefore(today)) return true;
+    if (lastDay.isAfter(today)) return false;
+
+    final hasClockTime =
+        lastMoment.hour != 0 ||
+        lastMoment.minute != 0 ||
+        lastMoment.second != 0;
+    final cutoff = hasClockTime
+        ? lastMoment
+        : DateTime(lastDay.year, lastDay.month, lastDay.day, 23, 59, 59, 999);
+    return now.isAfter(cutoff);
+  }
+
+  static DateTime? _parseDate(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is DateTime) return raw;
+    if (raw is int) {
+      // Heuristic: seconds vs milliseconds
+      final ms = raw < 100000000000 ? raw * 1000 : raw;
+      return DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true);
+    }
+    if (raw is num) {
+      return _parseDate(raw.toInt());
+    }
+    if (raw is Map) {
+      final nested = raw[r'$date'] ?? raw['date'];
+      return _parseDate(nested);
+    }
+    final text = raw.toString().trim();
+    if (text.isEmpty || text == 'null') return null;
+    final asInt = int.tryParse(text);
+    if (asInt != null && text.length >= 9) {
+      return _parseDate(asInt);
+    }
+    return DateTime.tryParse(text);
+  }
+
   factory EventModel.fromJson(Map<String, dynamic> json) {
     final guestsRaw = json['guests'];
     final coordinatorsRaw = json['coordinators'];
@@ -92,12 +163,12 @@ class EventModel {
       type: (json['event_type'] ?? json['type'] ?? 'Offline').toString(),
       isBookmarked: json['is_bookmarked'] == true,
       coverImage: json['cover_image']?.toString(),
-      startDate: json['start_date'] != null
-          ? DateTime.tryParse(json['start_date'].toString())
-          : null,
-      endDate: json['end_date'] != null
-          ? DateTime.tryParse(json['end_date'].toString())
-          : null,
+      startDate: _parseDate(
+        json['start_date'] ?? json['startDate'] ?? json['event_date'] ?? json['date'],
+      ),
+      endDate: _parseDate(
+        json['end_date'] ?? json['endDate'],
+      ),
       venue: json['venue']?.toString(),
       onlineLink: (json['link'] ?? json['online_link'])?.toString(),
       registrationEnabled: () {

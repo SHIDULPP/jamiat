@@ -98,6 +98,14 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
       return;
     }
 
+    if (event.hasEnded) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This event has ended')),
+      );
+      return;
+    }
+
     if (_registerLoading) return;
     setState(() => _registerLoading = true);
     try {
@@ -386,9 +394,20 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
     );
     final isCoordinator =
         event != null && event.isCoordinator(currentUserId);
-    final showRegister =
-        !isCoordinator && (event == null || event.registrationEnabled == true);
-    final showScanQr = isCoordinator;
+    final isCompleted = event?.hasEnded == true;
+    final isRegistered = event?.isRegistered == true;
+    // Past events: Completed (grey). Registered past events can still view ticket.
+    final showCompleted = event != null && !isCoordinator && isCompleted && !isRegistered;
+    final showViewTicket =
+        event != null && !isCoordinator && isRegistered;
+    final showRegister = event != null &&
+        !isCoordinator &&
+        !isCompleted &&
+        !isRegistered &&
+        event.registrationEnabled == true;
+    final showScanQr = event != null && isCoordinator && !isCompleted;
+    final showBottomBar =
+        showScanQr || showRegister || showViewTicket || showCompleted;
 
     return Scaffold(
       backgroundColor: kWhite,
@@ -482,7 +501,7 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: hasId && event != null && (showScanQr || showRegister)
+      bottomNavigationBar: hasId && event != null && showBottomBar
           ? SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -492,7 +511,9 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
                   16,
                 ),
                 child: ElevatedButton(
-                  onPressed: showScanQr
+                  onPressed: showCompleted
+                      ? null
+                      : showScanQr
                       ? () {
                           HapticHelper.impact(HapticImpact.medium);
                           NavigationService().pushNamed(
@@ -510,18 +531,22 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
                           _registerOrViewTicket(event);
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: kPrimaryColor,
+                    backgroundColor:
+                        showCompleted ? kGrey : kPrimaryColor,
                     foregroundColor: kWhite,
-                    disabledBackgroundColor: kPrimaryColor.withValues(
-                      alpha: 0.6,
-                    ),
+                    disabledBackgroundColor: showCompleted
+                        ? kGrey
+                        : kPrimaryColor.withValues(alpha: 0.6),
+                    disabledForegroundColor: kWhite,
                     minimumSize: const Size.fromHeight(56),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(kCardRadiusSm),
                     ),
                     elevation: 0,
                   ),
-                  child: showScanQr
+                  child: showCompleted
+                      ? Text('Completed', style: kButtonLabelSB)
+                      : showScanQr
                       ? Text('Scan QR', style: kButtonLabelSB)
                       : _registerLoading
                       ? const SizedBox(
@@ -533,9 +558,7 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
                           ),
                         )
                       : Text(
-                          event.isRegistered == true
-                              ? 'View Ticket'
-                              : 'Register',
+                          showViewTicket ? 'View Ticket' : 'Register',
                           style: kButtonLabelSB,
                         ),
                 ),
