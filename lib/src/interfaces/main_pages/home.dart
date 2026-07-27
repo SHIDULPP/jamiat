@@ -32,9 +32,9 @@ class _QuickAccessItem {
 const _quickAccessItems = <_QuickAccessItem>[
   // Figma Home Quick Access order (636:885+)
   _QuickAccessItem(
-    label: 'Donate',
-    icon: 'assets/svg/donate.svg',
-    background: Color(0xFFFFF4F4),
+    label: 'Autopay',
+    icon: 'assets/svg/autopay.svg',
+    background: Color(0xFFE8F6EE),
   ),
   _QuickAccessItem(
     label: 'Welfare',
@@ -834,8 +834,8 @@ class _QuickAccessList extends ConsumerWidget {
               onTap: () {
                 HapticHelper.impact(HapticImpact.light);
                 switch (item.label) {
-                  case 'Donate':
-                    ref.read(selectedIndexProvider.notifier).updateIndex(1);
+                  case 'Autopay':
+                    NavigationService().pushNamed('AutopayView');
                   case 'Events':
                     NavigationService().pushNamed('Events');
                   case 'Welfare':
@@ -1416,7 +1416,7 @@ class _ContributeButton extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 SvgPicture.asset(
-                  'assets/svg/figma/hand_heart.svg',
+                  'assets/svg/donate.svg',
                   width: 20,
                   height: 20,
                   colorFilter: const ColorFilter.mode(
