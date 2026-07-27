@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
       navigatorKey: NavigationService.navigatorKey,
       onGenerateRoute: router.generateRoute,
       initialRoute: 'Splash',
-      title: 'Jamiat',
+      title: 'Jamiat Connect',
       theme: ThemeData(
         brightness: Brightness.light,
         colorScheme: ColorScheme.fromSeed(
