@@ -6,11 +6,11 @@ import 'package:jamiat/src/data/models/campaign_model.dart';
 import 'package:jamiat/src/data/providers/campaign_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
-import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
 import 'package:jamiat/src/interfaces/components/campaign_card.dart';
 
 /// Lists all active **General Campaign** items for autopay setup.
+/// Card chrome matches Figma Campaigns list (636:1338).
 class GeneralCampaignsListScreen extends ConsumerStatefulWidget {
   const GeneralCampaignsListScreen({super.key});
 
@@ -72,7 +72,12 @@ class _GeneralCampaignsListScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingH,
+                16,
+                kScreenPaddingH,
+                0,
+              ),
               child: Row(
                 children: [
                   GestureDetector(
@@ -86,7 +91,7 @@ class _GeneralCampaignsListScreenState
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
+                        border: Border.all(color: kStrokeColor, width: 1.25),
                       ),
                       child: const Icon(
                         Icons.arrow_back,
@@ -95,43 +100,51 @@ class _GeneralCampaignsListScreenState
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'General Campaigns',
-                      style: kHeadTitleB.copyWith(
-                        color: kTextColor,
-                        fontSize: 22,
-                      ),
+                      style: kSectionTitleSB,
                     ),
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingH,
+                12,
+                kScreenPaddingH,
+                0,
+              ),
               child: Text(
                 'Pick a campaign to set up recurring donations.',
-                style: kCaption14R.copyWith(color: kSecondaryTextColor),
+                style: kCaption12R.copyWith(color: kSecondaryTextColor),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingH,
+                16,
+                kScreenPaddingH,
+                0,
+              ),
               child: Container(
+                height: 48,
                 decoration: BoxDecoration(
                   color: kWhite,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: kBorder, width: 1),
+                  borderRadius: BorderRadius.circular(kPillRadius),
+                  border: Border.all(color: kStrokeColor),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Row(
                   children: [
                     const Icon(
                       Icons.search,
-                      color: kSecondaryTextColor,
+                      color: kIconMuted,
                       size: 22,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: TextField(
                         controller: _searchController,
@@ -145,9 +158,7 @@ class _GeneralCampaignsListScreenState
                           ),
                           border: InputBorder.none,
                           isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 16,
-                          ),
+                          contentPadding: EdgeInsets.zero,
                         ),
                       ),
                     ),
@@ -186,13 +197,22 @@ class _GeneralCampaignsListScreenState
                       physics: const AlwaysScrollableScrollPhysics(
                         parent: BouncingScrollPhysics(),
                       ),
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                      padding: const EdgeInsets.fromLTRB(
+                        kScreenPaddingH,
+                        0,
+                        kScreenPaddingH,
+                        24,
+                      ),
                       itemCount: filtered.length,
                       itemBuilder: (context, index) {
                         final campaign = filtered[index];
-                        return _GeneralCampaignCard(
+                        return CampaignListCard(
                           campaign: campaign,
-                          onTap: () => _openCampaign(campaign),
+                          donateLabel: 'Set up Autopay',
+                          showOverlayActions: false,
+                          onDonate: () => _openCampaign(campaign),
+                          onBookmark: () {},
+                          onShare: () {},
                         );
                       },
                     ),
@@ -201,112 +221,6 @@ class _GeneralCampaignsListScreenState
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GeneralCampaignCard extends StatelessWidget {
-  const _GeneralCampaignCard({
-    required this.campaign,
-    required this.onTap,
-  });
-
-  final CampaignModel campaign;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final progress = campaign.targetAmount <= 0
-        ? 0.0
-        : (campaign.collectedAmount / campaign.targetAmount).clamp(0.0, 1.0);
-    final daysLeft = campaign.remainingDays;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: kCardBg,
-        borderRadius: BorderRadius.circular(kCardRadiusLg),
-        border: Border.all(color: kCardBorder),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AspectRatio(
-                aspectRatio: 16 / 9,
-                child: campaignCoverImage(campaign.coverImage),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      campaign.title,
-                      style: kBodyTitleSB.copyWith(fontSize: 15),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${formatRupee(campaign.collectedAmount)} of '
-                      '${formatRupee(campaign.targetAmount)}',
-                      style: kCaption12M.copyWith(color: kMutedText),
-                    ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: 6,
-                        backgroundColor: kBorder,
-                        color: kPrimaryColor,
-                      ),
-                    ),
-                    if (daysLeft != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        daysLeft <= 0
-                            ? 'Ended'
-                            : '$daysLeft days left',
-                        style: kCaption12R.copyWith(
-                          color: daysLeft <= 7
-                              ? kDaysLeftWarning
-                              : kMutedText,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: onTap,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: kPrimaryColor,
-                          foregroundColor: kWhite,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: Text(
-                          'Set up Autopay',
-                          style: kButtonLabelSB.copyWith(fontSize: 13),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );

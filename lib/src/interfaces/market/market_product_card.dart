@@ -5,6 +5,9 @@ import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/interfaces/market/market_product_data.dart';
 
+/// Figma Offer Card surface (636:3103) — `#F6F6F6`, r14, no border.
+const Color _kMarketCardSurface = Color(0xFFF6F6F6);
+
 class MarketProductCard extends StatelessWidget {
   const MarketProductCard({
     super.key,
@@ -27,17 +30,16 @@ class MarketProductCard extends StatelessWidget {
       aspectRatio: kMarketCardAspectRatio,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: kWhite,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: kBorder.withValues(alpha: 0.6)),
+          color: _kMarketCardSurface,
+          borderRadius: BorderRadius.circular(kCardRadiusMd),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(kCardRadiusMd),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                flex: kMarketImageHeight.round(),
+              SizedBox(
+                height: kMarketImageHeight,
                 child: _ProductImage(
                   imagePath: product.imagePath,
                   showBookmark: showBookmark,
@@ -46,50 +48,57 @@ class MarketProductCard extends StatelessWidget {
                 ),
               ),
               Expanded(
-                flex: (kMarketCardHeight - kMarketImageHeight).round(),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: Text(
-                          product.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: kBodyTitleM.copyWith(
-                            color: kTextColor,
-                            fontSize: 13,
-                            height: 1.25,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  product.title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: kCaption12R.copyWith(
+                                    color: kTextColor,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                product.formattedPrice,
+                                style: kBodyTitleSB.copyWith(height: 1.2),
+                              ),
+                            ],
                           ),
-                        ),
-                      ),
-                      Text(
-                        product.formattedPrice,
-                        style: kBodyTitleB.copyWith(
-                          color: kTextColor,
-                          fontSize: 15,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      GestureDetector(
-                        onTap: () {
-                          HapticHelper.impact(HapticImpact.light);
-                          onViewDetails();
-                        },
-                        child: Container(
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: SizedBox(
+                          height: 40,
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 9),
-                          decoration: BoxDecoration(
+                          child: Material(
                             color: kPrimaryColor,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'View Details',
-                              style: kButtonLabelSB.copyWith(
-                                color: kWhite,
-                                fontSize: 12,
+                            borderRadius: BorderRadius.circular(kCardRadiusSm),
+                            child: InkWell(
+                              onTap: () {
+                                HapticHelper.impact(HapticImpact.light);
+                                onViewDetails();
+                              },
+                              borderRadius:
+                                  BorderRadius.circular(kCardRadiusSm),
+                              child: Center(
+                                child: Text(
+                                  'View Details',
+                                  style: kButtonLabelSB,
+                                ),
                               ),
                             ),
                           ),

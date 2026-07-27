@@ -114,15 +114,15 @@ class RoleSelectionScreen extends ConsumerWidget {
 
                 SizedBox(height: 16 * scale),
 
-                // Frame 2005 — role cards, gap 16
+                // Frame 2005 — role cards, gap 16 (Figma 636:625)
                 Column(
                   children: [
                     _RoleCard(
                       scale: scale,
-                      iconAsset: 'assets/svg/normal_member.svg',
-                      title: 'Normal Member',
+                      iconAsset: 'assets/svg/figma/smile_circle.svg',
+                      title: 'I am new to the community',
                       description:
-                          'Access the Charity module exclusively to view donation campaigns, track contributions, and read reports.',
+                          'Use this to explore community services, events, and charity programs.',
                       onTap: () {
                         ref
                             .read(selectedRoleProvider.notifier)
@@ -133,10 +133,10 @@ class RoleSelectionScreen extends ConsumerWidget {
                     SizedBox(height: 16 * scale),
                     _RoleCard(
                       scale: scale,
-                      iconAsset: 'assets/svg/jamiat_membership.svg',
-                      title: 'Jamiat Member',
+                      iconAsset: 'assets/svg/figma/users_group.svg',
+                      title: "I'm a Jamaith Member",
                       description:
-                          'Gain full access to all community modules, features, updates, and specialized tools.',
+                          'Use this if you have a registered membership with our community.',
                       onTap: () {
                         ref
                             .read(selectedRoleProvider.notifier)

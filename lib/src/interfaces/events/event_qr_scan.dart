@@ -131,9 +131,9 @@ class _EventQrScanScreenState extends ConsumerState<EventQrScanScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
-        leadingWidth: 72,
+        leadingWidth: 56,
         leading: Padding(
-          padding: const EdgeInsets.only(left: 20),
+          padding: const EdgeInsets.only(left: kScreenPaddingH),
           child: Center(
             child: GestureDetector(
               onTap: () {
@@ -156,13 +156,10 @@ class _EventQrScanScreenState extends ConsumerState<EventQrScanScreen> {
             ),
           ),
         ),
-        titleSpacing: 0,
+        titleSpacing: 8,
         title: Text(
           'Scan any QR',
-          style: kHeadTitleB.copyWith(
-            color: kWhite,
-            fontSize: 20,
-          ),
+          style: kSectionTitleSB.copyWith(color: kWhite),
         ),
         centerTitle: false,
       ),
@@ -198,14 +195,14 @@ class _EventQrScanScreenState extends ConsumerState<EventQrScanScreen> {
           ),
           if (_statusMessage != null)
             Positioned(
-              left: 24,
-              right: 24,
+              left: kScreenPaddingH,
+              right: kScreenPaddingH,
               bottom: 48,
               child: Material(
                 color: _statusIsError
                     ? const Color(0xFF7F1D1D)
                     : kPrimaryColor,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(kCardRadiusSm),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -225,17 +222,21 @@ class _EventQrScanScreenState extends ConsumerState<EventQrScanScreen> {
             ),
           if (_permissionDenied)
             Positioned(
-              left: 24,
-              right: 24,
+              left: kScreenPaddingH,
+              right: kScreenPaddingH,
               bottom: 48,
               child: ElevatedButton(
                 onPressed: openAppSettings,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: kPrimaryColor,
                   foregroundColor: kWhite,
-                  minimumSize: const Size.fromHeight(48),
+                  minimumSize: const Size.fromHeight(56),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(kCardRadiusSm),
+                  ),
+                  elevation: 0,
                 ),
-                child: const Text('Open Settings'),
+                child: Text('Open Settings', style: kButtonLabelSB),
               ),
             ),
         ],

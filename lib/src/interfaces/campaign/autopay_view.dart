@@ -27,14 +27,13 @@ class _AutopayViewScreenState extends ConsumerState<AutopayViewScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? kSecondaryColor : kWhite,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(kCardRadiusSm),
           border: Border.all(color: kSecondaryColor, width: 1.25),
         ),
         child: Text(
           label,
-          style: kStyle(
-            isSelected ? kBold : kMedium,
-            14,
+          style: kCaption12M.copyWith(
+            fontWeight: isSelected ? kSemiBold : kMedium,
             color: isSelected ? kTextColor : kMutedText,
           ),
         ),
@@ -125,7 +124,10 @@ class _AutopayViewScreenState extends ConsumerState<AutopayViewScreen> {
       backgroundColor: kWhite,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: kScreenPaddingH,
+            vertical: 16,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -142,7 +144,7 @@ class _AutopayViewScreenState extends ConsumerState<AutopayViewScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
+                        border: Border.all(color: kStrokeColor, width: 1.25),
                       ),
                       child: const Icon(
                         Icons.arrow_back,
@@ -151,13 +153,10 @@ class _AutopayViewScreenState extends ConsumerState<AutopayViewScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Text(
                     'Autopay',
-                    style: kHeadTitleB.copyWith(
-                      color: kTextColor,
-                      fontSize: 22,
-                    ),
+                    style: kSectionTitleSB,
                   ),
                   const Spacer(),
                   GestureDetector(
@@ -172,7 +171,7 @@ class _AutopayViewScreenState extends ConsumerState<AutopayViewScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: kPrimaryColor,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(kCardRadiusSm),
                       ),
                       child: Text(
                         'Set up',

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jamiat/src/data/apis/empowerment_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
@@ -22,6 +23,7 @@ class _EmpowermentProgramsScreenState
     extends ConsumerState<EmpowermentProgramsScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  String _selectedChip = 'All';
 
   @override
   void dispose() {
@@ -77,6 +79,26 @@ class _EmpowermentProgramsScreenState
     }
   }
 
+  Widget _headerCircleButton({
+    required Widget child,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: kWhite,
+          border: Border.all(color: kGrey, width: 1.25),
+        ),
+        alignment: Alignment.center,
+        child: child,
+      ),
+    );
+  }
+
   Widget _image(String? url) {
     return AspectRatio(
       aspectRatio: 16 / 9,
@@ -104,62 +126,111 @@ class _EmpowermentProgramsScreenState
       backgroundColor: kWhite,
       body: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingH,
+                8,
+                kScreenPaddingH,
+                0,
+              ),
               child: Row(
                 children: [
-                  GestureDetector(
+                  _headerCircleButton(
                     onTap: () {
                       HapticHelper.impact(HapticImpact.light);
                       Navigator.pop(context);
                     },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: kTextColor,
-                        size: 20,
-                      ),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      color: kTextColor,
+                      size: 20,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Empowerment Programs',
-                      style: kHeadTitleB.copyWith(
-                        color: kTextColor,
-                        fontSize: 20,
-                      ),
+                      style: kSectionTitleSB,
                     ),
                   ),
-                  IconButton(
-                    onPressed: () {
+                  _headerCircleButton(
+                    onTap: () {
+                      HapticHelper.impact(HapticImpact.light);
                       NavigationService().pushNamed('AppliedPrograms');
                     },
-                    icon: const Icon(Icons.bookmark_border),
+                    child: SvgPicture.asset(
+                      'assets/svg/bookmark.svg',
+                      width: 18,
+                      height: 18,
+                      colorFilter: const ColorFilter.mode(
+                        kTextColor,
+                        BlendMode.srcIn,
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 24),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (v) => setState(() => _searchQuery = v.trim()),
-                decoration: InputDecoration(
-                  hintText: 'Search programs',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(28),
-                  ),
+              padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
+              child: Container(
+                height: 56,
+                decoration: BoxDecoration(
+                  color: kWhite,
+                  borderRadius: BorderRadius.circular(kCardRadiusMd),
+                  border: Border.all(color: kCardBorder),
                 ),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.search, color: kMutedText, size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (v) =>
+                            setState(() => _searchQuery = v.trim()),
+                        decoration: InputDecoration(
+                          hintText: 'Search programs',
+                          hintStyle: kBodyTitleR.copyWith(
+                            color: kSecondaryTextColor,
+                          ),
+                          border: InputBorder.none,
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 30,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: kScreenPaddingH,
+                ),
+                children: [
+                  for (final label in const [
+                    'All',
+                    'Education',
+                    'Skill',
+                    'Career',
+                    'Youth',
+                  ]) ...[
+                    if (label != 'All') const SizedBox(width: 12),
+                    _CategoryChip(
+                      label: label,
+                      selected: _selectedChip == label,
+                      onTap: () => setState(() => _selectedChip = label),
+                    ),
+                  ],
+                ],
               ),
             ),
             const SizedBox(height: 16),
@@ -176,7 +247,9 @@ class _EmpowermentProgramsScreenState
                     );
                   }
                   return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: kScreenPaddingH,
+                    ),
                     itemCount: programs.length,
                     itemBuilder: (context, index) {
                       final program = programs[index];
@@ -194,8 +267,9 @@ class _EmpowermentProgramsScreenState
                           margin: const EdgeInsets.only(bottom: 20),
                           decoration: BoxDecoration(
                             color: kWhite,
-                            borderRadius: BorderRadius.circular(kCardRadiusLg),
-                            border: Border.all(color: kBorder),
+                            borderRadius:
+                                BorderRadius.circular(kCardRadiusLg),
+                            border: Border.all(color: kCardBorder),
                           ),
                           clipBehavior: Clip.antiAlias,
                           child: Column(
@@ -207,13 +281,34 @@ class _EmpowermentProgramsScreenState
                                   Positioned(
                                     top: 10,
                                     right: 10,
-                                    child: IconButton(
-                                      onPressed: () => _toggleSave(program),
-                                      icon: Icon(
-                                        program.isBookmarked
-                                            ? Icons.bookmark
-                                            : Icons.bookmark_border,
-                                        color: kWhite,
+                                    child: Material(
+                                      color: kBlack.withValues(alpha: 0.35),
+                                      shape: const CircleBorder(),
+                                      child: InkWell(
+                                        customBorder: const CircleBorder(),
+                                        onTap: () {
+                                          HapticHelper.impact(
+                                            HapticImpact.light,
+                                          );
+                                          _toggleSave(program);
+                                        },
+                                        child: SizedBox(
+                                          width: 36,
+                                          height: 36,
+                                          child: Center(
+                                            child: SvgPicture.asset(
+                                              'assets/svg/bookmark.svg',
+                                              width: 16,
+                                              height: 16,
+                                              colorFilter: ColorFilter.mode(
+                                                program.isBookmarked
+                                                    ? kPrimaryColor
+                                                    : kWhite,
+                                                BlendMode.srcIn,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -224,12 +319,13 @@ class _EmpowermentProgramsScreenState
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(program.title, style: kBodyTitleB),
+                                    Text(program.title, style: kSectionTitleSB),
                                     const SizedBox(height: 6),
                                     Text(
                                       program.description,
                                       style: kCaption12R.copyWith(
                                         color: kSecondaryTextColor,
+                                        height: 1.4,
                                       ),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
@@ -237,25 +333,53 @@ class _EmpowermentProgramsScreenState
                                     const SizedBox(height: 12),
                                     Row(
                                       children: [
-                                        Text(
-                                          program.startDate != null
-                                              ? 'Starts ${formatDateLabel(program.startDate)}'
-                                              : '',
-                                          style: kCaption12R,
-                                        ),
-                                        const Spacer(),
-                                        ElevatedButton(
-                                          onPressed: program.isApplied
-                                              ? null
-                                              : () => _apply(program),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: kPrimaryColor,
-                                            foregroundColor: kWhite,
-                                          ),
-                                          child: Text(
-                                            program.isApplied
-                                                ? 'Applied'
-                                                : 'Apply',
+                                        if (program.startDate != null)
+                                          Expanded(
+                                            child: Text(
+                                              'Starts ${formatDateLabel(program.startDate)}',
+                                              style: kCaption12R.copyWith(
+                                                color: kTextColor,
+                                              ),
+                                            ),
+                                          )
+                                        else
+                                          const Spacer(),
+                                        SizedBox(
+                                          height: 40,
+                                          child: ElevatedButton(
+                                            onPressed: program.isApplied
+                                                ? null
+                                                : () {
+                                                    HapticHelper.impact(
+                                                      HapticImpact.medium,
+                                                    );
+                                                    _apply(program);
+                                                  },
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: kPrimaryColor,
+                                              foregroundColor: kWhite,
+                                              disabledBackgroundColor:
+                                                  kPrimaryColor.withValues(
+                                                alpha: 0.6,
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 20,
+                                              ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                  kCardRadiusSm,
+                                                ),
+                                              ),
+                                              elevation: 0,
+                                            ),
+                                            child: Text(
+                                              program.isApplied
+                                                  ? 'Applied'
+                                                  : 'Apply',
+                                              style: kButtonLabelSB,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -273,6 +397,42 @@ class _EmpowermentProgramsScreenState
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected
+              ? kSecondaryColor
+              : kSecondaryColor.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: kSecondaryColor),
+        ),
+        child: Text(
+          label,
+          style: kCaption12M.copyWith(
+            color: selected ? kTextColor : kSecondaryTextColor,
+            height: 1.2,
+          ),
         ),
       ),
     );

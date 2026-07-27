@@ -23,14 +23,13 @@ class _DonationsViewScreenState extends State<DonationsViewScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? kSecondaryColor : kWhite,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(kCardRadiusSm),
           border: Border.all(color: kSecondaryColor, width: 1.25),
         ),
         child: Text(
           label,
-          style: kStyle(
-            isSelected ? kBold : kMedium,
-            14,
+          style: kCaption12M.copyWith(
+            fontWeight: isSelected ? kSemiBold : kMedium,
             color: isSelected ? kTextColor : kMutedText,
           ),
         ),
@@ -44,7 +43,10 @@ class _DonationsViewScreenState extends State<DonationsViewScreen> {
       backgroundColor: kWhite,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(
+          horizontal: kScreenPaddingH,
+          vertical: 16,
+        ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -62,7 +64,7 @@ class _DonationsViewScreenState extends State<DonationsViewScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
+                        border: Border.all(color: kStrokeColor, width: 1.25),
                       ),
                       child: const Icon(
                         Icons.arrow_back,
@@ -71,13 +73,10 @@ class _DonationsViewScreenState extends State<DonationsViewScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Text(
                     'Donations',
-                    style: kHeadTitleB.copyWith(
-                      color: kTextColor,
-                      fontSize: 22,
-                    ),
+                    style: kSectionTitleSB,
                   ),
                 ],
               ),

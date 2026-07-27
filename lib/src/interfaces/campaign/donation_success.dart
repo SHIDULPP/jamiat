@@ -24,23 +24,40 @@ class DonationSuccessScreen extends StatelessWidget {
     this.message,
   });
 
+  Widget _circleButton({required Widget child, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: kWhite,
+          border: Border.all(color: kStrokeColor, width: 1.25),
+        ),
+        alignment: Alignment.center,
+        child: child,
+      ),
+    );
+  }
+
   Widget _buildRow(String label, String value, {bool isGreen = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
-            style: kCaption14R.copyWith(color: kMutedText, fontSize: 14),
+            style: kCaption12R.copyWith(color: kMutedText),
           ),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: kBodyTitleSB.copyWith(
+              style: kCaption12SB.copyWith(
                 color: isGreen ? kPrimaryColor : kTextColor,
-                fontSize: 14,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -53,82 +70,61 @@ class DonationSuccessScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Format currency display
     final displayAmount = amount.startsWith('₹') ? amount : '₹$amount';
 
     return Scaffold(
       backgroundColor: kWhite,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: kScreenPaddingH,
+            vertical: 16,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Row (Back Button)
-              GestureDetector(
+              _circleButton(
                 onTap: () {
                   HapticHelper.impact(HapticImpact.light);
                   Navigator.pop(context);
                 },
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: kWhite,
-                    border: Border.all(color: kBorder, width: 1.25),
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back,
-                    color: kTextColor,
-                    size: 20,
-                  ),
+                child: const Icon(
+                  Icons.arrow_back,
+                  color: kTextColor,
+                  size: 20,
                 ),
               ),
-              const SizedBox(height: 16),
-
-              // Success Banner / Checkmark Section
+              const SizedBox(height: 24),
               Center(
                 child: Column(
                   children: [
-                    // Green Checkmark Double Shade Circle
                     Container(
-                      width: 90,
-                      height: 90,
+                      width: 88,
+                      height: 88,
                       decoration: const BoxDecoration(
                         color: kPrimaryColor,
                         shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [Color(0xFF00C853), Color(0xFF00A54F)],
-                          center: Alignment.center,
-                          radius: 0.85,
-                        ),
                       ),
-                      child: const Icon(Icons.check, color: kWhite, size: 48),
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.check_rounded,
+                        color: kWhite,
+                        size: 48,
+                      ),
                     ),
                     const SizedBox(height: 20),
-                    Text(
-                      'Sucess',
-                      style: kHeadTitleB.copyWith(
-                        color: kTextColor,
-                        fontSize: 22,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
+                    Text('Sucess', style: kSectionTitle19SB),
+                    const SizedBox(height: 8),
                     Text(
                       'Thank you for Your generous Support!',
-                      style: kCaption14M.copyWith(color: kSecondaryTextColor),
+                      textAlign: TextAlign.center,
+                      style: kCaption12R.copyWith(color: kSecondaryTextColor),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 32),
-
-              // Donation Receipt Section
-              Text(
-                'Donation Receipt',
-                style: kBodyTitleB.copyWith(color: kTextColor, fontSize: 16),
-              ),
+              Text('Donation Receipt', style: kBodyTitleSB),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -137,8 +133,8 @@ class DonationSuccessScreen extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: kWhite,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: kBorder),
+                  borderRadius: BorderRadius.circular(kCardRadiusMd),
+                  border: Border.all(color: kCardBorder),
                 ),
                 child: Column(
                   children: [
@@ -151,27 +147,18 @@ class DonationSuccessScreen extends StatelessWidget {
                       _buildRow('Campaign', campaignName),
                     ],
                     const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      padding: EdgeInsets.symmetric(vertical: 8),
                       child: Divider(color: kLineGrey, height: 1),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Amount Paid',
-                            style: kBodyTitleSB.copyWith(
-                              color: kTextColor,
-                              fontSize: 14,
-                            ),
-                          ),
+                          Text('Amount Paid', style: kBodyTitleSB),
                           Text(
                             displayAmount,
-                            style: kBodyTitleB.copyWith(
-                              color: kPrimaryColor,
-                              fontSize: 16,
-                            ),
+                            style: kBodyTitleSB.copyWith(color: kPrimaryColor),
                           ),
                         ],
                       ),
@@ -180,27 +167,21 @@ class DonationSuccessScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-
-              // Your Message Section (only if not empty)
               if (message != null && message!.isNotEmpty) ...[
-                Text(
-                  'Your Message',
-                  style: kBodyTitleB.copyWith(color: kTextColor, fontSize: 16),
-                ),
+                Text('Your Message', style: kBodyTitleSB),
                 const SizedBox(height: 12),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: kWhite,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: kBorder),
+                    borderRadius: BorderRadius.circular(kCardRadiusMd),
+                    border: Border.all(color: kCardBorder),
                   ),
                   child: Text(
                     message!,
-                    style: kBodyTitleR.copyWith(
+                    style: kCaption14R.copyWith(
                       color: kTextColor,
-                      fontSize: 14,
                       height: 1.45,
                     ),
                   ),
@@ -209,52 +190,50 @@ class DonationSuccessScreen extends StatelessWidget {
               ] else ...[
                 const SizedBox(height: 16),
               ],
-
-              // CTA Buttons at the bottom
-              ElevatedButton(
-                onPressed: () {
-                  HapticHelper.impact(HapticImpact.medium);
-                  NavigationService().pushNamedAndRemoveUntil('navBar');
-                  if (isAutopay) {
-                    NavigationService().pushNamed('AutopayView');
-                  } else {
-                    NavigationService().pushNamed('DonationsView');
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kPrimaryColor,
-                  foregroundColor: kWhite,
-                  minimumSize: const Size.fromHeight(54),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+              SizedBox(
+                height: 52,
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    HapticHelper.impact(HapticImpact.medium);
+                    NavigationService().pushNamedAndRemoveUntil('navBar');
+                    if (isAutopay) {
+                      NavigationService().pushNamed('AutopayView');
+                    } else {
+                      NavigationService().pushNamed('DonationsView');
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kPrimaryColor,
+                    foregroundColor: kWhite,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(kCardRadiusSm),
+                    ),
                   ),
-                ),
-                child: Text(
-                  'View my donations',
-                  style: kButtonLabelSB.copyWith(fontSize: 16),
+                  child: Text('View my donations', style: kButtonLabelSB),
                 ),
               ),
               const SizedBox(height: 12),
-              OutlinedButton(
-                onPressed: () {
-                  HapticHelper.impact(HapticImpact.light);
-                  NavigationService().pushNamedAndRemoveUntil('navBar');
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: kTextColor,
-                  side: const BorderSide(color: kBorder, width: 1.25),
-                  minimumSize: const Size.fromHeight(54),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+              SizedBox(
+                height: 52,
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    HapticHelper.impact(HapticImpact.light);
+                    NavigationService().pushNamedAndRemoveUntil('navBar');
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: kTextColor,
+                    side: const BorderSide(color: kStrokeColor, width: 1.25),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(kCardRadiusSm),
+                    ),
                   ),
-                ),
-                child: Text(
-                  'Back to Home',
-                  style: kButtonLabelSB.copyWith(
-                    color: kTextColor,
-                    fontSize: 16,
+                  child: Text(
+                    'Back to Home',
+                    style: kButtonLabelSB.copyWith(color: kTextColor),
                   ),
                 ),
               ),

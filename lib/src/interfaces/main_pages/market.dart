@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
@@ -56,84 +57,73 @@ class _MarketPageState extends State<MarketPage> {
   }
 
   Widget _buildCategoryList() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: marketCategories.map((category) {
+    // Figma chips: 30h · r6 · selected #FBBD05 · unselected soft yellow + border · 12 Medium
+    return SizedBox(
+      height: 30,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: marketCategories.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final category = marketCategories[index];
           final isSelected = _selectedCategory == category;
-          return Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: GestureDetector(
-              onTap: () {
-                HapticHelper.impact(HapticImpact.light);
-                setState(() => _selectedCategory = category);
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected ? kSecondaryColor : kWhite,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isSelected ? kSecondaryColor : kBorder,
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  category,
-                  style: kBodyTitleM.copyWith(
-                    color: isSelected ? kTextColor : kSecondaryTextColor,
-                    fontWeight: isSelected ? kBold : kRegular,
-                  ),
+          return GestureDetector(
+            onTap: () {
+              HapticHelper.impact(HapticImpact.light);
+              setState(() => _selectedCategory = category);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? kSecondaryColor
+                    : kSecondaryColor.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(kCardRadiusXs),
+                border: Border.all(color: kSecondaryColor),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                category,
+                style: kCaption12M.copyWith(
+                  color: isSelected ? kTextColor : kMutedText,
                 ),
               ),
             ),
           );
-        }).toList(),
+        },
       ),
     );
   }
 
   Widget _buildSearchField() {
+    // Figma Input Field 1: 56h · r16 · border #E3E3E3 · no shadow
     return Container(
+      height: 56,
       decoration: BoxDecoration(
         color: kWhite,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+        borderRadius: BorderRadius.circular(kCardRadiusLg),
+        border: Border.all(color: kCardBorder),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          const Icon(Icons.search, color: kSecondaryTextColor, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              style: kBodyTitleR.copyWith(color: kTextColor),
+              onChanged: (_) => setState(() {}),
+              cursorColor: kPrimaryColor,
+              decoration: InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: 'Search for product & services',
+                hintStyle: kBodyTitleR.copyWith(color: kSecondaryTextColor),
+              ),
+            ),
           ),
         ],
-      ),
-      child: TextField(
-        controller: _searchController,
-        style: kBodyTitleR.copyWith(color: kTextColor),
-        onChanged: (_) => setState(() {}),
-        decoration: InputDecoration(
-          prefixIcon: const Icon(Icons.search, color: kSecondaryTextColor),
-          hintText: 'Search for product & services',
-          hintStyle: kBodyTitleR.copyWith(color: kSecondaryTextColor),
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 18,
-            horizontal: 16,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: kBorder, width: 1),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: kBorder, width: 1),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: kPrimaryColor, width: 1.5),
-          ),
-        ),
       ),
     );
   }
@@ -154,8 +144,8 @@ class _MarketPageState extends State<MarketPage> {
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: kMarketCardAspectRatio,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
       ),
       itemCount: filteredProducts.length,
       itemBuilder: (context, index) {
@@ -179,45 +169,46 @@ class _MarketPageState extends State<MarketPage> {
       backgroundColor: kWhite,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.fromLTRB(
+            kScreenPaddingH,
+            8,
+            kScreenPaddingH,
+            24,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          if (Navigator.canPop(context)) {
-                            Navigator.pop(context);
-                          }
-                        },
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: kWhite,
-                            border: Border.all(color: kBorder, width: 1.25),
-                          ),
-                          child: const Icon(
-                            Icons.arrow_back,
-                            color: kTextColor,
-                            size: 20,
-                          ),
-                        ),
+                  GestureDetector(
+                    onTap: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      }
+                    },
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: kWhite,
+                        border: Border.all(color: kStrokeColor, width: 1.25),
                       ),
-                      const SizedBox(width: 16),
-                      Text(
-                        'Jamiat Market Place',
-                        style: kHeadTitleB.copyWith(
-                          color: kTextColor,
-                          fontSize: 20,
-                        ),
+                      child: const Icon(
+                        Icons.arrow_back,
+                        color: kTextColor,
+                        size: 20,
                       ),
-                    ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Jamiat Market Place',
+                      style: kSectionTitleSB,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   GestureDetector(
                     onTap: () {
@@ -230,12 +221,18 @@ class _MarketPageState extends State<MarketPage> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
+                        border: Border.all(color: kStrokeColor, width: 1.25),
                       ),
-                      child: const Icon(
-                        Icons.shopping_cart_outlined,
-                        color: kTextColor,
-                        size: 20,
+                      child: Center(
+                        child: SvgPicture.asset(
+                          'assets/svg/market_icon.svg',
+                          width: 22,
+                          height: 22,
+                          colorFilter: const ColorFilter.mode(
+                            kTextColor,
+                            BlendMode.srcIn,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -243,11 +240,10 @@ class _MarketPageState extends State<MarketPage> {
               ),
               const SizedBox(height: 24),
               _buildSearchField(),
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
               _buildCategoryList(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               _buildProductGrid(filteredProducts),
-              const SizedBox(height: 24),
             ],
           ),
         ),

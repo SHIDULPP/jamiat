@@ -85,21 +85,48 @@ class _WelfareDetailsScreenState extends ConsumerState<WelfareDetailsScreen> {
     );
   }
 
+  Widget _headerCircleButton({
+    required Widget child,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: kWhite,
+          border: Border.all(color: kGrey, width: 1.25),
+        ),
+        alignment: Alignment.center,
+        child: child,
+      ),
+    );
+  }
+
   Widget _heroImage(String? url) {
-    return AspectRatio(
-      aspectRatio: 16 / 9,
+    return SizedBox(
+      height: 182,
+      width: double.infinity,
       child: url != null && url.startsWith('http')
           ? Image.network(
               url,
               fit: BoxFit.cover,
+              width: double.infinity,
+              height: 182,
               errorBuilder: (_, _, _) => Image.asset(
                 'assets/jpgs/campaign_welfare.jpg',
                 fit: BoxFit.cover,
+                width: double.infinity,
+                height: 182,
               ),
             )
           : Image.asset(
               'assets/jpgs/campaign_welfare.jpg',
               fit: BoxFit.cover,
+              width: double.infinity,
+              height: 182,
             ),
     );
   }
@@ -113,6 +140,8 @@ class _WelfareDetailsScreenState extends ConsumerState<WelfareDetailsScreen> {
         : 'Target';
     final targetSub =
         service.targetLabel?.isNotEmpty == true ? service.targetLabel! : '';
+    final screenW = MediaQuery.sizeOf(context).width;
+    final statWidth = (screenW - (kScreenPaddingH * 2) - 20) / 3;
 
     return RefreshIndicator(
       color: kPrimaryColor,
@@ -124,64 +153,67 @@ class _WelfareDetailsScreenState extends ConsumerState<WelfareDetailsScreen> {
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(kCardRadiusMd),
               child: _heroImage(service.icon),
             ),
             const SizedBox(height: 16),
             Text(
               service.shortDescription,
-              style: kBodyTitleSB.copyWith(fontSize: 15, height: 1.45),
+              style: kCaption12SB.copyWith(color: kTextColor, height: 1.2),
             ),
             if (service.fullDescription != null &&
                 service.fullDescription!.trim().isNotEmpty) ...[
               const SizedBox(height: 10),
               Text(
                 service.fullDescription!,
-                style: kCaption14R.copyWith(color: kText2Color, height: 1.5),
+                style: kCaption12R.copyWith(color: kTextColor, height: 1.4),
               ),
             ],
             for (final block in service.statements) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               Text(block.heading, style: kSectionTitleSB),
               const SizedBox(height: 8),
               Text(
                 block.description,
-                style: kCaption14R.copyWith(color: kText2Color, height: 1.5),
+                style: kCaption12R.copyWith(color: kTextColor, height: 1.4),
               ),
             ],
             if (service.impactStatus.isNotEmpty) ...[
               const SizedBox(height: 24),
               Text('Journey so far', style: kSectionTitleSB),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Wrap(
                 spacing: 10,
                 runSpacing: 10,
                 children: service.impactStatus.map((stat) {
                   return Container(
-                    width: (MediaQuery.sizeOf(context).width - 48 - 10) / 2,
-                    padding: const EdgeInsets.all(14),
+                    width: statWidth,
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF8E7),
-                      borderRadius: BorderRadius.circular(12),
+                      color: kSecondarySoftBg,
+                      borderRadius: BorderRadius.circular(kCardRadiusSm),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           stat.title,
-                          style: kCaption12R.copyWith(color: kMutedText),
+                          style: kCaption12R.copyWith(
+                            color: kMutedText,
+                            height: 1.3,
+                            fontWeight: kBold,
+                          ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 16),
                         Text(
                           stat.status,
-                          style: kBodyTitleSB.copyWith(
-                            color: const Color(0xFFD97706),
-                            fontSize: 18,
+                          style: kSectionTitle19SB.copyWith(
+                            color: kSecondaryColor,
                           ),
                         ),
                       ],
@@ -191,46 +223,34 @@ class _WelfareDetailsScreenState extends ConsumerState<WelfareDetailsScreen> {
               ),
             ],
             if (hasTarget) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(14),
+                  color: const Color(0xFFF0F8FF),
+                  borderRadius: BorderRadius.circular(kCardRadiusMd),
                 ),
                 child: Row(
                   children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDBEAFE),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.track_changes,
-                        color: Color(0xFF2563EB),
-                      ),
+                    const Icon(
+                      Icons.track_changes,
+                      color: Color(0xFF3B82F6),
+                      size: 32,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            targetTitle,
-                            style: kBodyTitleB.copyWith(
-                              color: const Color(0xFF1E3A8A),
-                              fontSize: 13,
-                            ),
-                          ),
+                          Text(targetTitle, style: kSectionTitleSB),
                           if (targetSub.isNotEmpty) ...[
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 4),
                             Text(
                               targetSub,
                               style: kCaption12R.copyWith(
-                                color: const Color(0xFF2563EB),
+                                color: kTextColor,
+                                height: 1.4,
                               ),
                             ),
                           ],
@@ -241,21 +261,29 @@ class _WelfareDetailsScreenState extends ConsumerState<WelfareDetailsScreen> {
                 ),
               ),
             ],
-            const SizedBox(height: 24),
-            Text(
-              'Donate for ${service.name}',
-              style: kSectionTitleSB.copyWith(fontSize: 16),
-            ),
-            const SizedBox(height: 14),
-            if (service.linkedCampaigns.isEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 32),
-                child: Text(
-                  'No active campaigns for this program yet.',
-                  style: kEmptyStateM,
+            if (service.linkedCampaigns.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              SizedBox(
+                height: 56,
+                width: double.infinity,
+                child: Material(
+                  color: kPrimaryColor,
+                  borderRadius: BorderRadius.circular(kCardRadiusSm),
+                  child: InkWell(
+                    onTap: () => _openDonate(service.linkedCampaigns.first),
+                    borderRadius: BorderRadius.circular(kCardRadiusSm),
+                    child: Center(
+                      child: Text('Donate', style: kButtonLabelSB),
+                    ),
+                  ),
                 ),
-              )
-            else
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Donate for ${service.name}',
+                style: kSectionTitleSB,
+              ),
+              const SizedBox(height: 14),
               ...service.linkedCampaigns.map(
                 (campaign) => CampaignListCard(
                   campaign: campaign,
@@ -273,7 +301,17 @@ class _WelfareDetailsScreenState extends ConsumerState<WelfareDetailsScreen> {
                   },
                 ),
               ),
-            const SizedBox(height: 16),
+            ] else ...[
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'No active campaigns for this program yet.',
+                  style: kEmptyStateM,
+                ),
+              ),
+            ],
+            const SizedBox(height: 40),
           ],
         ),
       ),
@@ -292,37 +330,30 @@ class _WelfareDetailsScreenState extends ConsumerState<WelfareDetailsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingH,
+                8,
+                kScreenPaddingH,
+                16,
+              ),
               child: Row(
                 children: [
-                  GestureDetector(
+                  _headerCircleButton(
                     onTap: () {
                       HapticHelper.impact(HapticImpact.light);
                       Navigator.pop(context);
                     },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: kTextColor,
-                        size: 20,
-                      ),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      color: kTextColor,
+                      size: 20,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       title,
-                      style: kHeadTitleB.copyWith(
-                        color: kTextColor,
-                        fontSize: 20,
-                      ),
+                      style: kSectionTitleSB,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),

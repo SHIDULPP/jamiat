@@ -126,7 +126,7 @@ class EventListCard extends StatelessWidget {
                   children: [
                     Text(
                       event.title,
-                      style: kBodyTitleSB.copyWith(fontSize: 16),
+                      style: kSectionTitleSB,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -136,7 +136,7 @@ class EventListCard extends StatelessWidget {
                         const Icon(
                           Icons.calendar_today_outlined,
                           size: 14,
-                          color: kMutedText,
+                          color: kTextColor,
                         ),
                         const SizedBox(width: 6),
                         Expanded(
@@ -145,9 +145,7 @@ class EventListCard extends StatelessWidget {
                               event.startDate,
                               event.endDate,
                             ),
-                            style: kCaption12R.copyWith(
-                              color: kSecondaryTextColor,
-                            ),
+                            style: kCaption12R.copyWith(color: kTextColor),
                           ),
                         ),
                       ],
@@ -159,15 +157,13 @@ class EventListCard extends StatelessWidget {
                           const Icon(
                             Icons.location_on_outlined,
                             size: 14,
-                            color: kMutedText,
+                            color: kTextColor,
                           ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
                               event.venue!,
-                              style: kCaption12R.copyWith(
-                                color: kSecondaryTextColor,
-                              ),
+                              style: kCaption12R.copyWith(color: kTextColor),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),

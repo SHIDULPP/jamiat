@@ -248,7 +248,10 @@ class _AutopayDetailsScreenState extends ConsumerState<AutopayDetailsScreen> {
     final isCancelled = status.toLowerCase().contains('cancel');
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(
+        horizontal: kScreenPaddingH,
+        vertical: 16,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -263,7 +266,7 @@ class _AutopayDetailsScreenState extends ConsumerState<AutopayDetailsScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: kWhite,
-                border: Border.all(color: kBorder, width: 1.25),
+                border: Border.all(color: kStrokeColor, width: 1.25),
               ),
               child: const Icon(Icons.arrow_back, color: kTextColor, size: 20),
             ),
@@ -272,8 +275,8 @@ class _AutopayDetailsScreenState extends ConsumerState<AutopayDetailsScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: kScreenBg,
-              borderRadius: BorderRadius.circular(kCardRadiusLg),
+              color: kBackgroundColor,
+              borderRadius: BorderRadius.circular(kCardRadiusMd),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

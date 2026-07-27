@@ -947,11 +947,16 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                 SizedBox(height: 32 * scale),
                 Text(
                   widget.isEditMode ? 'Edit profile' : 'Profile setup',
-                  style: kHeadTitleSB.copyWith(
-                    color: kTextColor,
-                    fontSize: kSize23,
-                    height: 27 / kSize23,
-                  ),
+                  style: widget.isEditMode
+                      ? kHeadTitleSB.copyWith(
+                          color: kTextColor,
+                          fontSize: kSize23,
+                          height: 27 / kSize23,
+                        )
+                      : kSubHeadingSB.copyWith(
+                          color: kTextColor,
+                          height: 1.4,
+                        ),
                 ),
                 Text(
                   widget.isEditMode

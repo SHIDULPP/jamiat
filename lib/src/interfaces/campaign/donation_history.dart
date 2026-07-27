@@ -11,24 +11,41 @@ import 'package:jamiat/src/interfaces/components/async_content.dart';
 class DonationHistoryScreen extends ConsumerWidget {
   const DonationHistoryScreen({super.key});
 
+  Widget _circleButton({required Widget child, VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: kWhite,
+          border: Border.all(color: kStrokeColor, width: 1.25),
+        ),
+        alignment: Alignment.center,
+        child: child,
+      ),
+    );
+  }
+
   Widget _buildStatCard(String label, String value) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
-        borderRadius: BorderRadius.circular(12),
+        color: kContributionsBg,
+        borderRadius: BorderRadius.circular(kCardRadiusMd),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: kCaption14M.copyWith(color: kMutedText, fontSize: 13),
+            style: kCaption12R.copyWith(color: kMutedText),
           ),
           const SizedBox(height: 6),
           Text(
             value,
-            style: kHeadTitleB.copyWith(color: kPrimaryColor, fontSize: 22),
+            style: kSectionTitle19SB.copyWith(color: kPrimaryColor),
           ),
         ],
       ),
@@ -106,8 +123,8 @@ class DonationHistoryScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: kWhite,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: kBorder),
+        borderRadius: BorderRadius.circular(kCardRadiusMd),
+        border: Border.all(color: kCardBorder),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,18 +144,18 @@ class DonationHistoryScreen extends ConsumerWidget {
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEEEEEE),
-                    borderRadius: BorderRadius.circular(6),
+                    color: kChipGreyBg,
+                    borderRadius: BorderRadius.circular(kCardRadiusXs),
                   ),
                   child: Text(
                     _transactionLabel(donation),
-                    style: kStyle(kMedium, 10, color: kSecondaryTextColor),
+                    style: kCaption10M.copyWith(color: kSecondaryTextColor),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   donation.campaignName ?? 'Donation',
-                  style: kBodyTitleB.copyWith(color: kTextColor, fontSize: 15),
+                  style: kBodyTitleSB,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -156,7 +173,7 @@ class DonationHistoryScreen extends ConsumerWidget {
             children: [
               Text(
                 formatRupee(donation.amount),
-                style: kBodyTitleB.copyWith(color: kTextColor, fontSize: 16),
+                style: kBodyTitleSB,
               ),
               if (donation.hasAutopay) ...[
                 const SizedBox(height: 4),
@@ -220,41 +237,44 @@ class DonationHistoryScreen extends ConsumerWidget {
           builder: (data) {
             final grouped = _groupByDate(data.donations);
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.symmetric(
+                horizontal: kScreenPaddingH,
+                vertical: 16,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      GestureDetector(
+                      _circleButton(
                         onTap: () {
                           HapticHelper.impact(HapticImpact.light);
                           Navigator.pop(context);
                         },
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: kWhite,
-                            border: Border.all(color: kBorder, width: 1.25),
-                          ),
-                          child: const Icon(
-                            Icons.arrow_back,
-                            color: kTextColor,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        'My Donations',
-                        style: kHeadTitleB.copyWith(
+                        child: const Icon(
+                          Icons.arrow_back,
                           color: kTextColor,
-                          fontSize: 20,
+                          size: 20,
                         ),
                       ),
-                      const SizedBox(width: 40),
+                      Expanded(
+                        child: Text(
+                          'My Donations',
+                          textAlign: TextAlign.center,
+                          style: kSectionTitleSB,
+                        ),
+                      ),
+                      _circleButton(
+                        onTap: () {
+                          HapticHelper.impact(HapticImpact.light);
+                          // UI affordance from Figma — export wiring not in scope
+                        },
+                        child: const Icon(
+                          Icons.download_outlined,
+                          color: kTextColor,
+                          size: 20,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -295,16 +315,12 @@ class DonationHistoryScreen extends ConsumerWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                group.label,
-                                style: kBodyTitleB.copyWith(
-                                  color: kTextColor,
-                                  fontSize: 16,
-                                ),
-                              ),
+                              Text(group.label, style: kBodyTitleSB),
                               Text(
                                 formatRupee(groupTotal),
-                                style: kCaption14R.copyWith(color: kTextColor),
+                                style: kCaption12R.copyWith(
+                                  color: kSecondaryTextColor,
+                                ),
                               ),
                             ],
                           ),

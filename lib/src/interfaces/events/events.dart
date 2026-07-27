@@ -84,21 +84,14 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
       backgroundColor: kWhite,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.fromLTRB(kScreenPaddingH, 8, kScreenPaddingH, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: Text(
-                      'Events',
-                      style: kHeadTitleB.copyWith(
-                        color: kTextColor,
-                        fontSize: 22,
-                      ),
-                    ),
-                  ),
+                  Text('Events', style: kSectionTitleSB),
                   PopupMenuButton<String>(
                     padding: EdgeInsets.zero,
                     offset: const Offset(0, 44),
@@ -113,8 +106,8 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                       height: 40,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
+                        color: kWhite.withValues(alpha: 0.08),
+                        border: Border.all(color: kGrey, width: 1.25),
                       ),
                       child: const Icon(
                         Icons.more_vert,
@@ -172,20 +165,21 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 32),
               Row(
                 children: [
                   Expanded(
                     child: Container(
-                      height: 48,
+                      height: 56,
                       decoration: BoxDecoration(
-                        color: kSearchFieldBg,
-                        borderRadius: BorderRadius.circular(12),
+                        color: kWhite,
+                        borderRadius: BorderRadius.circular(kCardRadiusMd),
+                        border: Border.all(color: kCardBorder),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Row(
                         children: [
-                          const Icon(Icons.search, color: kMutedText, size: 20),
+                          const Icon(Icons.search, color: kMutedText, size: 22),
                           const SizedBox(width: 10),
                           Expanded(
                             child: TextField(
@@ -194,7 +188,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                                   setState(() => _searchQuery = v),
                               decoration: InputDecoration(
                                 hintText: 'Search for events...',
-                                hintStyle: kCaption14R.copyWith(
+                                hintStyle: kBodyTitleR.copyWith(
                                   color: kSecondaryTextColor,
                                 ),
                                 border: InputBorder.none,
@@ -208,11 +202,12 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                   ),
                   const SizedBox(width: 10),
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 56,
+                    height: 56,
                     decoration: BoxDecoration(
-                      color: kSearchFieldBg,
-                      borderRadius: BorderRadius.circular(12),
+                      color: kWhite,
+                      borderRadius: BorderRadius.circular(kCardRadiusMd),
+                      border: Border.all(color: kCardBorder),
                     ),
                     child: IconButton(
                       onPressed: () {
@@ -233,6 +228,24 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                 ],
               ),
               const SizedBox(height: 16),
+              SizedBox(
+                height: 30,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: const [
+                    _EventCategoryChip(label: 'All', selected: true),
+                    SizedBox(width: 12),
+                    _EventCategoryChip(label: 'Conference'),
+                    SizedBox(width: 12),
+                    _EventCategoryChip(label: 'Workshop'),
+                    SizedBox(width: 12),
+                    _EventCategoryChip(label: 'Youth'),
+                    SizedBox(width: 12),
+                    _EventCategoryChip(label: 'Job'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
               GestureDetector(
                 onTap: () {
                   HapticHelper.impact(HapticImpact.light);
@@ -245,9 +258,8 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                     vertical: 14,
                   ),
                   decoration: BoxDecoration(
-                    color: kQuickEventsBg,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFFFE8C7)),
+                    color: const Color(0xFFFDF6E3),
+                    borderRadius: BorderRadius.circular(kCardRadiusMd),
                   ),
                   child: Row(
                     children: [
@@ -255,7 +267,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: kSecondaryColor.withValues(alpha: 0.25),
+                          color: Colors.transparent,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(
@@ -271,7 +283,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                           children: [
                             Text(
                               'My Tickets',
-                              style: kCaption12R.copyWith(
+                              style: kCaption10R.copyWith(
                                 color: kSecondaryTextColor,
                               ),
                             ),
@@ -288,7 +300,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                                 loading: () => 'Loading tickets...',
                                 error: (_, _) => 'View your tickets',
                               ),
-                              style: kBodyTitleSB.copyWith(fontSize: 14),
+                              style: kCaption12SB.copyWith(fontSize: 12),
                             ),
                           ],
                         ),
@@ -302,7 +314,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               Text('Upcoming events', style: kSectionTitleSB),
               const SizedBox(height: 12),
               Expanded(
@@ -352,6 +364,35 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EventCategoryChip extends StatelessWidget {
+  const _EventCategoryChip({required this.label, this.selected = false});
+
+  final String label;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: selected ? kSecondaryColor : kSecondaryColor.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: selected ? kSecondaryColor : kSecondaryColor,
+          width: 1,
+        ),
+      ),
+      child: Text(
+        label,
+        style: kCaption12M.copyWith(
+          color: selected ? kTextColor : kSecondaryTextColor,
+          height: 1.2,
         ),
       ),
     );

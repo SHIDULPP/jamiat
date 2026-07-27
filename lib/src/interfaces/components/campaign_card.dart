@@ -28,6 +28,7 @@ Widget campaignCoverImage(String? url, {BoxFit fit = BoxFit.cover}) {
   );
 }
 
+/// Campaign list card — Figma Campaigns (636:1338) card layout.
 class CampaignListCard extends StatelessWidget {
   const CampaignListCard({
     super.key,
@@ -38,6 +39,8 @@ class CampaignListCard extends StatelessWidget {
     this.isBookmarked,
     this.isBookmarkLoading = false,
     this.isShareLoading = false,
+    this.donateLabel = 'Donate Now',
+    this.showOverlayActions = true,
   });
 
   final CampaignModel campaign;
@@ -47,6 +50,8 @@ class CampaignListCard extends StatelessWidget {
   final bool? isBookmarked;
   final bool isBookmarkLoading;
   final bool isShareLoading;
+  final String donateLabel;
+  final bool showOverlayActions;
 
   @override
   Widget build(BuildContext context) {
@@ -62,18 +67,11 @@ class CampaignListCard extends StatelessWidget {
     final daysColor = daysLeft <= 7 ? kDaysLeftWarning : kMutedText;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: kCardBg,
-        borderRadius: BorderRadius.circular(kCardRadiusLg),
+        borderRadius: BorderRadius.circular(kCardRadiusMd),
         border: Border.all(color: kCardBorder),
-        boxShadow: [
-          BoxShadow(
-            color: kBlack.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
@@ -94,50 +92,51 @@ class CampaignListCard extends StatelessWidget {
                       left: 12,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
+                          horizontal: 8,
                           vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: kBlack.withValues(alpha: 0.45),
-                          borderRadius: BorderRadius.circular(kPillRadius),
+                          color: const Color(0xCCD5D5D5),
+                          borderRadius: BorderRadius.circular(kCardRadiusXs),
                         ),
                         child: Text(
                           categoryLabel,
-                          style: kCaption10M.copyWith(color: kWhite),
+                          style: kCaption10M.copyWith(color: kTextColor),
                         ),
                       ),
                     ),
-                    Positioned(
-                      top: 10,
-                      right: 10,
-                      child: Row(
-                        children: [
-                          _OverlayIconButton(
-                            asset: 'assets/svg/share.svg',
-                            onTap: isShareLoading ? null : onShare,
-                            loading: isShareLoading,
-                          ),
-                          const SizedBox(width: 8),
-                          _OverlayIconButton(
-                            asset: 'assets/svg/bookmark.svg',
-                            onTap: isBookmarkLoading ? null : onBookmark,
-                            filled: bookmarked,
-                            loading: isBookmarkLoading,
-                          ),
-                        ],
+                    if (showOverlayActions)
+                      Positioned(
+                        top: 10,
+                        right: 10,
+                        child: Row(
+                          children: [
+                            _OverlayIconButton(
+                              asset: 'assets/svg/share.svg',
+                              onTap: isShareLoading ? null : onShare,
+                              loading: isShareLoading,
+                            ),
+                            const SizedBox(width: 8),
+                            _OverlayIconButton(
+                              asset: 'assets/svg/bookmark.svg',
+                              onTap: isBookmarkLoading ? null : onBookmark,
+                              filled: bookmarked,
+                              loading: isBookmarkLoading,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       campaign.title,
-                      style: kBodyTitleSB.copyWith(fontSize: kSize16),
+                      style: kBodyTitleSB,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -153,15 +152,15 @@ class CampaignListCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 14),
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(kPillRadius),
+                      borderRadius: BorderRadius.circular(1),
                       child: LinearProgressIndicator(
                         value: progress.toDouble(),
-                        minHeight: 8,
-                        backgroundColor: kGreyLight,
+                        minHeight: 4,
+                        backgroundColor: kGreyLight.withValues(alpha: 0.45),
                         color: kSecondaryColor,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -171,7 +170,7 @@ class CampaignListCard extends StatelessWidget {
                             children: [
                               Text(
                                 formatRupee(campaign.collectedAmount),
-                                style: kBodyTitleSB,
+                                style: kCaption12SB.copyWith(color: kTextColor),
                               ),
                               const SizedBox(height: 2),
                               Text(
@@ -186,10 +185,15 @@ class CampaignListCard extends StatelessWidget {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text('$percent%', style: kBodyTitleSB),
+                            Text(
+                              '$percent%',
+                              style: kCaption12SB.copyWith(color: kTextColor),
+                            ),
                             const SizedBox(height: 2),
                             Text(
-                              '$daysLeft days left',
+                              daysLeft <= 0
+                                  ? 'Ended'
+                                  : '$daysLeft days left',
                               style: kCaption12M.copyWith(color: daysColor),
                             ),
                           ],
@@ -198,7 +202,7 @@ class CampaignListCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 14),
                     primaryButton(
-                      label: 'Donate Now',
+                      label: donateLabel,
                       onPressed: onDonate,
                       buttonHeight: 48,
                     ),
@@ -229,34 +233,37 @@ class _OverlayIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: kBlack.withValues(alpha: 0.35),
+      color: kWhite.withValues(alpha: 0.22),
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onTap,
-        child: SizedBox(
-          width: 36,
-          height: 36,
-          child: Center(
-            child: loading
-                ? const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: kWhite,
-                    ),
-                  )
-                : SvgPicture.asset(
-                    asset,
-                    width: 16,
-                    height: 16,
-                    colorFilter: ColorFilter.mode(
-                      filled ? kPrimaryColor : kWhite,
-                      BlendMode.srcIn,
-                    ),
-                  ),
+        child: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: kWhite.withValues(alpha: 0.85), width: 1.25),
           ),
+          alignment: Alignment.center,
+          child: loading
+              ? const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: kWhite,
+                  ),
+                )
+              : SvgPicture.asset(
+                  asset,
+                  width: 16,
+                  height: 16,
+                  colorFilter: ColorFilter.mode(
+                    filled ? kSecondaryColor : kWhite,
+                    BlendMode.srcIn,
+                  ),
+                ),
         ),
       ),
     );

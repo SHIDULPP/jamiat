@@ -101,63 +101,63 @@ class _NavBarState extends ConsumerState<NavBar> {
       child: Scaffold(
         backgroundColor: kWhite,
         body: _pages.elementAt(pageIndex),
+        // Figma BottomNav: shadow 7/-1/18 @ 18% · pt 8 · pb 24 · gap 6 · label 10
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
             color: kWhite,
             boxShadow: [
               BoxShadow(
-                color: kBlack.withValues(alpha: 0.08),
-                blurRadius: 8,
-                offset: const Offset(0, -2),
+                color: kBlack.withValues(alpha: 0.18),
+                blurRadius: 18,
+                offset: const Offset(7, -1),
               ),
             ],
           ),
           child: SafeArea(
             top: false,
-            child: SizedBox(
-              height: 70,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  children: List.generate(tabs.length, (index) {
-                    final tab = tabs[index];
-                    final isSelected = selectedIndex == tab.pageIndex;
-                    final color = isSelected ? kPrimaryColor : kIconMuted;
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+              child: Row(
+                children: List.generate(tabs.length, (index) {
+                  final tab = tabs[index];
+                  final isSelected = selectedIndex == tab.pageIndex;
+                  final color = isSelected ? kPrimaryColor : kIconMuted;
 
-                    return Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          if (selectedIndex == tab.pageIndex) return;
-                          HapticHelper.impact(HapticImpact.light);
-                          ref
-                              .read(selectedIndexProvider.notifier)
-                              .updateIndex(tab.pageIndex);
-                        },
-                        behavior: HitTestBehavior.opaque,
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        if (selectedIndex == tab.pageIndex) return;
+                        HapticHelper.impact(HapticImpact.light);
+                        ref
+                            .read(selectedIndexProvider.notifier)
+                            .updateIndex(tab.pageIndex);
+                      },
+                      behavior: HitTestBehavior.opaque,
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            AnimatedScale(
-                              duration: const Duration(milliseconds: 200),
-                              scale: isSelected ? 1.15 : 1.0,
-                              child: _NavBarIcon(
-                                tab: tab,
-                                color: color,
-                                profileImageUrl: profileImageUrl,
-                              ),
+                            _NavBarIcon(
+                              tab: tab,
+                              color: color,
+                              isSelected: isSelected,
+                              profileImageUrl: profileImageUrl,
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 6),
                             Text(
                               tab.label,
                               style: (isSelected ? kNavLabelM : kNavLabelR)
                                   .copyWith(color: color),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
                       ),
-                    );
-                  }),
-                ),
+                    ),
+                  );
+                }),
               ),
             ),
           ),
@@ -171,14 +171,16 @@ class _NavBarIcon extends StatelessWidget {
   const _NavBarIcon({
     required this.tab,
     required this.color,
+    required this.isSelected,
     this.profileImageUrl,
   });
 
   final _NavTab tab;
   final Color color;
+  final bool isSelected;
   final String? profileImageUrl;
 
-  static const double _profileSize = 26;
+  static const double _profileSize = 24;
 
   @override
   Widget build(BuildContext context) {
@@ -191,9 +193,11 @@ class _NavBarIcon extends StatelessWidget {
       );
     }
 
+    // Figma active Profile tab: 24×24 avatar with 2px primary border
     final image = profileImageUrl;
+    Widget avatar;
     if (image != null && image.startsWith('http')) {
-      return ClipOval(
+      avatar = ClipOval(
         child: Image.network(
           image,
           width: _profileSize,
@@ -203,8 +207,20 @@ class _NavBarIcon extends StatelessWidget {
               Icon(Icons.person_outline, size: 24, color: color),
         ),
       );
+    } else {
+      avatar = Icon(Icons.person_outline, size: 24, color: color);
     }
 
-    return Icon(Icons.person_outline, size: 24, color: color);
+    if (!isSelected) return SizedBox(width: 24, height: 24, child: avatar);
+
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: kPrimaryColor, width: 2),
+      ),
+      child: ClipOval(child: avatar),
+    );
   }
 }

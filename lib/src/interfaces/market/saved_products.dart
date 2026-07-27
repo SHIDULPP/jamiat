@@ -21,80 +21,97 @@ class _SavedProductsScreenState extends State<SavedProductsScreen> {
     );
   }
 
+  Widget _headerCircleButton({
+    required Widget child,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: kWhite,
+          border: Border.all(color: kGrey, width: 1.25),
+        ),
+        alignment: Alignment.center,
+        child: child,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final products = MarketSavedProducts.savedProducts();
 
     return Scaffold(
-      backgroundColor: kScreenBg,
+      backgroundColor: kWhite,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingH,
+                8,
+                kScreenPaddingH,
+                16,
+              ),
+              child: Row(
                 children: [
-                  GestureDetector(
+                  _headerCircleButton(
                     onTap: () {
                       HapticHelper.impact(HapticImpact.light);
                       Navigator.pop(context);
                     },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: kTextColor,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'Saved',
-                    style: kHeadTitleB.copyWith(
+                    child: const Icon(
+                      Icons.arrow_back,
                       color: kTextColor,
-                      fontSize: 22,
+                      size: 20,
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Text('Saved', style: kSectionTitleSB),
                 ],
               ),
-              const SizedBox(height: 24),
-              Expanded(
-                child: products.isEmpty
-                    ? Center(
-                        child: Text(
-                          'No saved products yet',
-                          style: kEmptyStateM,
-                        ),
-                      )
-                    : GridView.builder(
-                        physics: const BouncingScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: kMarketCardAspectRatio,
-                          crossAxisSpacing: 14,
-                          mainAxisSpacing: 14,
-                        ),
-                        itemCount: products.length,
-                        itemBuilder: (context, index) {
-                          final product = products[index];
-                          return MarketProductCard(
-                            product: product,
-                            onViewDetails: () => _openDetails(product.id),
-                          );
-                        },
+            ),
+            Expanded(
+              child: products.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No saved products yet',
+                        style: kEmptyStateM,
                       ),
-              ),
-            ],
-          ),
+                    )
+                  : GridView.builder(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(
+                        kScreenPaddingH,
+                        0,
+                        kScreenPaddingH,
+                        16,
+                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: kMarketCardAspectRatio,
+                        crossAxisSpacing: 14,
+                        mainAxisSpacing: 14,
+                      ),
+                      itemCount: products.length,
+                      itemBuilder: (context, index) {
+                        final product = products[index];
+                        return MarketProductCard(
+                          product: product,
+                          showBookmark: true,
+                          isBookmarked: true,
+                          onViewDetails: () => _openDetails(product.id),
+                        );
+                      },
+                    ),
+            ),
+          ],
         ),
       ),
     );

@@ -218,7 +218,10 @@ class _SavedDonationsScreenState extends ConsumerState<SavedDonationsScreen> {
       backgroundColor: kWhite,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: kScreenPaddingH,
+            vertical: 16,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -235,7 +238,7 @@ class _SavedDonationsScreenState extends ConsumerState<SavedDonationsScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
+                        border: Border.all(color: kStrokeColor, width: 1.25),
                       ),
                       child: const Icon(
                         Icons.arrow_back,
@@ -244,13 +247,10 @@ class _SavedDonationsScreenState extends ConsumerState<SavedDonationsScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Text(
                     'Saved Donations',
-                    style: kHeadTitleB.copyWith(
-                      color: kTextColor,
-                      fontSize: 22,
-                    ),
+                    style: kSectionTitleSB,
                   ),
                 ],
               ),
@@ -259,29 +259,28 @@ class _SavedDonationsScreenState extends ConsumerState<SavedDonationsScreen> {
                 height: 48,
                 decoration: BoxDecoration(
                   color: kWhite,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: kBorder),
+                  borderRadius: BorderRadius.circular(kPillRadius),
+                  border: Border.all(color: kStrokeColor),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Row(
                   children: [
-                    const Icon(Icons.search, color: kMutedText, size: 20),
-                    const SizedBox(width: 12),
+                    const Icon(Icons.search, color: kIconMuted, size: 22),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: TextField(
                         controller: _searchController,
                         onChanged: (val) => setState(() => _searchQuery = val),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Search for campaigns',
-                          hintStyle: TextStyle(color: kMutedText, fontSize: 14),
+                          hintStyle: kBodyTitleR.copyWith(
+                            color: kSecondaryTextColor,
+                          ),
                           border: InputBorder.none,
                           isDense: true,
                           contentPadding: EdgeInsets.zero,
                         ),
-                        style: kBodyTitleR.copyWith(
-                          color: kTextColor,
-                          fontSize: 14,
-                        ),
+                        style: kBodyTitleR,
                       ),
                     ),
                   ],

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Design reference width (logical px) used across the app.
-const double kDesignWidth = 375;
+/// Design reference width (logical px) — Figma Mobile frames are 402pt.
+const double kDesignWidth = 402;
 
 /// Width scale factor clamped so layouts stay stable on very small/large phones.
 double responsiveScale(BuildContext context) {

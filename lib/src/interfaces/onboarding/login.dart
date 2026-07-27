@@ -114,18 +114,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   OutlineInputBorder _phoneBorder({Color? color, double width = 1.0}) {
     return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(kCardRadiusMd),
       borderSide: BorderSide(color: color ?? kBorder, width: width),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    // Figma OTP 636:654 — side inset 24 (16+8) · back 40 · gap 32 · icon 80 · title 23 SB
     return Scaffold(
       backgroundColor: kWhite,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -141,7 +142,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: kWhite.withValues(alpha: 0.08),
-                    border: Border.all(color: kBorder, width: 1.25),
+                    border: Border.all(color: kGrey, width: 1.25),
                   ),
                   child: const Icon(
                     Icons.arrow_back,
@@ -150,22 +151,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 62),
-              SvgPicture.asset(
-                'assets/svg/phonelogo.svg',
-                width: 42,
-                height: 50,
-                fit: BoxFit.contain,
-                alignment: Alignment.centerLeft,
+              const SizedBox(height: 32),
+              SizedBox(
+                width: 80,
+                height: 80,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: SvgPicture.asset(
+                    'assets/svg/phonelogo.svg',
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.contain,
+                    alignment: Alignment.centerLeft,
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
-              Text('Enter Phone Number', style: kHeadTitleSB),
-              const SizedBox(height: 6),
+              Text(
+                'Enter Phone Number',
+                style: kSubHeadingSB.copyWith(height: 1.4),
+              ),
               Text(
                 'We’ll send a OTP to verify your number',
-                style: kCaption13R.copyWith(color: kSecondaryTextColor),
+                style: kCaption12R.copyWith(
+                  color: kSecondaryTextColor,
+                  height: 1.36,
+                ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
               Text('Mobile Number', style: kLabel15M),
               const SizedBox(height: 8),
               IntlPhoneField(
@@ -367,7 +380,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
       backgroundColor: kWhite,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -379,7 +392,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: kWhite.withValues(alpha: 0.08),
-                    border: Border.all(color: kBorder, width: 1.25),
+                    border: Border.all(color: kGrey, width: 1.25),
                   ),
                   child: const Icon(
                     Icons.arrow_back,
@@ -388,22 +401,34 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 62),
-              SvgPicture.asset(
-                'assets/svg/otplogo.svg',
-                width: 72,
-                height: 30,
-                fit: BoxFit.contain,
-                alignment: Alignment.centerLeft,
+              const SizedBox(height: 32),
+              SizedBox(
+                width: 80,
+                height: 80,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: SvgPicture.asset(
+                    'assets/svg/otplogo.svg',
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.contain,
+                    alignment: Alignment.centerLeft,
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
-              Text('Enter Phone Number', style: kHeadTitleSB),
-              const SizedBox(height: 6),
+              Text(
+                'Enter Phone Number',
+                style: kSubHeadingSB.copyWith(height: 1.4),
+              ),
               Text(
                 'We’ll send a OTP to verify your number',
-                style: kCaption13R.copyWith(color: kSecondaryTextColor),
+                style: kCaption12R.copyWith(
+                  color: kSecondaryTextColor,
+                  height: 1.36,
+                ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
               Text('Enter OTP', style: kLabel15M),
               const SizedBox(height: 8),
               LayoutBuilder(
@@ -430,7 +455,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                     cursorColor: kPrimaryColor,
                     pinTheme: PinTheme(
                       shape: PinCodeFieldShape.box,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(kCardRadiusMd),
                       fieldHeight: 58,
                       fieldWidth: fieldWidth,
                       borderWidth: 1,
@@ -464,20 +489,20 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                   children: [
                     Text(
                       "Didn't get SMS?",
-                      style: kCaption13R.copyWith(color: kSecondaryTextColor),
+                      style: kCaption12R.copyWith(color: kSecondaryTextColor),
                     ),
                     const SizedBox(height: 6),
                     if (_isResendDisabled)
                       RichText(
                         text: TextSpan(
-                          style: kCaption13R.copyWith(
+                          style: kCaption12R.copyWith(
                             color: kSecondaryTextColor,
                           ),
                           children: [
                             const TextSpan(text: 'Get a new OTP in '),
                             TextSpan(
                               text: '00:${_start.toString().padLeft(2, '0')}',
-                              style: kCaption13R.copyWith(
+                              style: kCaption12R.copyWith(
                                 color: kPrimaryColor,
                                 fontWeight: kSemiBold,
                               ),
@@ -490,7 +515,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                         onTap: _resendOtp,
                         child: Text(
                           'Resend OTP',
-                          style: kLinkSB.copyWith(fontSize: 13),
+                          style: kLinkSB.copyWith(fontSize: 12),
                         ),
                       ),
                   ],

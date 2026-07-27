@@ -9,6 +9,9 @@ import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
 
+/// Figma tickets list cream card header (`636:2243`).
+const Color _kTicketCardCream = Color(0xFFFFF8E7);
+
 class MyTicketsScreen extends ConsumerStatefulWidget {
   const MyTicketsScreen({super.key});
 
@@ -31,6 +34,26 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
     return map;
   }
 
+  Widget _headerCircleButton({
+    required Widget child,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: kWhite,
+          border: Border.all(color: kGrey, width: 1.25),
+        ),
+        alignment: Alignment.center,
+        child: child,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tab = _isUpcomingSelected ? 'upcoming' : 'past';
@@ -47,42 +70,32 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingH,
+                8,
+                kScreenPaddingH,
+                16,
+              ),
               child: Row(
                 children: [
-                  GestureDetector(
+                  _headerCircleButton(
                     onTap: () {
                       HapticHelper.impact(HapticImpact.light);
                       Navigator.pop(context);
                     },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: kTextColor,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'My Tickets',
-                    style: kHeadTitleB.copyWith(
+                    child: const Icon(
+                      Icons.arrow_back,
                       color: kTextColor,
-                      fontSize: 22,
+                      size: 20,
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Text('My Tickets', style: kSectionTitleSB),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
               child: Row(
                 children: [
                   _tabChip(
@@ -129,7 +142,9 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
                       await ref.read(myTicketsProvider(tab).future);
                     },
                     child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: kScreenPaddingH,
+                      ),
                       itemCount: sections.length,
                       itemBuilder: (context, sectionIndex) {
                         final entry = sections[sectionIndex];
@@ -143,7 +158,7 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
                               ),
                               child: Text(
                                 entry.key,
-                                style: kCaption14M.copyWith(
+                                style: kCaption12M.copyWith(
                                   color: kMutedText,
                                 ),
                               ),
@@ -180,9 +195,9 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
           color: active ? kSecondaryColor : kWhite,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(kCardRadiusSm),
           border: Border.all(
-            color: active ? Colors.transparent : const Color(0xFFFDE68A),
+            color: active ? kSecondaryColor : kSecondaryColor.withValues(alpha: 0.45),
           ),
         ),
         alignment: Alignment.center,
@@ -191,9 +206,8 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
           children: [
             Text(
               label,
-              style: kCaption14M.copyWith(
-                color: active ? const Color(0xFF451A03) : kMutedText,
-                fontWeight: kBold,
+              style: kCaption12M.copyWith(
+                color: active ? kTextColor : kMutedText,
               ),
             ),
             if (count != null) ...[
@@ -209,7 +223,7 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
                 child: Text(
                   '$count',
                   style: kCaption10SB.copyWith(
-                    color: active ? const Color(0xFF451A03) : kMutedText,
+                    color: active ? kTextColor : kMutedText,
                   ),
                 ),
               ),
@@ -240,15 +254,8 @@ class _UpcomingTicketCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 14),
         decoration: BoxDecoration(
           color: kWhite,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(kCardRadiusMd),
           border: Border.all(color: kCardBorder),
-          boxShadow: [
-            BoxShadow(
-              color: kBlack.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -257,13 +264,13 @@ class _UpcomingTicketCard extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-              color: const Color(0xFFFFF8E7),
+              color: _kTicketCardCream,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     ticket.eventTitle ?? 'Event',
-                    style: kBodyTitleSB.copyWith(fontSize: 16),
+                    style: kCaption12SB.copyWith(color: kTextColor),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -290,7 +297,7 @@ class _UpcomingTicketCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           formatEventShortDate(ticket.eventDate),
-                          style: kCaption14M,
+                          style: kCaption12SB.copyWith(color: kTextColor),
                         ),
                       ],
                     ),
@@ -306,7 +313,10 @@ class _UpcomingTicketCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(ticket.ticketCode, style: kCaption14M),
+                        Text(
+                          ticket.ticketCode,
+                          style: kCaption12SB.copyWith(color: kTextColor),
+                        ),
                       ],
                     ),
                   ),
@@ -325,7 +335,10 @@ class _UpcomingTicketCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Tap to show QR', style: kCaption14M),
+                        Text(
+                          'Tap to show QR',
+                          style: kCaption12SB.copyWith(color: kTextColor),
+                        ),
                         Text(
                           'Present to program coordinators',
                           style: kCaption12R.copyWith(
@@ -370,7 +383,7 @@ class _PastTicketCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 14),
         decoration: BoxDecoration(
           color: kWhite,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(kCardRadiusMd),
           border: Border.all(color: kCardBorder),
         ),
         clipBehavior: Clip.antiAlias,
@@ -383,7 +396,7 @@ class _PastTicketCard extends StatelessWidget {
               color: kScreenBg,
               child: Text(
                 ticket.eventTitle ?? 'Event',
-                style: kBodyTitleSB.copyWith(fontSize: 16),
+                style: kCaption12SB.copyWith(color: kTextColor),
               ),
             ),
             Padding(
@@ -408,7 +421,7 @@ class _PastTicketCard extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: statusBg,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(kCardRadiusSm),
                     ),
                     child: Text(
                       statusLabel,

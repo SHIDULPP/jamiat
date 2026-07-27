@@ -30,10 +30,11 @@ class _QuickAccessItem {
 }
 
 const _quickAccessItems = <_QuickAccessItem>[
+  // Figma Home Quick Access order (636:885+)
   _QuickAccessItem(
-    label: 'Autopay',
-    icon: 'assets/svg/autopay.svg',
-    background: Color(0xFFECFDF5),
+    label: 'Donate',
+    icon: 'assets/svg/donate.svg',
+    background: Color(0xFFFFF4F4),
   ),
   _QuickAccessItem(
     label: 'Welfare',
@@ -53,12 +54,12 @@ const _quickAccessItems = <_QuickAccessItem>[
   _QuickAccessItem(
     label: 'News',
     icon: 'assets/svg/news.svg',
-    background: kQuickNewsBg,
+    background: Color(0xFFEFF5E5),
   ),
   _QuickAccessItem(
     label: 'Programs',
     icon: 'assets/svg/programs.svg',
-    background: Color(0xFFF5EBE6),
+    background: Color(0xFFF2E7E1),
   ),
 ];
 
@@ -112,7 +113,7 @@ class HomePage extends ConsumerWidget {
                           children: [
                             const _ContributionsCard(),
                             if (isJamiatMember) ...[
-                              const SizedBox(height: 24),
+                              const SizedBox(height: 40),
                               Text('Quick Access', style: kSectionTitleSB),
                               const SizedBox(height: 12),
                             ],
@@ -144,7 +145,13 @@ class HomePage extends ConsumerWidget {
                                     .read(selectedIndexProvider.notifier)
                                     .updateIndex(1);
                               },
-                              child: Text('See all', style: kLinkM),
+                              child: Text(
+                                'See all',
+                                style: kCaption12M.copyWith(
+                                  color: kPrimaryColor,
+                                  height: 1.2,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -259,13 +266,12 @@ class HomePage extends ConsumerWidget {
                           vertical: 20,
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(14),
                           child: ColoredBox(
-                            color: const Color(0xFFFEF9E7),
+                            color: kSecondarySoftBg,
                             child: Stack(
                               clipBehavior: Clip.hardEdge,
                               children: [
-                                // Decorative wavy vectors on the right
                                 Positioned(
                                   right: -30,
                                   top: -20,
@@ -292,7 +298,6 @@ class HomePage extends ConsumerWidget {
                                     ),
                                   ),
                                 ),
-                                // Content
                                 Padding(
                                   padding: const EdgeInsets.all(16),
                                   child: Column(
@@ -302,36 +307,32 @@ class HomePage extends ConsumerWidget {
                                     children: [
                                       Container(
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 6,
+                                          horizontal: 8,
+                                          vertical: 5,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: kWhite,
+                                          color: kWhite.withValues(alpha: 0.66),
                                           borderRadius: BorderRadius.circular(
-                                            8,
+                                            6,
                                           ),
                                         ),
                                         child: Text(
                                           'Medical Relief Fund',
-                                          style: kCaption12M.copyWith(
+                                          style: kCaption10M.copyWith(
                                             color: kTextColor,
                                             height: 1.2,
                                           ),
                                         ),
                                       ),
                                       const SizedBox(height: 10),
-                                      SizedBox(
-                                        width: 210,
-                                        child: Text(
-                                          'Millions lack healthcare; fund life-\nsaving medicine today.',
-                                          style: kBodyTitleSB.copyWith(
-                                            color: kTextColor,
-                                            fontSize: 17,
-                                            height: 1.2,
-                                          ),
+                                      Text(
+                                        'Millions lack healthcare; fund life-saving medicine today.',
+                                        style: kSubHeadingSB.copyWith(
+                                          color: kTextColor,
+                                          height: 1.4,
                                         ),
                                       ),
-                                      const SizedBox(height: 14),
+                                      const SizedBox(height: 10),
                                       GestureDetector(
                                         onTap: () {
                                           HapticHelper.impact(
@@ -345,13 +346,13 @@ class HomePage extends ConsumerWidget {
                                         },
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 20,
+                                            horizontal: 16,
                                             vertical: 10,
                                           ),
                                           decoration: BoxDecoration(
                                             color: kSecondaryColor,
                                             borderRadius: BorderRadius.circular(
-                                              20,
+                                              6,
                                             ),
                                           ),
                                           child: Text(
@@ -626,6 +627,7 @@ class _HomeHeader extends ConsumerWidget {
     final userName = user?.displayName ?? 'Member';
     final image = user?.image;
 
+    // Figma Home header: avatar 48 · gap 8 · greeting 15/#aaa · name 19 SB · bell 40
     return Row(
       children: [
         ClipOval(
@@ -649,19 +651,22 @@ class _HomeHeader extends ConsumerWidget {
                   fit: BoxFit.cover,
                 ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'As-salamu alaykum',
-                style: kCaption12R.copyWith(color: kSecondaryTextColor),
+                'As- salamu alaykum',
+                style: kBodyTitleR.copyWith(
+                  color: kSecondaryTextColor,
+                  height: 1.2,
+                ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 userName,
-                style: kBodyTitleSB.copyWith(fontSize: kSize16),
+                style: kSubHeadingSB.copyWith(height: 1.2),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -670,8 +675,10 @@ class _HomeHeader extends ConsumerWidget {
         ),
         const SizedBox(width: 8),
         Material(
-          color: kWhite,
-          shape: const CircleBorder(side: BorderSide(color: kStrokeColor)),
+          color: kWhite.withValues(alpha: 0.08),
+          shape: const CircleBorder(
+            side: BorderSide(color: kGrey, width: 1.25),
+          ),
           child: InkWell(
             customBorder: const CircleBorder(),
             onTap: () {
@@ -679,13 +686,13 @@ class _HomeHeader extends ConsumerWidget {
               NavigationService().pushNamed('Notifications');
             },
             child: SizedBox(
-              width: 44,
-              height: 44,
+              width: 40,
+              height: 40,
               child: Center(
                 child: SvgPicture.asset(
                   'assets/svg/bell.svg',
-                  width: 22,
-                  height: 22,
+                  width: 24,
+                  height: 24,
                   colorFilter: const ColorFilter.mode(
                     kIconMuted,
                     BlendMode.srcIn,
@@ -707,12 +714,13 @@ class _ContributionsCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(homeStatsProvider);
 
+    // Figma 2248:620 — bg #edf9f3 · radius 14 · pad 16 · gap 10
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFECFDF5),
-        borderRadius: BorderRadius.circular(kCardRadiusLg),
+        color: kContributionsBg,
+        borderRadius: BorderRadius.circular(kCardRadiusMd),
       ),
       child: AsyncContent(
         asyncValue: statsAsync,
@@ -722,14 +730,17 @@ class _ContributionsCard extends ConsumerWidget {
           children: [
             Text(
               'My Contributions',
-              style: kBodyTitleSB.copyWith(color: const Color(0xFF065F46)),
+              style: kBodyTitleSB.copyWith(color: kTextColor, height: 1.2),
             ),
             const SizedBox(height: 4),
             Text(
-              'Welcome, ${stats.user.displayName}',
-              style: kCaption12R.copyWith(color: const Color(0xFF047857)),
+              'Members-only deals & services',
+              style: kCaption12R.copyWith(
+                color: kContributionsSubtext,
+                height: 1.2,
+              ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
@@ -762,8 +773,9 @@ class _StatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Figma stat tiles: pad 16 · radius 8 · label 12 Bold/#6d6d6d · value 19 SB primary
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: kWhite,
         borderRadius: BorderRadius.circular(kCardRadiusSm),
@@ -773,20 +785,18 @@ class _StatTile extends StatelessWidget {
         children: [
           Text(
             label,
-            style: kCaption10R.copyWith(
-              color: kSecondaryTextColor,
-              letterSpacing: 0.2,
+            style: kCaption12SB.copyWith(
+              color: kMutedText,
+              fontWeight: kBold,
+              height: 1.3,
             ),
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 16),
           Text(
             value,
-            style: kLabel22B.copyWith(
-              color: const Color(0xFF059669), // Green text matching mockup
-              height: 1.1,
-            ),
+            style: kSubHeadingSB.copyWith(color: kPrimaryColor, height: 1.2),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -824,12 +834,12 @@ class _QuickAccessList extends ConsumerWidget {
               onTap: () {
                 HapticHelper.impact(HapticImpact.light);
                 switch (item.label) {
+                  case 'Donate':
+                    ref.read(selectedIndexProvider.notifier).updateIndex(1);
                   case 'Events':
                     NavigationService().pushNamed('Events');
                   case 'Welfare':
                     NavigationService().pushNamed('WelfareProgram');
-                  case 'Autopay':
-                    NavigationService().pushNamed('AutopayView');
                   case 'News':
                     NavigationService().pushNamed('NewsList');
                   case 'Programs':
@@ -879,7 +889,7 @@ class _QuickAccessCard extends StatelessWidget {
                 right: 12,
                 child: Text(
                   item.label,
-                  style: kLabel15SB.copyWith(height: 1.2),
+                  style: kBodyTitleR.copyWith(height: 1.2),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -906,8 +916,9 @@ class _QuickAccessCard extends StatelessWidget {
 class _ActiveCampaignsSection extends ConsumerWidget {
   const _ActiveCampaignsSection();
 
-  static const double _cardWidth = 200;
-  static const double _cardHeight = 280;
+  // Figma Active Campaigns cards: 241×262 · gap 12 · radius 14
+  static const double _cardWidth = 241;
+  static const double _cardHeight = 262;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -976,7 +987,7 @@ class _CampaignCard extends StatelessWidget {
         width: width,
         height: height,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(kCardRadiusLg),
+          borderRadius: BorderRadius.circular(kCardRadiusMd),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -999,58 +1010,81 @@ class _CampaignCard extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Color(0x00000000), Color(0x99000000)],
-                    stops: [0.45, 1],
+                    colors: [Color(0x00000000), Color(0xE6000000)],
+                    stops: [0.664, 1],
                   ),
                 ),
               ),
               Positioned(
-                top: 12,
-                left: 12,
+                top: 16,
+                left: 16,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+                    horizontal: 8,
+                    vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: kWhite.withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(kPillRadius),
+                    color: const Color(0xCCD5D5D5),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     CategoryMapper.toUi(campaign.category),
-                    style: kCaption10M.copyWith(color: kTextColor),
+                    style: kCaption10M.copyWith(color: kTextColor, height: 1.2),
                   ),
                 ),
               ),
               Positioned(
-                left: 12,
-                right: 12,
-                bottom: 12,
+                left: 16,
+                right: 16,
+                bottom: 16,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       campaign.title,
-                      style: kBodyTitleSB.copyWith(color: kWhite, height: 1.25),
+                      style: kBodyTitleSB.copyWith(color: kWhite, height: 1.2),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(1),
                       child: LinearProgressIndicator(
                         value: progress.toDouble(),
-                        minHeight: 3.5,
-                        backgroundColor: kWhite.withValues(alpha: 0.3),
+                        minHeight: 4,
+                        backgroundColor: const Color(0x66D9D9D9),
                         valueColor: const AlwaysStoppedAnimation<Color>(
-                          kSecondaryColor,
+                          kPrimaryColor,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '${formatRupee(campaign.collectedAmount)} of ${formatRupee(campaign.targetAmount)}',
-                      style: kCaption10M.copyWith(color: kWhite),
+                    const SizedBox(height: 2),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: formatRupee(campaign.collectedAmount),
+                            style: kCaption12SB.copyWith(
+                              color: kWhite,
+                              height: 1.2,
+                            ),
+                          ),
+                          TextSpan(
+                            text: ' / ',
+                            style: kCaption12M.copyWith(
+                              color: kWhite,
+                              height: 1.2,
+                            ),
+                          ),
+                          TextSpan(
+                            text: 'of ${formatRupee(campaign.targetAmount)}',
+                            style: kCaption12R.copyWith(
+                              color: kWhite,
+                              height: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -1207,10 +1241,7 @@ class _WelfareGridSection extends ConsumerWidget {
                                 _fallbackHeights[(columnIndex + i * 3) %
                                     _fallbackHeights.length] *
                                 scale,
-                            bgColor: _cardColor(
-                              items[i],
-                              columnIndex + i * 3,
-                            ),
+                            bgColor: _cardColor(items[i], columnIndex + i * 3),
                             fallbackAsset: _localAsset(items[i].name),
                           ),
                         ],
@@ -1351,33 +1382,50 @@ class _ContributeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Figma Contribute FAB: gradient #FFDE79→#FBBD05 · r14 · text #5D5D5D 12 SB
     return Material(
-      color: kSecondaryColor,
-      borderRadius: BorderRadius.circular(22),
-      elevation: 4,
-      shadowColor: kBlack.withValues(alpha: 0.18),
+      color: Colors.transparent,
+      elevation: 0,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Contribute',
-                style: kCaption12M.copyWith(
-                  color: const Color(0xFF78350F),
-                  height: 1.2,
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(
-                Icons.volunteer_activism,
-                size: 20,
-                color: Color(0xFF78350F),
+        borderRadius: BorderRadius.circular(kCardRadiusMd),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(kCardRadiusMd),
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFFFFDE79), kSecondaryColor],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: kBlack.withValues(alpha: 0.12),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Contribute',
+                  style: kCaption12SB.copyWith(color: kText2Color, height: 1.2),
+                ),
+                const SizedBox(width: 8),
+                SvgPicture.asset(
+                  'assets/svg/figma/hand_heart.svg',
+                  width: 20,
+                  height: 20,
+                  colorFilter: const ColorFilter.mode(
+                    kText2Color,
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

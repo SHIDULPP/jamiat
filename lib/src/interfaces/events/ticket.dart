@@ -15,6 +15,9 @@ import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+/// Figma Event-Ticket header yellow (`636:2144`).
+const Color _kTicketHeaderYellow = Color(0xFFFFBF00);
+
 class EventTicketScreen extends ConsumerStatefulWidget {
   final String? ticketId;
   final String title;
@@ -36,6 +39,26 @@ class EventTicketScreen extends ConsumerStatefulWidget {
 class _EventTicketScreenState extends ConsumerState<EventTicketScreen> {
   final TicketDownloadService _downloadService = const TicketDownloadService();
   bool _downloading = false;
+
+  Widget _headerCircleButton({
+    required Widget child,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: kWhite,
+          border: Border.all(color: kGrey, width: 1.25),
+        ),
+        alignment: Alignment.center,
+        child: child,
+      ),
+    );
+  }
 
   void _showMessage(
     String message, {
@@ -96,69 +119,50 @@ class _EventTicketScreenState extends ConsumerState<EventTicketScreen> {
     );
 
     return Scaffold(
-      backgroundColor: kWhite,
+      backgroundColor: kScreenBg,
       body: SafeArea(
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingH,
+                8,
+                kScreenPaddingH,
+                16,
+              ),
               child: Row(
                 children: [
-                  GestureDetector(
+                  _headerCircleButton(
                     onTap: () {
                       HapticHelper.impact(HapticImpact.light);
                       Navigator.pop(context);
                     },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: kTextColor,
-                        size: 20,
-                      ),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      color: kTextColor,
+                      size: 20,
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      'My Ticket',
-                      textAlign: TextAlign.center,
-                      style: kHeadTitleB.copyWith(
-                        color: kTextColor,
-                        fontSize: 20,
-                      ),
-                    ),
+                    child: Text('My Ticket', style: kSectionTitleSB),
                   ),
-                  GestureDetector(
+                  _headerCircleButton(
                     onTap: _downloading || (hasId && loadedTicket == null)
                         ? null
-                        : () => _downloadTicket(loadedTicket ?? fallbackTicket),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
-                      ),
-                      alignment: Alignment.center,
-                      child: _downloading
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : SvgPicture.asset(
-                              'assets/svg/donwload_icon.svg',
-                              width: 17,
-                              height: 17,
-                            ),
-                    ),
+                        : () =>
+                            _downloadTicket(loadedTicket ?? fallbackTicket),
+                    child: _downloading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : SvgPicture.asset(
+                            'assets/svg/donwload_icon.svg',
+                            width: 17,
+                            height: 17,
+                          ),
                   ),
                 ],
               ),
@@ -242,175 +246,168 @@ class _TicketBody extends StatelessWidget {
     final timeLabel = formatEventTime(ticket.eventDate);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+      padding: const EdgeInsets.fromLTRB(
+        kScreenPaddingH,
+        0,
+        kScreenPaddingH,
+        24,
+      ),
       child: Column(
         children: [
           Container(
+            width: double.infinity,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: kBlack.withValues(alpha: 0.06),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
+              color: kScreenBg,
+              borderRadius: BorderRadius.circular(kCardRadiusLg),
+              border: Border.all(color: kCardBorder),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+                  color: _kTicketHeaderYellow,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        ticket.eventTitle ?? 'Event',
+                        style: kCaption12SB.copyWith(color: kTextColor),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        ticket.passType,
+                        style: kSectionTitleSB,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'ORGANIZERS',
+                        style: kCaption10SB.copyWith(
+                          color: kSecondaryTextColor,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Jamiat Welfare Committee',
+                        style: kCaption12R.copyWith(color: kTextColor),
+                      ),
+                    ],
+                  ),
+                ),
+                CustomPaint(
+                  painter: _DashedLinePainter(color: kBorder),
+                  child: const SizedBox(width: double.infinity, height: 1),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _MetaColumn(
+                              label: 'Date',
+                              value: dateLabel.isEmpty ? '—' : dateLabel,
+                            ),
+                          ),
+                          Expanded(
+                            child: _MetaColumn(
+                              label: 'Time',
+                              value: timeLabel.isEmpty ? '—' : timeLabel,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: _MetaColumn(
+                          label: 'Venue',
+                          value: (ticket.venue == null || ticket.venue!.isEmpty)
+                              ? '—'
+                              : ticket.venue!,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: kWhite,
+                          borderRadius: BorderRadius.circular(kCardRadiusMd),
+                          border: Border.all(color: kBorder),
+                        ),
+                        child: _qrWidget(),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Show this QR to the program coordinators',
+                        style: kCaption12R.copyWith(
+                          color: kSecondaryTextColor,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (ticket.ticketCode.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          ticket.ticketCode,
+                          style: kCaption12SB.copyWith(letterSpacing: 1.2),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ],
             ),
-            child: Material(
-              color: kWhite,
-              borderRadius: BorderRadius.circular(20),
-              clipBehavior: Clip.antiAlias,
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: kWhite,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: kCardBorder),
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
-                      color: kSecondaryColor,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            ticket.eventTitle ?? 'Event',
-                            style: kSectionTitleSB.copyWith(fontSize: 20),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            ticket.passType,
-                            style: kBodyTitleSB.copyWith(fontSize: 15),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'ORGANIZERS',
-                            style: kCaption10SB.copyWith(
-                              color: kTextColor.withValues(alpha: 0.55),
-                              letterSpacing: 0.6,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Jamiat Welfare Committee',
-                            style: kCaption14M,
-                          ),
-                        ],
-                      ),
-                    ),
-                    CustomPaint(
-                      painter: _DashedLinePainter(color: kBorder),
-                      child: const SizedBox(width: double.infinity, height: 1),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _MetaColumn(
-                                  label: 'Date',
-                                  value: dateLabel.isEmpty ? '—' : dateLabel,
-                                ),
-                              ),
-                              Expanded(
-                                child: _MetaColumn(
-                                  label: 'Time',
-                                  value: timeLabel.isEmpty ? '—' : timeLabel,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: _MetaColumn(
-                              label: 'Venue',
-                              value:
-                                  (ticket.venue == null ||
-                                      ticket.venue!.isEmpty)
-                                  ? '—'
-                                  : ticket.venue!,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: kWhite,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: kBorder),
-                            ),
-                            child: _qrWidget(),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Show this QR to the program coordinators',
-                            style: kCaption12R.copyWith(
-                              color: kSecondaryTextColor,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          if (ticket.ticketCode.isNotEmpty) ...[
-                            const SizedBox(height: 10),
-                            Text(
-                              ticket.ticketCode,
-                              style: kBodyTitleB.copyWith(letterSpacing: 1.2),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ),
           const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: downloading ? null : onDownload,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: kPrimaryColor,
-              foregroundColor: kWhite,
-              disabledBackgroundColor: kPrimaryColor.withValues(alpha: 0.6),
-              minimumSize: const Size.fromHeight(52),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+          SizedBox(
+            height: 56,
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: downloading ? null : onDownload,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kPrimaryColor,
+                foregroundColor: kWhite,
+                disabledBackgroundColor: kPrimaryColor.withValues(alpha: 0.6),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(kCardRadiusSm),
+                ),
+                elevation: 0,
               ),
-              elevation: 0,
+              child: downloading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: kWhite,
+                      ),
+                    )
+                  : Text('Download Tickets', style: kButtonLabelSB),
             ),
-            child: downloading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: kWhite,
-                    ),
-                  )
-                : Text('Download Tickets', style: kButtonLabelSB),
           ),
           const SizedBox(height: 12),
-          OutlinedButton(
-            onPressed: () {
-              HapticHelper.impact(HapticImpact.light);
-              NavigationService().popAndPushNamed('MyTickets');
-            },
-            style: OutlinedButton.styleFrom(
-              foregroundColor: kTextColor,
-              minimumSize: const Size.fromHeight(52),
-              side: const BorderSide(color: kBorder),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+          SizedBox(
+            height: 56,
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () {
+                HapticHelper.impact(HapticImpact.light);
+                NavigationService().popAndPushNamed('MyTickets');
+              },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: kTextColor,
+                side: const BorderSide(color: kBorder),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(kCardRadiusSm),
+                ),
               ),
-            ),
-            child: Text(
-              'View all my Tickets',
-              style: kButtonLabelSB.copyWith(color: kTextColor),
+              child: Text(
+                'View all my Tickets',
+                style: kButtonLabelSB.copyWith(color: kTextColor),
+              ),
             ),
           ),
         ],
@@ -467,7 +464,7 @@ class _MetaColumn extends StatelessWidget {
           style: kCaption12R.copyWith(color: kSecondaryTextColor),
         ),
         const SizedBox(height: 4),
-        Text(value, style: kCaption14M),
+        Text(value, style: kCaption12SB.copyWith(color: kTextColor)),
       ],
     );
   }

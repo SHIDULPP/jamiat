@@ -52,8 +52,9 @@ const Color kDaysLeftWarning = Color(0xFFC47A3A); // Campaigns · "X days left"
 const Color kGreen = Color(0xFF00A54F);
 const Color kLightGreen = Color(0xFFE4F3E7);
 const Color kContributionsBg = Color(
-  0xFFEBFAF3,
-); // Home · My Contributions card
+  0xFFEDF9F3,
+); // Home · My Contributions card (Figma #edf9f3)
+const Color kContributionsSubtext = Color(0xFF6A6A6A); // Home · contributions subtitle
 
 const Color kQuickWelfareBg = Color(0xFFEFEFF9);
 const Color kQuickEventsBg = Color(0xFFFFFAF4);

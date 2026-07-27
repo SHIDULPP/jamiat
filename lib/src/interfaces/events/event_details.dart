@@ -53,9 +53,10 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: kWhite,
-          border: Border.all(color: kBorder, width: 1.25),
+          border: Border.all(color: kGrey, width: 1.25),
         ),
-        child: Center(child: child),
+        alignment: Alignment.center,
+        child: child,
       ),
     );
   }
@@ -131,8 +132,7 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
     return null;
   }
 
-  Widget _personAvatar(String? rawUrl) {
-    const size = 48.0;
+  Widget _personAvatar(String? rawUrl, {double size = 40, double radius = 4}) {
     final url = _resolvePersonImageUrl(rawUrl);
 
     Widget placeholder() => Container(
@@ -140,11 +140,11 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
       height: size,
       color: kScreenBg,
       alignment: Alignment.center,
-      child: const Icon(Icons.person_outline, color: kMutedText, size: 22),
+      child: Icon(Icons.person_outline, color: kMutedText, size: size * 0.5),
     );
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(radius),
       child: url == null
           ? placeholder()
           : Image.network(
@@ -164,8 +164,8 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
                   color: kScreenBg,
                   alignment: Alignment.center,
                   child: const SizedBox(
-                    width: 16,
-                    height: 16,
+                    width: 14,
+                    height: 14,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 );
@@ -175,29 +175,19 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
     );
   }
 
-  Widget _personTile(EventPerson person, {String? fallbackRole}) {
-    final role = person.designation?.isNotEmpty == true
-        ? person.designation!
-        : (fallbackRole ?? '');
+  Widget _speakerTile(EventPerson person) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
           _personAvatar(person.image),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(person.name, style: kBodyTitleSB.copyWith(fontSize: 15)),
-                if (role.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    role,
-                    style: kCaption12R.copyWith(color: kSecondaryTextColor),
-                  ),
-                ],
-              ],
+            child: Text(
+              person.name,
+              style: kCaption12R.copyWith(color: kTextColor),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -207,43 +197,109 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
 
   Widget _metaRow({required IconData icon, required String text}) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(icon, size: 16, color: kMutedText),
-        const SizedBox(width: 8),
+        Icon(icon, size: 16, color: kTextColor),
+        const SizedBox(width: 5),
         Expanded(
           child: Text(
             text,
-            style: kCaption14R.copyWith(color: kSecondaryTextColor),
+            style: kCaption12R.copyWith(color: kTextColor),
           ),
         ),
       ],
     );
   }
 
+  Widget _categoryChip(String label) {
+    if (label.trim().isEmpty) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFD5D5D5).withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: kCaption10M.copyWith(color: kTextColor),
+      ),
+    );
+  }
+
+  Widget _organizersRow(EventModel event) {
+    final named = event.coordinators.where((p) => p.name.isNotEmpty).toList();
+    final organizer = named.isNotEmpty ? named.first : null;
+    final name = organizer?.name ?? 'Jamiat Welfare Committee';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          _personAvatar(organizer?.image, radius: 4),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ORGANIZERS',
+                  style: kCaption10SB.copyWith(
+                    color: kSecondaryTextColor,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  name,
+                  style: kCaption12R.copyWith(color: kTextColor),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBody(EventModel event) {
+    final dateTimeLabel = formatEventDateTimeRange(
+      event.startDate,
+      event.endDate,
+    );
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      padding: const EdgeInsets.fromLTRB(
+        kScreenPaddingH,
+        0,
+        kScreenPaddingH,
+        24,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
+          AspectRatio(
+            aspectRatio: 370 / 203,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(kCardRadiusMd),
               child: eventCoverImage(event.coverImage),
             ),
           ),
           const SizedBox(height: 16),
+          _categoryChip(event.type),
+          const SizedBox(height: 16),
           Text(
             event.title,
-            style: kSectionTitleSB.copyWith(fontSize: 22),
+            style: kLabel19SB,
           ),
-          const SizedBox(height: 12),
-          _metaRow(
-            icon: Icons.calendar_today_outlined,
-            text: formatEventDateTimeRange(event.startDate, event.endDate),
-          ),
+          const SizedBox(height: 16),
+          if (dateTimeLabel.isNotEmpty) ...[
+            _metaRow(
+              icon: Icons.calendar_today_outlined,
+              text: dateTimeLabel,
+            ),
+          ],
           if (event.venue != null && event.venue!.isNotEmpty) ...[
             const SizedBox(height: 8),
             _metaRow(
@@ -260,30 +316,57 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
               text: event.onlineLink!,
             ),
           ],
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
+          _organizersRow(event),
+          const SizedBox(height: 8),
           Text('About Event', style: kSectionTitleSB),
           const SizedBox(height: 8),
           Text(
             event.description,
-            style: kBodyTitleR.copyWith(color: kText2Color, height: 1.5),
+            style: kCaption12R.copyWith(color: kTextColor, height: 1.4),
           ),
           if (event.guests.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            Text('Guests', style: kSectionTitleSB),
-            const SizedBox(height: 12),
-            ...event.guests.map(_personTile),
-          ],
-          if (event.coordinators.where((p) => p.name.isNotEmpty).isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text('Speakers', style: kSectionTitleSB),
             const SizedBox(height: 8),
-            Text('Event Coordinators', style: kSectionTitleSB),
-            const SizedBox(height: 12),
-            ...event.coordinators
-                .where((p) => p.name.isNotEmpty)
-                .map(
-                  (p) => _personTile(p, fallbackRole: 'Event Coordinator'),
-                ),
+            ...event.guests.map(_speakerTile),
           ],
           const SizedBox(height: 80),
+        ],
+      ),
+    );
+  }
+
+  Widget _fallbackBody() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AspectRatio(
+            aspectRatio: 370 / 203,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(kCardRadiusMd),
+              child: eventCoverImage(widget.image),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _categoryChip(widget.category),
+          const SizedBox(height: 16),
+          Text(widget.title, style: kLabel19SB),
+          const SizedBox(height: 16),
+          if (widget.date.isNotEmpty)
+            _metaRow(
+              icon: Icons.calendar_today_outlined,
+              text: widget.date,
+            ),
+          if (widget.location.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _metaRow(
+              icon: Icons.location_on_outlined,
+              text: widget.location,
+            ),
+          ],
         ],
       ),
     );
@@ -313,7 +396,12 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingH,
+                8,
+                kScreenPaddingH,
+                16,
+              ),
               child: Row(
                 children: [
                   _headerCircleButton(
@@ -327,14 +415,11 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
                       size: 20,
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Event Details',
-                      textAlign: TextAlign.center,
-                      style: kHeadTitleB.copyWith(
-                        color: kTextColor,
-                        fontSize: 20,
-                      ),
+                      style: kSectionTitleSB,
                     ),
                   ),
                   if (hasId) ...[
@@ -380,8 +465,7 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
                               ),
                             ),
                     ),
-                  ] else
-                    const SizedBox(width: 40),
+                  ],
                 ],
               ),
             ),
@@ -393,29 +477,7 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
                           ref.invalidate(eventDetailProvider(widget.eventId!)),
                       builder: _buildBody,
                     )
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: AspectRatio(
-                              aspectRatio: 16 / 9,
-                              child: eventCoverImage(widget.image),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            widget.title,
-                            style: kSectionTitleSB.copyWith(fontSize: 22),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(widget.date, style: kCaption12R),
-                          Text(widget.location, style: kCaption12R),
-                        ],
-                      ),
-                    ),
+                  : _fallbackBody(),
             ),
           ],
         ),
@@ -423,7 +485,12 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
       bottomNavigationBar: hasId && event != null && (showScanQr || showRegister)
           ? SafeArea(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                padding: const EdgeInsets.fromLTRB(
+                  kScreenPaddingH,
+                  8,
+                  kScreenPaddingH,
+                  16,
+                ),
                 child: ElevatedButton(
                   onPressed: showScanQr
                       ? () {
@@ -448,9 +515,9 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
                     disabledBackgroundColor: kPrimaryColor.withValues(
                       alpha: 0.6,
                     ),
-                    minimumSize: const Size.fromHeight(52),
+                    minimumSize: const Size.fromHeight(56),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(kCardRadiusSm),
                     ),
                     elevation: 0,
                   ),

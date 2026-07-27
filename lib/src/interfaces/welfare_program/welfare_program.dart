@@ -87,7 +87,7 @@ class _WelfareProgramScreenState extends ConsumerState<WelfareProgramScreen> {
       backgroundColor: kWhite,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.fromLTRB(kScreenPaddingH, 8, kScreenPaddingH, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -103,8 +103,8 @@ class _WelfareProgramScreenState extends ConsumerState<WelfareProgramScreen> {
                       height: 40,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
+                        color: kWhite.withValues(alpha: 0.08),
+                        border: Border.all(color: kGrey, width: 1.25),
                       ),
                       child: const Icon(
                         Icons.arrow_back,
@@ -113,43 +113,35 @@ class _WelfareProgramScreenState extends ConsumerState<WelfareProgramScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'Welfare Services',
-                    style: kHeadTitleB.copyWith(
-                      color: kTextColor,
-                      fontSize: 22,
-                    ),
-                  ),
+                  const SizedBox(width: 8),
+                  Text('Welfare Services', style: kSectionTitleSB),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               Container(
                 decoration: BoxDecoration(
-                  color: kSearchFieldBg,
-                  borderRadius: BorderRadius.circular(12),
+                  color: kWhite,
+                  borderRadius: BorderRadius.circular(kCardRadiusMd),
+                  border: Border.all(color: kCardBorder),
                 ),
                 child: TextField(
                   controller: _searchController,
                   onChanged: (v) => setState(() => _searchQuery = v.trim()),
                   decoration: InputDecoration(
                     hintText: 'Search for services',
-                    hintStyle: kCaption14M.copyWith(color: kMutedText),
+                    hintStyle: kBodyTitleR.copyWith(color: kMutedText),
                     prefixIcon: const Icon(
                       Icons.search,
                       color: kMutedText,
                       size: 22,
                     ),
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   ),
-                  style: kBodyTitleB.copyWith(color: kTextColor, fontSize: 15),
+                  style: kBodyTitleR.copyWith(color: kTextColor, fontSize: 15),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               Expanded(
                 child: AsyncContent(
                   asyncValue: listAsync,
@@ -184,13 +176,11 @@ class _WelfareProgramScreenState extends ConsumerState<WelfareProgramScreen> {
                               );
                             },
                             child: Container(
-                              margin: const EdgeInsets.only(bottom: 20),
+                              margin: const EdgeInsets.only(bottom: 16),
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: bg,
-                                borderRadius: BorderRadius.circular(
-                                  kCardRadiusLg,
-                                ),
+                                borderRadius: BorderRadius.circular(kCardRadiusMd),
                               ),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,12 +190,12 @@ class _WelfareProgramScreenState extends ConsumerState<WelfareProgramScreen> {
                                     height: 80,
                                     decoration: BoxDecoration(
                                       color: kWhite,
-                                      borderRadius: BorderRadius.circular(16),
+                                      borderRadius: BorderRadius.circular(kCardRadiusMd),
                                     ),
                                     clipBehavior: Clip.antiAlias,
                                     child: _icon(service.icon),
                                   ),
-                                  const SizedBox(width: 14),
+                                  const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
@@ -213,16 +203,14 @@ class _WelfareProgramScreenState extends ConsumerState<WelfareProgramScreen> {
                                       children: [
                                         Text(
                                           service.name,
-                                          style: kBodyTitleSB.copyWith(
-                                            fontSize: 16,
-                                          ),
+                                          style: kBodyTitleSB.copyWith(fontSize: 15),
                                         ),
-                                        const SizedBox(height: 6),
+                                        const SizedBox(height: 4),
                                         Text(
                                           service.shortDescription,
                                           style: kCaption12R.copyWith(
-                                            color: kMutedText,
-                                            height: 1.4,
+                                            color: kSecondaryTextColor,
+                                            height: 1.3,
                                           ),
                                           maxLines: 4,
                                           overflow: TextOverflow.ellipsis,

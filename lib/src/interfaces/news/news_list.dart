@@ -85,47 +85,57 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.fromLTRB(kScreenPaddingH, 8, kScreenPaddingH, 0),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  GestureDetector(
-                    onTap: () {
-                      HapticHelper.impact(HapticImpact.light);
-                      Navigator.pop(context);
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          HapticHelper.impact(HapticImpact.light);
+                          Navigator.pop(context);
+                        },
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: kWhite.withValues(alpha: 0.08),
+                            border: Border.all(color: kGrey, width: 1.25),
+                          ),
+                          child: const Icon(
+                            Icons.arrow_back,
+                            color: kTextColor,
+                            size: 20,
+                          ),
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: kTextColor,
-                        size: 20,
-                      ),
-                    ),
+                      const SizedBox(width: 8),
+                      Text('News & Announcements', style: kSectionTitleSB),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'News & Announcements',
-                    style: kHeadTitleB.copyWith(
-                      color: kTextColor,
-                      fontSize: 22,
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: kWhite.withValues(alpha: 0.08),
+                      border: Border.all(color: kGrey, width: 1.25),
                     ),
+                    child: const Icon(Icons.more_vert, color: kMutedText, size: 20),
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 32),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
               child: Container(
                 decoration: BoxDecoration(
                   color: kWhite,
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: kBorder, width: 1.25),
+                  borderRadius: BorderRadius.circular(kCardRadiusMd),
+                  border: Border.all(color: kCardBorder, width: 1),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
@@ -144,14 +154,31 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
                           ),
                           border: InputBorder.none,
                           isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 14,
-                          ),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                       ),
                     ),
                   ],
                 ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 30,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
+                children: const [
+                  _NewsCategoryChip(label: 'All', selected: true),
+                  SizedBox(width: 12),
+                  _NewsCategoryChip(label: 'Charity'),
+                  SizedBox(width: 12),
+                  _NewsCategoryChip(label: 'Welfare'),
+                  SizedBox(width: 12),
+                  _NewsCategoryChip(label: 'Events'),
+                  SizedBox(width: 12),
+                  _NewsCategoryChip(label: 'Medical'),
+                ],
               ),
             ),
             const SizedBox(height: 16),
@@ -171,7 +198,7 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
                   }
                   return ListView.builder(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final item = filtered[index];
@@ -188,14 +215,14 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: kWhite,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: kBorder),
+                            borderRadius: BorderRadius.circular(kCardRadiusMd),
+                            border: Border.all(color: kBorder, width: 1),
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(6),
                                 child: _thumb(item.image),
                               ),
                               const SizedBox(width: 16),
@@ -208,7 +235,7 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
                                       style: kBodyTitleB.copyWith(
                                         color: kTextColor,
                                         fontSize: 15,
-                                        height: 1.3,
+                                        height: 1.2,
                                       ),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
@@ -218,7 +245,7 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
                                       item.subTitle ?? item.description,
                                       style: kCaption12R.copyWith(
                                         color: kSecondaryTextColor,
-                                        height: 1.35,
+                                        height: 1.2,
                                       ),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
@@ -226,9 +253,7 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
                                     const SizedBox(height: 8),
                                     Text(
                                       formatDateLabel(item.createdAt),
-                                      style: kCaption10M.copyWith(
-                                        color: kMutedText,
-                                      ),
+                                      style: kCaption10SB.copyWith(color: kText2Color),
                                     ),
                                   ],
                                 ),
@@ -243,6 +268,32 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NewsCategoryChip extends StatelessWidget {
+  const _NewsCategoryChip({required this.label, this.selected = false});
+
+  final String label;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: selected ? kSecondaryColor : kSecondaryColor.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: kSecondaryColor, width: 1),
+      ),
+      child: Text(
+        label,
+        style: kCaption12M.copyWith(
+          color: selected ? kTextColor : kSecondaryTextColor,
+          height: 1.2,
         ),
       ),
     );

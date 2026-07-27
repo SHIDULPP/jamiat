@@ -27,9 +27,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Widget _heroImage(String imagePath) {
     return AspectRatio(
-      aspectRatio: 16 / 9,
+      aspectRatio: 370 / 203,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(kCardRadiusMd),
         child: Image.asset(
           imagePath,
           fit: BoxFit.cover,
@@ -37,6 +37,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
       ),
     );
+  }
+
+  List<(String, String)> _quickSpecs(MarketProduct product) {
+    if (product.id != 'prayer_mat') return const [];
+    return const [
+      ('Size', '45" x 27" (Fits all adult heights)'),
+      ('Thickness', '1.2 inches of premium memory foam'),
+      ('Top Material', 'Hypoallergenic soft micro-velvet'),
+      ('Maintenance', 'Removable outer cover for easy machine washing'),
+    ];
   }
 
   @override
@@ -57,7 +67,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.fromLTRB(kScreenPaddingH, 8, kScreenPaddingH, 0),
               child: Row(
                 children: [
                   GestureDetector(
@@ -70,8 +80,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       height: 40,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
+                        color: kWhite.withValues(alpha: 0.08),
+                        border: Border.all(color: kGrey, width: 1.25),
                       ),
                       child: const Icon(
                         Icons.arrow_back,
@@ -80,14 +90,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Product Details',
-                      style: kHeadTitleB.copyWith(
-                        color: kTextColor,
-                        fontSize: 20,
-                      ),
+                      style: kSectionTitleSB,
                     ),
                   ),
                   GestureDetector(
@@ -105,8 +112,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       height: 40,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
+                        color: kWhite.withValues(alpha: 0.08),
+                        border: Border.all(color: kGrey, width: 1.25),
                       ),
                       child: const Icon(
                         Icons.ios_share_outlined,
@@ -118,21 +125,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 24),
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _heroImage(product.imagePath),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
                     Text(
                       product.title,
-                      style: kHeadTitleB.copyWith(
+                      style: kSubHeadingR.copyWith(
                         color: kTextColor,
-                        fontSize: 18,
-                        height: 1.35,
+                        height: 1.2,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -140,7 +147,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         CircleAvatar(
-                          radius: 18,
+                          radius: 20,
                           backgroundColor: kScreenBg,
                           backgroundImage: AssetImage(product.sellerLogoPath),
                         ),
@@ -151,51 +158,80 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             children: [
                               Text(
                                 'SELLERS',
-                                style: kCaption10M.copyWith(
-                                  color: kMutedText,
-                                  letterSpacing: 0.4,
+                                style: kCaption10SB.copyWith(
+                                  color: kSecondaryTextColor,
+                                  letterSpacing: 0.2,
                                 ),
                               ),
                               Text(
                                 product.sellerName,
-                                style: kBodyTitleM.copyWith(
+                                style: kCaption12R.copyWith(
                                   color: kTextColor,
-                                  fontSize: 14,
+                                  height: 1.2,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        Text(
-                          product.formattedPrice,
-                          style: kHeadTitleB.copyWith(
-                            color: kTextColor,
-                            fontSize: 18,
-                          ),
-                        ),
+                        Text(product.formattedPrice, style: kSubHeadingSB),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                     Text(
                       'About Product',
-                      style: kSectionTitleSB.copyWith(fontSize: 16),
+                      style: kBodyTitleSB,
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Text(
                       product.description,
-                      style: kBodyTitleR.copyWith(
+                      style: kCaption12R.copyWith(
                         color: kTextColor,
-                        fontSize: 14,
-                        height: 1.55,
+                        height: 1.4,
                       ),
                     ),
+                    if (_quickSpecs(product).isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Text('Quick Specs', style: kBodyTitleSB),
+                      const SizedBox(height: 8),
+                      ..._quickSpecs(product).map(
+                        (spec) => Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 120,
+                                child: Text(
+                                  spec.$1,
+                                  style: kCaption12SB.copyWith(
+                                    color: kText2Color,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ),
+                              Text(':', style: kCaption12R.copyWith(height: 1.4)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  spec.$2,
+                                  style: kCaption12R.copyWith(
+                                    color: kTextColor,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 24),
                   ],
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+              padding: const EdgeInsets.fromLTRB(kScreenPaddingH, 8, kScreenPaddingH, 16),
               child: Row(
                 children: [
                   Expanded(
@@ -217,7 +253,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ),
                         );
                       },
-                      buttonHeight: 52,
+                      buttonHeight: 56,
                       buttonColor: kWhite,
                       labelColor: kPrimaryColor,
                       sideColor: kPrimaryColor,
@@ -236,7 +272,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ),
                         );
                       },
-                      buttonHeight: 52,
+                      buttonHeight: 56,
                     ),
                   ),
                 ],

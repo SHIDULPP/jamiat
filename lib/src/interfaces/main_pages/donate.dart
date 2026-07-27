@@ -148,7 +148,7 @@ class _DonatePageState extends ConsumerState<DonatePage> {
               ),
               child: _CampaignsHeader(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
               child: _SearchField(
@@ -156,7 +156,7 @@ class _DonatePageState extends ConsumerState<DonatePage> {
                 onChanged: (_) => setState(() {}),
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             _CategoryChips(
               categories: CategoryMapper.donateTabCategories,
               selected: selectedCategory,
@@ -167,7 +167,7 @@ class _DonatePageState extends ConsumerState<DonatePage> {
                     .setCategory(value);
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             Expanded(
               child: AsyncContent(
                 asyncValue: listAsync,
@@ -186,7 +186,7 @@ class _DonatePageState extends ConsumerState<DonatePage> {
                     ),
                     children: [
                       _StatsRow(statsAsync: statsAsync),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 16),
                       _EndingSoonBanner(statsAsync: statsAsync),
                       const SizedBox(height: 16),
                       if (campaigns.isEmpty)
@@ -202,7 +202,7 @@ class _DonatePageState extends ConsumerState<DonatePage> {
                       else
                         ...campaigns.map(
                           (campaign) => Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.only(bottom: 12),
                             child: _CampaignCard(
                               campaign: campaign,
                               isBookmarked: _isBookmarked(campaign),
@@ -246,20 +246,22 @@ class _CampaignsHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(child: Text('Campaigns', style: kSectionTitleSB)),
+        Expanded(
+          child: Text('Campaigns', style: kSectionTitleSB),
+        ),
         Container(
           width: 40,
           height: 40,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: kWhite,
-            border: Border.all(color: kStrokeColor),
+            border: Border.all(color: kStrokeColor, width: 1.25),
           ),
           child: PopupMenuButton<String>(
             padding: EdgeInsets.zero,
-            icon: const Icon(Icons.more_vert, color: kIconMuted, size: 22),
+            icon: const Icon(Icons.more_horiz, color: kIconMuted, size: 22),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(kCardRadiusMd),
               side: const BorderSide(color: kStrokeColor, width: 1),
             ),
             color: kWhite,
@@ -316,17 +318,18 @@ class _SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Figma Input Field 1: 56h · r16 · border #E3E3E3
     return Container(
-      height: 48,
+      height: 56,
       decoration: BoxDecoration(
         color: kWhite,
-        borderRadius: BorderRadius.circular(kPillRadius),
-        border: Border.all(color: kStrokeColor),
+        borderRadius: BorderRadius.circular(kCardRadiusLg),
+        border: Border.all(color: kCardBorder),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          const Icon(Icons.search, color: kIconMuted, size: 22),
+          const Icon(Icons.search, color: kSecondaryTextColor, size: 22),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
@@ -361,13 +364,14 @@ class _CategoryChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Figma chips: 30h · r6 · selected #FBBD05 · unselected soft yellow + border
     return SizedBox(
-      height: 40,
+      height: 30,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
         itemCount: categories.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final label = categories[index];
           final isSelected = label == selected;
@@ -375,15 +379,13 @@ class _CategoryChips extends StatelessWidget {
             onTap: () => onSelected(label),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: isSelected ? kSecondaryColor : kWhite,
-                borderRadius: BorderRadius.circular(kPillRadius),
-                border: Border.all(
-                  color: isSelected
-                      ? kSecondaryColor
-                      : kSecondaryColor.withValues(alpha: 0.55),
-                ),
+                color: isSelected
+                    ? kSecondaryColor
+                    : kSecondaryColor.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(kCardRadiusXs),
+                border: Border.all(color: kSecondaryColor),
               ),
               alignment: Alignment.center,
               child: Text(
@@ -416,14 +418,14 @@ class _StatsRow extends StatelessWidget {
             value: stats != null ? '${stats.activeCampaigns}' : '—',
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
         Expanded(
           child: _StatCard(
             label: 'Raised Total',
             value: stats != null ? formatRupeeCompact(stats.raisedTotal) : '—',
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
         Expanded(
           child: _StatCard(
             label: 'Donors',
@@ -443,8 +445,10 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Figma stats: ~87h · p16 · r14 · #EDF9F3 · label 12 · value 19 SB primary
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      constraints: const BoxConstraints(minHeight: 87),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: kContributionsBg,
         borderRadius: BorderRadius.circular(kCardRadiusMd),
@@ -454,14 +458,14 @@ class _StatCard extends StatelessWidget {
         children: [
           Text(
             label,
-            style: kCaption10R.copyWith(color: kSecondaryTextColor),
+            style: kCaption12R.copyWith(color: kMutedText),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 16),
           Text(
             value,
-            style: kLabel19SB.copyWith(color: kPrimaryColor, height: 1.1),
+            style: kLabel19SB.copyWith(color: kPrimaryColor, height: 1.2),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -479,9 +483,10 @@ class _EndingSoonBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final count = statsAsync.value?.endingSoonCount ?? 0;
+    // Figma ending-soon: #FFF5F4 · r14 · danger-circle 24 · body + green link
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: kEndingSoonBg,
         borderRadius: BorderRadius.circular(kCardRadiusMd),
@@ -489,25 +494,17 @@ class _EndingSoonBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: const BoxDecoration(
-              color: kRed,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.priority_high, color: kWhite, size: 18),
-          ),
-          const SizedBox(width: 12),
+          const Icon(Icons.error_outline, color: kRed, size: 24),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   '$count Campaigns ending in less than 3 days',
-                  style: kCaption14M.copyWith(color: kTextColor, height: 1.35),
+                  style: kBodyTitleR.copyWith(color: kTextColor, height: 1.2),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 2),
                 GestureDetector(
                   onTap: () {
                     HapticHelper.impact(HapticImpact.light);
@@ -556,15 +553,8 @@ class _CampaignCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: kCardBg,
-        borderRadius: BorderRadius.circular(kCardRadiusLg),
+        borderRadius: BorderRadius.circular(kCardRadiusMd),
         border: Border.all(color: kCardBorder),
-        boxShadow: [
-          BoxShadow(
-            color: kBlack.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
@@ -585,16 +575,16 @@ class _CampaignCard extends StatelessWidget {
                       left: 12,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
+                          horizontal: 8,
                           vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: kBlack.withValues(alpha: 0.45),
-                          borderRadius: BorderRadius.circular(kPillRadius),
+                          color: const Color(0xCCD5D5D5),
+                          borderRadius: BorderRadius.circular(kCardRadiusXs),
                         ),
                         child: Text(
                           categoryLabel,
-                          style: kCaption10M.copyWith(color: kWhite),
+                          style: kCaption10M.copyWith(color: kTextColor),
                         ),
                       ),
                     ),
@@ -622,13 +612,13 @@ class _CampaignCard extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       campaign.title,
-                      style: kBodyTitleSB.copyWith(fontSize: kSize16),
+                      style: kBodyTitleSB,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -644,15 +634,15 @@ class _CampaignCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 14),
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(kPillRadius),
+                      borderRadius: BorderRadius.circular(1),
                       child: LinearProgressIndicator(
                         value: progress.toDouble(),
-                        minHeight: 8,
-                        backgroundColor: kGreyLight,
+                        minHeight: 4,
+                        backgroundColor: kGreyLight.withValues(alpha: 0.4),
                         color: kSecondaryColor,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -662,7 +652,7 @@ class _CampaignCard extends StatelessWidget {
                             children: [
                               Text(
                                 formatRupee(campaign.collectedAmount),
-                                style: kBodyTitleSB,
+                                style: kCaption12SB.copyWith(color: kTextColor),
                               ),
                               const SizedBox(height: 2),
                               Text(
@@ -677,7 +667,10 @@ class _CampaignCard extends StatelessWidget {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text('$percent%', style: kBodyTitleSB),
+                            Text(
+                              '$percent%',
+                              style: kCaption12SB.copyWith(color: kTextColor),
+                            ),
                             const SizedBox(height: 2),
                             Text(
                               '$daysLeft days left',

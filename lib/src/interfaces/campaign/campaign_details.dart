@@ -175,7 +175,7 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: kWhite,
-          border: Border.all(color: kBorder, width: 1.25),
+          border: Border.all(color: kStrokeColor, width: 1.25),
         ),
         alignment: Alignment.center,
         child: child,
@@ -231,7 +231,7 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
         AspectRatio(
           aspectRatio: 16 / 9,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(kCardRadiusMd),
             child: _coverImage(displayImage),
           ),
         ),
@@ -240,31 +240,31 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: const Color(0xFFEEEEEE),
-              borderRadius: BorderRadius.circular(8),
+              color: kChipGreyBg,
+              borderRadius: BorderRadius.circular(kCardRadiusXs),
             ),
             child: Text(
               categoryLabel,
-              style: kCaption12M.copyWith(color: kTextColor),
+              style: kCaption10M.copyWith(color: kTextColor),
             ),
           ),
           const SizedBox(height: 12),
         ],
         Text(
           displayTitle,
-          style: kSectionTitleSB.copyWith(fontSize: 22, height: 1.25),
+          style: kSectionTitle19SB.copyWith(height: 1.25),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
         ClipRRect(
-          borderRadius: BorderRadius.circular(kPillRadius),
+          borderRadius: BorderRadius.circular(1),
           child: LinearProgressIndicator(
             value: progress.toDouble(),
-            minHeight: 8,
-            backgroundColor: kGreyLight,
+            minHeight: 4,
+            backgroundColor: kGreyLight.withValues(alpha: 0.45),
             color: kSecondaryColor,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -274,7 +274,7 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
                 children: [
                   Text(
                     formatRupee(displayRaised),
-                    style: kBodyTitleSB.copyWith(fontSize: 16),
+                    style: kBodyTitleSB,
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -287,26 +287,32 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text('$percent%', style: kBodyTitleSB.copyWith(fontSize: 16)),
+                Text('$percent%', style: kBodyTitleSB),
                 const SizedBox(height: 2),
                 Text(
-                  '$displayDaysLeft days left',
-                  style: kCaption12R.copyWith(color: kSecondaryTextColor),
+                  displayDaysLeft <= 0
+                      ? 'Ended'
+                      : '$displayDaysLeft days left',
+                  style: kCaption12R.copyWith(
+                    color: displayDaysLeft <= 7
+                        ? kDaysLeftWarning
+                        : kSecondaryTextColor,
+                  ),
                 ),
               ],
             ),
           ],
         ),
         if (targetDate != null) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Text.rich(
             TextSpan(
-              style: kCaption14R.copyWith(color: kSecondaryTextColor),
+              style: kCaption12R.copyWith(color: kMutedText),
               children: [
                 const TextSpan(text: 'Target Date: '),
                 TextSpan(
                   text: formatTargetDate(targetDate),
-                  style: kCaption14M.copyWith(color: kTextColor),
+                  style: kCaption12M.copyWith(color: kTextColor),
                 ),
               ],
             ),
@@ -315,10 +321,9 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
         const SizedBox(height: 16),
         Text(
           displayDescription,
-          style: kBodyTitleR.copyWith(
+          style: kCaption14R.copyWith(
             color: kText2Color,
             height: 1.5,
-            fontSize: 14,
           ),
         ),
         const SizedBox(height: 24),
@@ -406,35 +411,43 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-        child: ElevatedButton(
-          onPressed: () {
-            HapticHelper.impact(HapticImpact.medium);
-            DonationSheet.show(
-              context: context,
-              categoryTitle: title,
-              icon: _getCategoryIcon(displayCat),
-              iconBgColor: _getCategoryBgColor(displayCat),
-              iconColor: _getCategoryIconColor(displayCat),
-              isAutopay: widget.isAutopay,
-              campaignId: campaignId,
-              categoryLabel: displayCat,
-              raised: raised,
-              goal: goal,
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: kPrimaryColor,
-            foregroundColor: kWhite,
-            minimumSize: const Size.fromHeight(54),
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+        padding: const EdgeInsets.fromLTRB(
+          kScreenPaddingH,
+          8,
+          kScreenPaddingH,
+          16,
+        ),
+        child: SizedBox(
+          height: 52,
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () {
+              HapticHelper.impact(HapticImpact.medium);
+              DonationSheet.show(
+                context: context,
+                categoryTitle: title,
+                icon: _getCategoryIcon(displayCat),
+                iconBgColor: _getCategoryBgColor(displayCat),
+                iconColor: _getCategoryIconColor(displayCat),
+                isAutopay: widget.isAutopay,
+                campaignId: campaignId,
+                categoryLabel: displayCat,
+                raised: raised,
+                goal: goal,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kPrimaryColor,
+              foregroundColor: kWhite,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(kCardRadiusSm),
+              ),
             ),
-          ),
-          child: Text(
-            widget.isAutopay ? 'Set up Autopay' : 'Donate Now',
-            style: kButtonLabelSB.copyWith(fontSize: 16),
+            child: Text(
+              widget.isAutopay ? 'Set up Autopay' : 'Donate Now',
+              style: kButtonLabelSB,
+            ),
           ),
         ),
       ),
@@ -457,7 +470,12 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingH,
+                8,
+                kScreenPaddingH,
+                16,
+              ),
               child: Row(
                 children: [
                   _headerCircleButton(
@@ -475,10 +493,7 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
                     child: Text(
                       isCampaignMode ? 'Campaign details' : 'Donation details',
                       textAlign: TextAlign.center,
-                      style: kHeadTitleB.copyWith(
-                        color: kTextColor,
-                        fontSize: 20,
-                      ),
+                      style: kSectionTitleSB,
                     ),
                   ),
                   if (hasCampaignId) ...[
@@ -559,7 +574,9 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
                         campaignDetailProvider(widget.campaignId!),
                       ),
                       builder: (campaign) => SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: kScreenPaddingH,
+                        ),
                         child: _buildCampaignBody(
                           context: context,
                           displayTitle: campaign.title,
@@ -574,7 +591,9 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
                       ),
                     )
                   : SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: kScreenPaddingH,
+                      ),
                       child: isCampaignMode
                           ? _buildCampaignBody(
                               context: context,
@@ -617,32 +636,40 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
         }
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-            child: ElevatedButton(
-              onPressed: () {
-                HapticHelper.impact(HapticImpact.medium);
-                DonationSheet.show(
-                  context: context,
-                  categoryTitle: widget.title,
-                  icon: _getCategoryIcon(widget.title),
-                  iconBgColor: _getCategoryBgColor(widget.title),
-                  iconColor: _getCategoryIconColor(widget.title),
-                  isAutopay: widget.isAutopay,
-                  campaignId: widget.campaignId,
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kPrimaryColor,
-                foregroundColor: kWhite,
-                minimumSize: const Size.fromHeight(54),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+            padding: const EdgeInsets.fromLTRB(
+              kScreenPaddingH,
+              8,
+              kScreenPaddingH,
+              20,
+            ),
+            child: SizedBox(
+              height: 52,
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  HapticHelper.impact(HapticImpact.medium);
+                  DonationSheet.show(
+                    context: context,
+                    categoryTitle: widget.title,
+                    icon: _getCategoryIcon(widget.title),
+                    iconBgColor: _getCategoryBgColor(widget.title),
+                    iconColor: _getCategoryIconColor(widget.title),
+                    isAutopay: widget.isAutopay,
+                    campaignId: widget.campaignId,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kPrimaryColor,
+                  foregroundColor: kWhite,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(kCardRadiusSm),
+                  ),
                 ),
-              ),
-              child: Text(
-                widget.isAutopay ? 'Set up Autopay' : 'Donate Now',
-                style: kButtonLabelSB.copyWith(fontSize: 16),
+                child: Text(
+                  widget.isAutopay ? 'Set up Autopay' : 'Donate Now',
+                  style: kButtonLabelSB,
+                ),
               ),
             ),
           ),

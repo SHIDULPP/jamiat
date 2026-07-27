@@ -347,6 +347,17 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
     _showError(response.message ?? 'Payment cancelled or failed');
   }
 
+  String _formatPreset(int amount) {
+    final raw = amount.toString();
+    final buf = StringBuffer();
+    final len = raw.length;
+    for (var i = 0; i < len; i++) {
+      if (i > 0 && (len - i) % 3 == 0) buf.write(',');
+      buf.write(raw[i]);
+    }
+    return '₹$buf';
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
@@ -366,7 +377,15 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
         ? (raised ?? 0) / goal
         : 0.0;
     final clampedProgress = progress.clamp(0.0, 1.0);
-    final percent = (clampedProgress * 100).round();
+
+    final fieldBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(kCardRadiusMd),
+      borderSide: const BorderSide(color: kCardBorder, width: 1),
+    );
+    final fieldFocused = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(kCardRadiusMd),
+      borderSide: const BorderSide(color: kPrimaryColor, width: 1.5),
+    );
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
@@ -375,7 +394,12 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
           color: kWhite,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+        padding: const EdgeInsets.fromLTRB(
+          kScreenPaddingH,
+          12,
+          kScreenPaddingH,
+          24,
+        ),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -386,7 +410,7 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: kBorder,
+                    color: kStrokeColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -402,12 +426,12 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEEEEEE),
-                        borderRadius: BorderRadius.circular(8),
+                        color: kChipGreyBg,
+                        borderRadius: BorderRadius.circular(kCardRadiusXs),
                       ),
                       child: Text(
                         categoryLabel,
-                        style: kCaption12M.copyWith(color: kTextColor),
+                        style: kCaption10M.copyWith(color: kTextColor),
                       ),
                     ),
                   ),
@@ -415,48 +439,34 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
                 ],
                 Text(
                   widget.isAutopay ? 'Set up Autopay' : title,
-                  style: kStyle(kSemiBold, 20, color: kTextColor),
+                  style: kSectionTitle19SB,
                 ),
                 const SizedBox(height: 14),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(kPillRadius),
+                  borderRadius: BorderRadius.circular(1),
                   child: LinearProgressIndicator(
                     value: clampedProgress.toDouble(),
-                    minHeight: 8,
-                    backgroundColor: kGreyLight,
+                    minHeight: 4,
+                    backgroundColor: kGreyLight.withValues(alpha: 0.45),
                     color: kPrimaryColor,
                   ),
                 ),
                 const SizedBox(height: 10),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: formatRupee(raised ?? 0),
-                              style: kBodyTitleSB.copyWith(fontSize: 15),
-                            ),
-                            TextSpan(
-                              text: ' / of ${formatRupee(goal)}',
-                              style: kCaption12R.copyWith(
-                                color: kSecondaryTextColor,
-                              ),
-                            ),
-                          ],
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: formatRupee(raised ?? 0),
+                        style: kBodyTitleSB,
+                      ),
+                      TextSpan(
+                        text: ' / of ${formatRupee(goal)}',
+                        style: kCaption12R.copyWith(
+                          color: kSecondaryTextColor,
                         ),
                       ),
-                    ),
-                    Text(
-                      '$percent%',
-                      style: kBodyTitleSB.copyWith(
-                        fontSize: 15,
-                        color: kPrimaryColor,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ] else ...[
                 Row(
@@ -480,7 +490,7 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
                     Expanded(
                       child: Text(
                         widget.isAutopay ? 'Set up Autopay' : title,
-                        style: kStyle(kSemiBold, 20, color: kTextColor),
+                        style: kSectionTitle19SB,
                       ),
                     ),
                   ],
@@ -489,10 +499,7 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
               const SizedBox(height: 16),
               const Divider(color: kLineGrey, height: 1),
               const SizedBox(height: 20),
-              Text(
-                'Select amount',
-                style: kStyle(kSemiBold, 16, color: kTextColor),
-              ),
+              Text('Select amount', style: kBodyTitleSB),
               const SizedBox(height: 16),
               GridView.builder(
                 shrinkWrap: true,
@@ -516,17 +523,17 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
                         color: isSelected ? kPrimaryColor : Colors.transparent,
                         width: 1.5,
                       ),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(kCardRadiusMd),
                     ),
                     child: InkWell(
                       onTap: () => _onPresetSelected(index, amount),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(kCardRadiusMd),
                       child: Center(
                         child: Text(
-                          '₹$amount',
+                          _formatPreset(amount),
                           style: kStyle(
                             isSelected ? kSemiBold : kMedium,
-                            16,
+                            15,
                             color: isSelected ? kPrimaryColor : kTextColor,
                           ),
                         ),
@@ -553,7 +560,7 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
                             ),
                             child: Text(
                               'Popular',
-                              style: kStyle(kBold, 8, color: kWhite),
+                              style: kCaption8SB.copyWith(color: kWhite),
                             ),
                           ),
                         ),
@@ -567,7 +574,7 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
               const SizedBox(height: 20),
               Text(
                 'or enter custom amount',
-                style: kCaption13R.copyWith(color: kMutedText),
+                style: kCaption12R.copyWith(color: kMutedText),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -575,52 +582,22 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 onChanged: _onCustomAmountChanged,
-                style: kStyle(kMedium, 16, color: kTextColor),
+                style: kBodyTitleM,
                 decoration: InputDecoration(
-                  prefixIcon: const Padding(
-                    padding: EdgeInsets.only(left: 16, right: 8, top: 12),
-                    child: Text(
-                      '₹',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: kMedium,
-                        color: kTextColor,
-                      ),
-                    ),
-                  ),
-                  prefixIconConstraints: const BoxConstraints(
-                    minWidth: 0,
-                    minHeight: 0,
-                  ),
-                  hintText: 'Enter amount',
-                  hintStyle: kStyle(kRegular, 16, color: kSecondaryTextColor),
+                  hintText: '₹ Enter amount',
+                  hintStyle: kBodyTitleR.copyWith(color: kSecondaryTextColor),
                   contentPadding: const EdgeInsets.symmetric(
                     vertical: 16,
                     horizontal: 16,
                   ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: kBorder, width: 1),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: kBorder, width: 1),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(
-                      color: kPrimaryColor,
-                      width: 1.5,
-                    ),
-                  ),
+                  border: fieldBorder,
+                  enabledBorder: fieldBorder,
+                  focusedBorder: fieldFocused,
                 ),
               ),
               if (widget.isAutopay) ...[
                 const SizedBox(height: 20),
-                Text(
-                  'Billing period',
-                  style: kStyle(kSemiBold, 16, color: kTextColor),
-                ),
+                Text('Billing period', style: kBodyTitleSB),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
@@ -637,95 +614,85 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
                         setState(() => _selectedPeriod = period);
                       },
                       selectedColor: kLightGreen,
+                      backgroundColor: kChipGreyBg,
                       labelStyle: kCaption12M.copyWith(
                         color: selected ? kPrimaryColor : kTextColor,
                       ),
                       side: BorderSide(
-                        color: selected ? kPrimaryColor : kBorder,
+                        color: selected ? kPrimaryColor : kCardBorder,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(kCardRadiusSm),
                       ),
                     );
                   }).toList(),
                 ),
               ],
               const SizedBox(height: 20),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'Add a message ',
-                    style: kStyle(kSemiBold, 16, color: kTextColor),
-                  ),
-                  Text(
-                    '(optional)',
-                    style: kStyle(kRegular, 14, color: kSecondaryTextColor),
-                  ),
-                ],
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(text: 'Add a message ', style: kBodyTitleSB),
+                    TextSpan(
+                      text: '(optional)',
+                      style: kCaption12R.copyWith(color: kSecondaryTextColor),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _messageController,
                 maxLines: 3,
                 minLines: 3,
-                style: kStyle(kMedium, 16, color: kTextColor),
+                style: kBodyTitleM,
                 decoration: InputDecoration(
                   hintText: 'Enter message',
-                  hintStyle: kStyle(kRegular, 16, color: kSecondaryTextColor),
+                  hintStyle: kBodyTitleR.copyWith(color: kSecondaryTextColor),
                   contentPadding: const EdgeInsets.symmetric(
                     vertical: 12,
                     horizontal: 16,
                   ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: kBorder, width: 1),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: kBorder, width: 1),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(
-                      color: kPrimaryColor,
-                      width: 1.5,
-                    ),
-                  ),
+                  border: fieldBorder,
+                  enabledBorder: fieldBorder,
+                  focusedBorder: fieldFocused,
                 ),
               ),
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: (_hasValidAmount && !_isProcessing)
-                    ? _handlePayment
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kPrimaryColor,
-                  disabledBackgroundColor: kChipGreyBg,
-                  foregroundColor: kWhite,
-                  disabledForegroundColor: kMutedText,
-                  minimumSize: const Size.fromHeight(52),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+              SizedBox(
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: (_hasValidAmount && !_isProcessing)
+                      ? _handlePayment
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kPrimaryColor,
+                    disabledBackgroundColor: kChipGreyBg,
+                    foregroundColor: kWhite,
+                    disabledForegroundColor: kMutedText,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(kCardRadiusSm),
+                    ),
                   ),
+                  child: _isProcessing
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(kWhite),
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      : Text(
+                          widget.isAutopay
+                              ? 'Continue to Autopay'
+                              : 'Continue to payment',
+                          style: kButtonLabelSB.copyWith(
+                            color: _hasValidAmount ? kWhite : kMutedText,
+                          ),
+                        ),
                 ),
-                child: _isProcessing
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(kWhite),
-                          strokeWidth: 2.5,
-                        ),
-                      )
-                    : Text(
-                        widget.isAutopay
-                            ? 'Continue to Autopay'
-                            : 'Continue to payment',
-                        style: kStyle(
-                          kSemiBold,
-                          16,
-                          color: _hasValidAmount ? kWhite : kMutedText,
-                        ),
-                      ),
               ),
               const SizedBox(height: 8),
             ],

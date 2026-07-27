@@ -28,8 +28,8 @@ class _DonationCategory {
 
 /// Category picker for setting up autopay on a campaign.
 ///
-/// - **General Campaign** opens a list of time-bound / targeted campaigns.
-/// - Other categories open that category’s ongoing campaign directly.
+/// Visual layout aligned to Figma Donations / Campaigns category list
+/// (636:1338 family). Business routes and API calls unchanged.
 class DonationListScreen extends ConsumerStatefulWidget {
   const DonationListScreen({super.key});
 
@@ -188,7 +188,7 @@ class _DonationListScreenState extends ConsumerState<DonationListScreen> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: kWhite,
-          border: Border.all(color: kBorder, width: 1.25),
+          border: Border.all(color: kStrokeColor, width: 1.25),
         ),
         child: const Icon(Icons.arrow_back, color: kTextColor, size: 20),
       ),
@@ -197,16 +197,17 @@ class _DonationListScreenState extends ConsumerState<DonationListScreen> {
 
   Widget _buildSearchField() {
     return Container(
+      height: 48,
       decoration: BoxDecoration(
         color: kWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: kBorder, width: 1),
+        borderRadius: BorderRadius.circular(kPillRadius),
+        border: Border.all(color: kStrokeColor),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Row(
         children: [
-          const Icon(Icons.search, color: kSecondaryTextColor, size: 22),
-          const SizedBox(width: 12),
+          const Icon(Icons.search, color: kIconMuted, size: 22),
+          const SizedBox(width: 10),
           Expanded(
             child: TextField(
               controller: _searchController,
@@ -217,7 +218,7 @@ class _DonationListScreenState extends ConsumerState<DonationListScreen> {
                 hintStyle: kBodyTitleR.copyWith(color: kSecondaryTextColor),
                 border: InputBorder.none,
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                contentPadding: EdgeInsets.zero,
               ),
             ),
           ),
@@ -235,7 +236,7 @@ class _DonationListScreenState extends ConsumerState<DonationListScreen> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: kScreenBg,
+            color: kBackgroundColor,
             borderRadius: BorderRadius.circular(kCardRadiusMd),
           ),
           child: Row(
@@ -263,10 +264,7 @@ class _DonationListScreenState extends ConsumerState<DonationListScreen> {
                   children: [
                     Text(
                       item.title,
-                      style: kBodyTitleSB.copyWith(
-                        color: kTextColor,
-                        fontSize: 16,
-                      ),
+                      style: kBodyTitleSB.copyWith(color: kTextColor),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -278,13 +276,6 @@ class _DonationListScreenState extends ConsumerState<DonationListScreen> {
                     ),
                   ],
                 ),
-              ),
-              Icon(
-                item.isGeneralCampaigns
-                    ? Icons.chevron_right
-                    : Icons.autorenew,
-                color: kMutedText,
-                size: 22,
               ),
             ],
           ),
@@ -318,14 +309,11 @@ class _DonationListScreenState extends ConsumerState<DonationListScreen> {
                   child: Row(
                     children: [
                       _buildBackButton(),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'Set up Autopay',
-                          style: kHeadTitleB.copyWith(
-                            color: kTextColor,
-                            fontSize: 22,
-                          ),
+                          style: kSectionTitleSB,
                         ),
                       ),
                     ],
@@ -340,7 +328,7 @@ class _DonationListScreenState extends ConsumerState<DonationListScreen> {
                   ),
                   child: Text(
                     'Choose a campaign to start recurring donations.',
-                    style: kCaption14R.copyWith(color: kSecondaryTextColor),
+                    style: kCaption12R.copyWith(color: kSecondaryTextColor),
                   ),
                 ),
                 Padding(

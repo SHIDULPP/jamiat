@@ -57,6 +57,26 @@ class _SavedEventsScreenState extends ConsumerState<SavedEventsScreen> {
     );
   }
 
+  Widget _headerCircleButton({
+    required Widget child,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: kWhite,
+          border: Border.all(color: kGrey, width: 1.25),
+        ),
+        alignment: Alignment.center,
+        child: child,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final savedAsync = ref.watch(savedEventsProvider);
@@ -67,37 +87,27 @@ class _SavedEventsScreenState extends ConsumerState<SavedEventsScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingH,
+                8,
+                kScreenPaddingH,
+                16,
+              ),
               child: Row(
                 children: [
-                  GestureDetector(
+                  _headerCircleButton(
                     onTap: () {
                       HapticHelper.impact(HapticImpact.light);
                       Navigator.pop(context);
                     },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: kTextColor,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'Saved events',
-                    style: kHeadTitleB.copyWith(
+                    child: const Icon(
+                      Icons.arrow_back,
                       color: kTextColor,
-                      fontSize: 22,
+                      size: 20,
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Text('Saved', style: kSectionTitleSB),
                 ],
               ),
             ),
@@ -118,7 +128,9 @@ class _SavedEventsScreenState extends ConsumerState<SavedEventsScreen> {
                       await ref.read(savedEventsProvider.future);
                     },
                     child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: kScreenPaddingH,
+                      ),
                       itemCount: events.length,
                       itemBuilder: (context, index) {
                         final event = events[index];

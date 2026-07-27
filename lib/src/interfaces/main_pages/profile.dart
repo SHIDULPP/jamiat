@@ -167,28 +167,25 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   Widget _buildStatCard({required String title, required String value}) {
+    // Figma: white · pad 16 · radius 8 · label 12/#6d6d6d · value 15 SB primary · gap 16
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: kWhite,
-        borderRadius: BorderRadius.circular(kCardRadiusMd),
-        border: Border.all(color: kBorder.withValues(alpha: 0.5), width: 1),
+        borderRadius: BorderRadius.circular(kCardRadiusSm),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: kCaption10SB.copyWith(
-              color: kSecondaryTextColor,
-              letterSpacing: 0.5,
-            ),
+            style: kCaption12SB.copyWith(color: kMutedText, height: 1.2),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 16),
           Text(
             value,
-            style: kHeadTitleB.copyWith(color: kPrimaryColor, fontSize: 20),
+            style: kBodyTitleSB.copyWith(color: kPrimaryColor, height: 1.2),
           ),
         ],
       ),
@@ -196,6 +193,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   Widget _buildMenuItem(_ProfileMenuItem item) {
+    // Figma menu row: icon 24 · gap 8 · label 12 Regular/#161616 · chevron 24
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -204,21 +202,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           item.onTap();
         },
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          padding: EdgeInsets.zero,
           child: Row(
             children: [
-              Icon(item.icon, color: kPrimaryColor, size: 20),
-              const SizedBox(width: 16),
+              Icon(item.icon, color: kPrimaryColor, size: 24),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   item.title,
-                  style: kBodyTitleM.copyWith(
-                    color: kTextColor,
-                    fontWeight: kMedium,
-                  ),
+                  style: kCaption12R.copyWith(color: kBodyText, height: 1.2),
                 ),
               ),
-              Icon(Icons.chevron_right, color: item.chevronColor, size: 22),
+              Icon(Icons.chevron_right, color: item.chevronColor, size: 24),
             ],
           ),
         ),
@@ -227,12 +222,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   Widget _buildDivider() {
-    return const Divider(
-      color: kWhite,
-      height: 1,
-      thickness: 1.5,
-      indent: 16,
-      endIndent: 16,
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 16),
+      child: Divider(color: kLineGrey, height: 1, thickness: 1),
     );
   }
 
@@ -240,15 +232,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final image = user.image;
     if (image != null && image.startsWith('http')) {
       return CircleAvatar(
-        radius: 45,
+        radius: 40,
         backgroundColor: kScreenBg,
         backgroundImage: NetworkImage(image),
         onBackgroundImageError: (_, _) {},
       );
     }
     return Container(
-      width: 90,
-      height: 90,
+      width: 80,
+      height: 80,
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
         image: DecorationImage(
@@ -267,24 +259,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               HapticHelper.impact(HapticImpact.light);
               _pickAndUploadAvatar();
             },
-      child: Container(
-        width: 32,
-        height: 32,
-        alignment: Alignment.center,
-        decoration: const BoxDecoration(
-          color: kTextColor,
-          shape: BoxShape.circle,
-        ),
+      child: SizedBox(
+        width: 21.3,
+        height: 21.3,
         child: _isUploadingAvatar
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: kWhite,
-                ),
-              )
-            : const Icon(Icons.camera_alt, color: kWhite, size: 14),
+            ? const CircularProgressIndicator(strokeWidth: 2, color: kPrimaryColor)
+            : SvgPicture.asset(
+                'assets/svg/figma/camera_badge.svg',
+                width: 21.3,
+                height: 21.3,
+              ),
       ),
     );
   }
@@ -292,20 +276,19 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   Widget _qrSection(UserModel user) {
     final qrBytes = _decodeQrImage(user.qrCode);
 
+    // Figma QR frame: stroke bg · pad 18 · radius 14 · QR 90 · Share 10 Regular
     return Container(
-      width: 112,
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: kWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorder.withValues(alpha: 0.5)),
+        color: kStrokeColor,
+        borderRadius: BorderRadius.circular(kCardRadiusMd),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
-            width: 88,
-            height: 88,
+            width: 90,
+            height: 90,
             child: qrBytes != null
                 ? Image.memory(qrBytes, fit: BoxFit.contain)
                 : QrImageView(
@@ -321,32 +304,32 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     ),
                   ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           GestureDetector(
-            onTap: _isSharingQr
-                ? null
-                : () => _shareProfileQr(user),
+            onTap: _isSharingQr ? null : () => _shareProfileQr(user),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'Share',
-                  style: kCaption12M.copyWith(
+                  style: kCaption10R.copyWith(
                     color: _isSharingQr ? kMutedText : kTextColor,
+                    height: 1.2,
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
                 if (_isSharingQr)
                   const SizedBox(
-                    width: 14,
-                    height: 14,
+                    width: 12,
+                    height: 12,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 else
                   SvgPicture.asset(
                     'assets/svg/share.svg',
-                    width: 14,
-                    height: 14,
+                    width: 13,
+                    height: 12,
                     colorFilter: const ColorFilter.mode(
                       kTextColor,
                       BlendMode.srcIn,
@@ -365,52 +348,63 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     required String? donations,
     required String? totalDonated,
   }) {
+    // Figma 636:3461 — avatar+name left · stats right · gap 32 · radius 14
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: kScreenBg,
-        borderRadius: BorderRadius.circular(kCardRadiusLg),
+        borderRadius: BorderRadius.circular(kCardRadiusMd),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            flex: 5,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Stack(
+                  clipBehavior: Clip.none,
                   children: [
                     _avatar(user),
-                    Positioned(bottom: 0, right: 0, child: _cameraButton()),
+                    Positioned(
+                      right: 0,
+                      bottom: 2,
+                      child: _cameraButton(),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 24),
                 Text(
                   user.displayName,
-                  style: kBodyTitleB.copyWith(
-                    color: kTextColor,
-                    fontSize: 16,
-                  ),
+                  style: kCaption12SB.copyWith(color: kTextColor, height: 1.2),
+                  textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'ID : ${user.displayMemberId}',
-                  style: kCaption12R.copyWith(color: kSecondaryTextColor),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: kScreenBg,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'ID : ${user.displayMemberId}',
+                    style: kCaption12R.copyWith(
+                      color: kSecondaryTextColor,
+                      height: 1.2,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 32),
           Expanded(
-            flex: 5,
             child: Column(
               children: [
                 _buildStatCard(
                   title: 'DONATIONS',
                   value: donations ?? '—',
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 _buildStatCard(
                   title: 'TOTAL DONATED',
                   value: totalDonated ?? '—',
@@ -428,61 +422,76 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     required String? donations,
     required String? totalDonated,
   }) {
+    // Figma 1187:6509 — avatar+meta | QR · then stats row
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: kScreenBg,
-        borderRadius: BorderRadius.circular(kCardRadiusLg),
+        borderRadius: BorderRadius.circular(kCardRadiusMd),
       ),
       child: Column(
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Stack(
+                      clipBehavior: Clip.none,
                       children: [
                         _avatar(user),
                         Positioned(
-                          bottom: 0,
                           right: 0,
+                          bottom: 2,
                           child: _cameraButton(),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 24),
                     Text(
                       user.displayName,
-                      style: kBodyTitleB.copyWith(
+                      style: kCaption12SB.copyWith(
                         color: kTextColor,
-                        fontSize: 16,
+                        height: 1.2,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 4),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           'Jamaith Member',
-                          style: kCaption12R.copyWith(
-                            color: kSecondaryTextColor,
+                          style: kCaption10R.copyWith(
+                            color: kTextColor,
+                            height: 1.2,
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        if (user.status == 'active')
-                          const Icon(
-                            Icons.verified,
-                            color: kSecondaryColor,
-                            size: 14,
+                        if (user.status == 'active') ...[
+                          const SizedBox(width: 4),
+                          SvgPicture.asset(
+                            'assets/svg/figma/check_circle.svg',
+                            width: 12,
+                            height: 12,
                           ),
+                        ],
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'ID : ${user.displayMemberId}',
-                      style: kCaption12R.copyWith(color: kSecondaryTextColor),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: kScreenBg,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'ID : ${user.displayMemberId}',
+                        style: kCaption12R.copyWith(
+                          color: kSecondaryTextColor,
+                          height: 1.2,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -491,7 +500,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               _qrSection(user),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 24),
           Row(
             children: [
               Expanded(
@@ -500,7 +509,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   value: donations ?? '—',
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: _buildStatCard(
                   title: 'TOTAL DONATED',
@@ -590,9 +599,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     required BuildContext context,
   }) {
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: kScreenBg,
-        borderRadius: BorderRadius.circular(kCardRadiusLg),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         children: [
@@ -605,7 +615,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             _buildMenuItem(
               _ProfileMenuItem(
                 icon: Icons.logout,
-                title: 'Log out',
+                title: 'Logout',
                 chevronColor: kPrimaryColor,
                 onTap: () => _logout(context),
               ),
@@ -646,49 +656,42 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             );
 
             return SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingH,
+                8,
+                kScreenPaddingH,
                 24,
-                16,
-                24,
-                isJamiatMember ? 16 : 110,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      GestureDetector(
-                        onTap: () {
-                          if (Navigator.canPop(context)) {
-                            Navigator.pop(context);
-                          }
-                        },
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: kWhite,
-                            border: Border.all(color: kBorder, width: 1.25),
-                          ),
-                          child: const Icon(
-                            Icons.arrow_back,
-                            color: kTextColor,
-                            size: 20,
-                          ),
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: kWhite.withValues(alpha: 0.08),
+                          border: Border.all(color: kGrey, width: 1.25),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back,
+                          color: kTextColor,
+                          size: 20,
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 8),
                       Text(
                         'My Profile',
-                        style: kHeadTitleB.copyWith(
+                        style: kBodyTitleSB.copyWith(
                           color: kTextColor,
-                          fontSize: 22,
+                          height: 1.2,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
                   if (isJamiatMember)
                     _jamiatMemberHeader(
                       user: user,
@@ -701,26 +704,45 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       donations: donations,
                       totalDonated: totalDonated,
                     ),
-                  const SizedBox(height: 24),
-                  if (isJamiatMember)
+                  const SizedBox(height: 16),
+                  if (isJamiatMember) ...[
                     _menuCard(
                       items: menuItems,
-                      includeLogout: true,
                       context: context,
-                    )
-                  else ...[
-                    _menuCard(items: menuItems, context: context),
-                    const SizedBox(height: 24),
-                    _menuCard(
-                      items: [
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: kScreenBg,
+                        borderRadius: BorderRadius.circular(kCardRadiusSm),
+                      ),
+                      child: _buildMenuItem(
                         _ProfileMenuItem(
                           icon: Icons.logout,
-                          title: 'Log out',
+                          title: 'Logout',
                           chevronColor: kPrimaryColor,
                           onTap: () => _logout(context),
                         ),
-                      ],
-                      context: context,
+                      ),
+                    ),
+                  ] else ...[
+                    _menuCard(items: menuItems, context: context),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: kScreenBg,
+                        borderRadius: BorderRadius.circular(kCardRadiusSm),
+                      ),
+                      child: _buildMenuItem(
+                        _ProfileMenuItem(
+                          icon: Icons.logout,
+                          title: 'Logout',
+                          chevronColor: kPrimaryColor,
+                          onTap: () => _logout(context),
+                        ),
+                      ),
                     ),
                   ],
                   const SizedBox(height: 24),

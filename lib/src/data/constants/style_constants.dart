@@ -169,8 +169,9 @@ final kLabel22White = kStyle(kSemiBold, kSize22, color: kWhite, height: 1.15);
 final kTabLabelR = kStyle(kRegular, kSize12, color: kTextColor);
 final kTabLabelM = kStyle(kMedium, kSize12, color: kPrimaryColor);
 
-final kNavLabelR = kStyle(kRegular, kSize12, color: kSecondaryTextColor);
-final kNavLabelM = kStyle(kMedium, kSize12, color: kPrimaryColor);
+// Figma BottomNav label = Noto Sans Regular 10 / leading 1.2
+final kNavLabelR = kStyle(kRegular, kSize10, color: kIconMuted);
+final kNavLabelM = kStyle(kRegular, kSize10, color: kPrimaryColor);
 
 final kLinkM = kStyle(kMedium, kSize15, color: kPrimaryColor);
 final kLinkSB = kStyle(kSemiBold, kSize15, color: kPrimaryColor);
@@ -179,6 +180,8 @@ final kButtonLabelM = kStyle(kMedium, kSize15, color: kWhite, height: 1.2);
 final kButtonLabelSB = kStyle(kSemiBold, kSize15, color: kWhite, height: 1.2);
 
 final kSectionLabelR = kStyle(kRegular, kSize12, color: kSecondaryTextColor);
-final kSectionTitleSB = kStyle(kSemiBold, kSize19, color: kTextColor);
+// Figma section headers on Home (Quick Access / Active Campaigns / Latest News) = 15 SemiBold
+final kSectionTitleSB = kStyle(kSemiBold, kSize15, color: kTextColor);
+final kSectionTitle19SB = kStyle(kSemiBold, kSize19, color: kTextColor);
 final kEmptyStateM = kStyle(kMedium, kSize15, color: kMutedText);
 final kVersionR = kStyle(kRegular, kSize12, color: kSecondaryTextColor);
