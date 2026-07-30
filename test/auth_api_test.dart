@@ -36,7 +36,7 @@ void main() {
     );
     final authApi = AuthApi(api);
 
-    final response = await authApi.requestOtp(phone: '+919645398555');
+    final response = await authApi.requestOtp(phone: '+919645398555', otpVia: 'sms');
 
     expect(response.success, isTrue);
     expect(response.message, 'OTP sent successfully');

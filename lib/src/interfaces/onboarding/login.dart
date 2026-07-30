@@ -546,6 +546,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                     appContext: context,
                     length: otpLength,
                     controller: _otpController,
+                    autoDisposeControllers: false,
                     obscureText: false,
                     autoFocus: true,
                     keyboardType: TextInputType.number,
@@ -575,7 +576,11 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                     backgroundColor: Colors.transparent,
                     enableActiveFill: true,
                     onChanged: (_) {},
-                    onCompleted: (_) => _verifyOtp(),
+                    onCompleted: (_) {
+                      if (!_isLoading && mounted) {
+                        _verifyOtp();
+                      }
+                    },
                   );
                 },
               ),
