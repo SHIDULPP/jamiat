@@ -1,284 +1,318 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jamiat/src/data/apis/product_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
+import 'package:jamiat/src/data/models/product_model.dart';
+import 'package:jamiat/src/data/providers/product_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
+import 'package:jamiat/src/interfaces/components/async_content.dart';
 import 'package:jamiat/src/interfaces/components/primarybutton.dart';
-import 'package:jamiat/src/interfaces/market/market_product_data.dart';
+import 'package:jamiat/src/interfaces/market/market_product_card.dart';
 
-class ProductDetailScreen extends StatefulWidget {
+class ProductDetailScreen extends ConsumerStatefulWidget {
   const ProductDetailScreen({super.key, required this.productId});
 
   final String productId;
 
   @override
-  State<ProductDetailScreen> createState() => _ProductDetailScreenState();
+  ConsumerState<ProductDetailScreen> createState() =>
+      _ProductDetailScreenState();
 }
 
-class _ProductDetailScreenState extends State<ProductDetailScreen> {
-  late bool _isSaved;
+class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
+  bool? _isSavedOverride;
+  bool _saveLoading = false;
+  bool _enquireLoading = false;
 
-  MarketProduct? get _product => marketProductById(widget.productId);
-
-  @override
-  void initState() {
-    super.initState();
-    _isSaved = MarketSavedProducts.isSaved(widget.productId);
+  bool _isSaved(ProductModel product) {
+    return _isSavedOverride ?? product.isSaved;
   }
 
-  Widget _heroImage(String imagePath) {
+  Future<void> _toggleSave(ProductModel product) async {
+    if (_saveLoading) return;
+    setState(() => _saveLoading = true);
+    try {
+      final res =
+          await ref.read(productApiProvider).toggleSaveProduct(product.id);
+      if (!mounted) return;
+      if (!res.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res.message ?? 'Failed to update saved'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+      final saved = res.data ?? !_isSaved(product);
+      setState(() => _isSavedOverride = saved);
+      ref.invalidate(productsListProvider);
+      ref.invalidate(savedProductsProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            saved ? 'Product saved' : 'Removed from saved products',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _saveLoading = false);
+    }
+  }
+
+  Future<void> _enquire(ProductModel product) async {
+    if (_enquireLoading) return;
+    setState(() => _enquireLoading = true);
+    try {
+      final res = await ref.read(productApiProvider).createEnquiry(product.id);
+      if (!mounted) return;
+      if (!res.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res.message ?? 'Failed to submit enquiry'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+      ref.invalidate(myProductEnquiriesProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res.message ?? 'Enquiry submitted'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _enquireLoading = false);
+    }
+  }
+
+  Widget _heroImage(String? imageUrl) {
     return AspectRatio(
       aspectRatio: 370 / 203,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(kCardRadiusMd),
-        child: Image.asset(
-          imagePath,
-          fit: BoxFit.cover,
-          width: double.infinity,
-        ),
+        child: productCoverImage(imageUrl),
       ),
     );
   }
 
-  List<(String, String)> _quickSpecs(MarketProduct product) {
-    if (product.id != 'prayer_mat') return const [];
-    return const [
-      ('Size', '45" x 27" (Fits all adult heights)'),
-      ('Thickness', '1.2 inches of premium memory foam'),
-      ('Top Material', 'Hypoallergenic soft micro-velvet'),
-      ('Maintenance', 'Removable outer cover for easy machine washing'),
-    ];
+  Widget _sellerAvatar(ProductSeller? seller) {
+    final image = seller?.image;
+    if (image != null && image.startsWith('http')) {
+      return CircleAvatar(
+        radius: 20,
+        backgroundColor: kScreenBg,
+        backgroundImage: NetworkImage(image),
+      );
+    }
+    return CircleAvatar(
+      radius: 20,
+      backgroundColor: kScreenBg,
+      backgroundImage: const AssetImage('assets/pngs/dummy_avatar.png'),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final product = _product;
-    if (product == null) {
-      return Scaffold(
-        backgroundColor: kWhite,
-        body: SafeArea(
-          child: Center(child: Text('Product not found', style: kEmptyStateM)),
-        ),
-      );
-    }
+    final productAsync = ref.watch(productDetailProvider(widget.productId));
 
     return Scaffold(
       backgroundColor: kWhite,
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(kScreenPaddingH, 8, kScreenPaddingH, 0),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      HapticHelper.impact(HapticImpact.light);
-                      Navigator.pop(context);
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: kWhite.withValues(alpha: 0.08),
-                        border: Border.all(color: kGrey, width: 1.25),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: kTextColor,
-                        size: 20,
-                      ),
-                    ),
+        child: AsyncContent(
+          asyncValue: productAsync,
+          onRetry: () =>
+              ref.invalidate(productDetailProvider(widget.productId)),
+          builder: (product) {
+            final sellerName =
+                (product.seller?.name.isNotEmpty == true)
+                    ? product.seller!.name
+                    : 'Jamiat Welfare Committee';
+            final isSaved = _isSaved(product);
+
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    kScreenPaddingH,
+                    8,
+                    kScreenPaddingH,
+                    0,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Product Details',
-                      style: kSectionTitleSB,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      HapticHelper.impact(HapticImpact.light);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Share coming soon'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: kWhite.withValues(alpha: 0.08),
-                        border: Border.all(color: kGrey, width: 1.25),
-                      ),
-                      child: const Icon(
-                        Icons.ios_share_outlined,
-                        color: kTextColor,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _heroImage(product.imagePath),
-                    const SizedBox(height: 16),
-                    Text(
-                      product.title,
-                      style: kSubHeadingR.copyWith(
-                        color: kTextColor,
-                        height: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        CircleAvatar(
-                          radius: 20,
-                          backgroundColor: kScreenBg,
-                          backgroundImage: AssetImage(product.sellerLogoPath),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'SELLERS',
-                                style: kCaption10SB.copyWith(
-                                  color: kSecondaryTextColor,
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                              Text(
-                                product.sellerName,
-                                style: kCaption12R.copyWith(
-                                  color: kTextColor,
-                                  height: 1.2,
-                                ),
-                              ),
-                            ],
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          HapticHelper.impact(HapticImpact.light);
+                          Navigator.pop(context);
+                        },
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: kWhite.withValues(alpha: 0.08),
+                            border: Border.all(color: kGrey, width: 1.25),
+                          ),
+                          child: const Icon(
+                            Icons.arrow_back,
+                            color: kTextColor,
+                            size: 20,
                           ),
                         ),
-                        Text(product.formattedPrice, style: kSubHeadingSB),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'About Product',
-                      style: kBodyTitleSB,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      product.description,
-                      style: kCaption12R.copyWith(
-                        color: kTextColor,
-                        height: 1.4,
                       ),
-                    ),
-                    if (_quickSpecs(product).isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      Text('Quick Specs', style: kBodyTitleSB),
-                      const SizedBox(height: 8),
-                      ..._quickSpecs(product).map(
-                        (spec) => Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: 120,
-                                child: Text(
-                                  spec.$1,
-                                  style: kCaption12SB.copyWith(
-                                    color: kText2Color,
-                                    height: 1.2,
-                                  ),
-                                ),
-                              ),
-                              Text(':', style: kCaption12R.copyWith(height: 1.4)),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  spec.$2,
-                                  style: kCaption12R.copyWith(
-                                    color: kTextColor,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ),
-                            ],
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Product Details',
+                          style: kSectionTitleSB,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          HapticHelper.impact(HapticImpact.light);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Share coming soon'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: kWhite.withValues(alpha: 0.08),
+                            border: Border.all(color: kGrey, width: 1.25),
+                          ),
+                          child: const Icon(
+                            Icons.ios_share_outlined,
+                            color: kTextColor,
+                            size: 18,
                           ),
                         ),
                       ),
                     ],
-                    const SizedBox(height: 24),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(kScreenPaddingH, 8, kScreenPaddingH, 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: primaryButton(
-                      label: _isSaved ? 'Saved' : 'Save Product',
-                      onPressed: () {
-                        HapticHelper.impact(HapticImpact.light);
-                        setState(() {
-                          _isSaved = MarketSavedProducts.toggle(product.id);
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              _isSaved
-                                  ? 'Product saved'
-                                  : 'Removed from saved products',
+                const SizedBox(height: 24),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: kScreenPaddingH,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _heroImage(product.image),
+                        const SizedBox(height: 16),
+                        Text(
+                          product.name,
+                          style: kSubHeadingR.copyWith(
+                            color: kTextColor,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            _sellerAvatar(product.seller),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'SELLERS',
+                                    style: kCaption10SB.copyWith(
+                                      color: kSecondaryTextColor,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                  Text(
+                                    sellerName,
+                                    style: kCaption12R.copyWith(
+                                      color: kTextColor,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            behavior: SnackBarBehavior.floating,
+                            Text(
+                              product.formattedPrice,
+                              style: kSubHeadingSB,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Text('About Product', style: kBodyTitleSB),
+                        const SizedBox(height: 8),
+                        Text(
+                          product.description.isEmpty
+                              ? 'No description available.'
+                              : product.description,
+                          style: kCaption12R.copyWith(
+                            color: kTextColor,
+                            height: 1.4,
                           ),
-                        );
-                      },
-                      buttonHeight: 56,
-                      buttonColor: kWhite,
-                      labelColor: kPrimaryColor,
-                      sideColor: kPrimaryColor,
+                        ),
+                        const SizedBox(height: 24),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: primaryButton(
-                      label: 'Enquire',
-                      onPressed: () {
-                        HapticHelper.impact(HapticImpact.medium);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Enquiry submitted'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                      buttonHeight: 56,
-                    ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    kScreenPaddingH,
+                    8,
+                    kScreenPaddingH,
+                    16,
                   ),
-                ],
-              ),
-            ),
-          ],
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: primaryButton(
+                          label: isSaved ? 'Saved' : 'Save Product',
+                          onPressed: _saveLoading
+                              ? null
+                              : () {
+                                  HapticHelper.impact(HapticImpact.light);
+                                  _toggleSave(product);
+                                },
+                          isLoading: _saveLoading,
+                          buttonHeight: 56,
+                          buttonColor: kWhite,
+                          labelColor: kPrimaryColor,
+                          sideColor: kPrimaryColor,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: primaryButton(
+                          label: 'Enquire',
+                          onPressed: _enquireLoading
+                              ? null
+                              : () {
+                                  HapticHelper.impact(HapticImpact.medium);
+                                  _enquire(product);
+                                },
+                          isLoading: _enquireLoading,
+                          buttonHeight: 56,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

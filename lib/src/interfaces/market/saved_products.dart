@@ -1,24 +1,60 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jamiat/src/data/apis/product_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
+import 'package:jamiat/src/data/models/product_model.dart';
+import 'package:jamiat/src/data/providers/product_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
+import 'package:jamiat/src/interfaces/components/async_content.dart';
 import 'package:jamiat/src/interfaces/market/market_product_card.dart';
 import 'package:jamiat/src/interfaces/market/market_product_data.dart';
 
-class SavedProductsScreen extends StatefulWidget {
+class SavedProductsScreen extends ConsumerStatefulWidget {
   const SavedProductsScreen({super.key});
 
   @override
-  State<SavedProductsScreen> createState() => _SavedProductsScreenState();
+  ConsumerState<SavedProductsScreen> createState() =>
+      _SavedProductsScreenState();
 }
 
-class _SavedProductsScreenState extends State<SavedProductsScreen> {
+class _SavedProductsScreenState extends ConsumerState<SavedProductsScreen> {
+  String? _bookmarkLoadingId;
+
   void _openDetails(String productId) {
-    NavigationService().pushNamed(
-      'MarketProductDetail',
-      arguments: {'productId': productId},
-    );
+    NavigationService()
+        .pushNamed(
+          'MarketProductDetail',
+          arguments: {'productId': productId},
+        )
+        .then((_) {
+          if (mounted) {
+            ref.invalidate(savedProductsProvider);
+            ref.invalidate(productsListProvider);
+          }
+        });
+  }
+
+  Future<void> _unsave(ProductModel product) async {
+    if (_bookmarkLoadingId != null) return;
+    setState(() => _bookmarkLoadingId = product.id);
+    try {
+      final res =
+          await ref.read(productApiProvider).toggleSaveProduct(product.id);
+      if (!mounted) return;
+      if (!res.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(res.message ?? 'Failed to update saved')),
+        );
+        return;
+      }
+      ref.invalidate(savedProductsProvider);
+      ref.invalidate(productsListProvider);
+      ref.invalidate(productDetailProvider(product.id));
+    } finally {
+      if (mounted) setState(() => _bookmarkLoadingId = null);
+    }
   }
 
   Widget _headerCircleButton({
@@ -43,7 +79,7 @@ class _SavedProductsScreenState extends State<SavedProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final products = MarketSavedProducts.savedProducts();
+    final savedAsync = ref.watch(savedProductsProvider);
 
     return Scaffold(
       backgroundColor: kWhite,
@@ -77,15 +113,29 @@ class _SavedProductsScreenState extends State<SavedProductsScreen> {
               ),
             ),
             Expanded(
-              child: products.isEmpty
-                  ? Center(
+              child: AsyncContent(
+                asyncValue: savedAsync,
+                onRetry: () => ref.invalidate(savedProductsProvider),
+                builder: (page) {
+                  final products = page.items;
+                  if (products.isEmpty) {
+                    return Center(
                       child: Text(
                         'No saved products yet',
                         style: kEmptyStateM,
                       ),
-                    )
-                  : GridView.builder(
-                      physics: const BouncingScrollPhysics(),
+                    );
+                  }
+                  return RefreshIndicator(
+                    color: kPrimaryColor,
+                    onRefresh: () async {
+                      ref.invalidate(savedProductsProvider);
+                      await ref.read(savedProductsProvider.future);
+                    },
+                    child: GridView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
                       padding: const EdgeInsets.fromLTRB(
                         kScreenPaddingH,
                         0,
@@ -106,10 +156,14 @@ class _SavedProductsScreenState extends State<SavedProductsScreen> {
                           product: product,
                           showBookmark: true,
                           isBookmarked: true,
+                          onBookmark: () => _unsave(product),
                           onViewDetails: () => _openDetails(product.id),
                         );
                       },
                     ),
+                  );
+                },
+              ),
             ),
           ],
         ),

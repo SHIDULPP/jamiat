@@ -29,6 +29,7 @@ import 'package:jamiat/src/interfaces/empowerment/applied_programs.dart';
 import 'package:jamiat/src/interfaces/notifications/notifications_list.dart';
 import 'package:jamiat/src/interfaces/market/product_detail.dart';
 import 'package:jamiat/src/interfaces/market/saved_products.dart';
+import 'package:jamiat/src/interfaces/market/my_enquiries.dart';
 import 'package:jamiat/src/interfaces/enquiries/enquiries.dart';
 
 enum TransitionType { slideFromBottom, slideFromRight, fade, fadeScale }
@@ -385,6 +386,12 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
 
     case 'SavedProducts':
       page = const SavedProductsScreen();
+      transitionToUse = TransitionType.slideFromRight;
+      transitionDuration = const Duration(milliseconds: 300);
+      break;
+
+    case 'MyEnquiries':
+      page = const MyEnquiriesScreen();
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);
       break;

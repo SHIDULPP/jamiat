@@ -1,27 +1,36 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jamiat/src/data/apis/product_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
+import 'package:jamiat/src/data/models/product_model.dart';
+import 'package:jamiat/src/data/providers/product_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
+import 'package:jamiat/src/interfaces/components/async_content.dart';
 import 'package:jamiat/src/interfaces/market/market_product_card.dart';
 import 'package:jamiat/src/interfaces/market/market_product_data.dart';
 
-class MarketPage extends StatefulWidget {
+class MarketPage extends ConsumerStatefulWidget {
   const MarketPage({super.key});
 
   @override
-  State<MarketPage> createState() => _MarketPageState();
+  ConsumerState<MarketPage> createState() => _MarketPageState();
 }
 
-class _MarketPageState extends State<MarketPage> {
+class _MarketPageState extends ConsumerState<MarketPage> {
   late final TextEditingController _searchController;
-  String _selectedCategory = 'All';
+  String _searchQuery = '';
+  final Map<String, bool> _bookmarkOverrides = {};
+  String? _bookmarkLoadingId;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+    _searchController.addListener(() {
+      setState(() => _searchQuery = _searchController.text.trim().toLowerCase());
+    });
   }
 
   @override
@@ -30,73 +39,76 @@ class _MarketPageState extends State<MarketPage> {
     super.dispose();
   }
 
-  List<MarketProduct> _filteredProducts() {
-    final query = _searchController.text.toLowerCase().trim();
-
-    return marketProducts.where((product) {
-      final matchesCategory =
-          _selectedCategory == 'All' || product.category == _selectedCategory;
-      final matchesSearch =
-          query.isEmpty || product.title.toLowerCase().contains(query);
-      return matchesCategory && matchesSearch;
+  List<ProductModel> _filter(List<ProductModel> items) {
+    if (_searchQuery.isEmpty) return items;
+    return items.where((product) {
+      return product.name.toLowerCase().contains(_searchQuery) ||
+          product.description.toLowerCase().contains(_searchQuery);
     }).toList();
   }
 
-  void _openDetails(String productId) {
-    NavigationService().pushNamed(
-      'MarketProductDetail',
-      arguments: {'productId': productId},
-    ).then((_) {
-      if (mounted) setState(() {});
+  bool _isSaved(ProductModel product) {
+    return _bookmarkOverrides[product.id] ?? product.isSaved;
+  }
+
+  void _clearBookmarkOverrides() {
+    if (_bookmarkOverrides.isEmpty) return;
+    setState(() => _bookmarkOverrides.clear());
+  }
+
+  void _refreshProductsAfterNavigation() {
+    if (!mounted) return;
+    _clearBookmarkOverrides();
+    ref.invalidate(productsListProvider);
+    ref.invalidate(savedProductsProvider);
+  }
+
+  Future<void> _toggleBookmark(ProductModel product) async {
+    if (_bookmarkLoadingId != null) return;
+    final currentlySaved = _isSaved(product);
+    setState(() {
+      _bookmarkLoadingId = product.id;
+      _bookmarkOverrides[product.id] = !currentlySaved;
     });
+    try {
+      final res = await ref
+          .read(productApiProvider)
+          .toggleSaveProduct(product.id);
+      if (!mounted) return;
+      if (!res.success) {
+        setState(() => _bookmarkOverrides[product.id] = currentlySaved);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(res.message ?? 'Failed to update saved')),
+        );
+        return;
+      }
+      setState(() {
+        _bookmarkOverrides[product.id] = res.data ?? !currentlySaved;
+      });
+      ref.invalidate(savedProductsProvider);
+      ref.invalidate(productDetailProvider(product.id));
+      ref.invalidate(productsListProvider);
+    } finally {
+      if (mounted) setState(() => _bookmarkLoadingId = null);
+    }
   }
 
-  void _toggleBookmark(String productId) {
-    MarketSavedProducts.toggle(productId);
-    setState(() {});
+  void _openDetails(String productId) {
+    NavigationService()
+        .pushNamed(
+          'MarketProductDetail',
+          arguments: {'productId': productId},
+        )
+        .then((_) => _refreshProductsAfterNavigation());
   }
 
-  Widget _buildCategoryList() {
-    // Figma chips: 30h · r6 · selected #FBBD05 · unselected soft yellow + border · 12 Medium
-    return SizedBox(
-      height: 30,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: marketCategories.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final category = marketCategories[index];
-          final isSelected = _selectedCategory == category;
-          return GestureDetector(
-            onTap: () {
-              HapticHelper.impact(HapticImpact.light);
-              setState(() => _selectedCategory = category);
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? kSecondaryColor
-                    : kSecondaryColor.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(kCardRadiusXs),
-                border: Border.all(color: kSecondaryColor),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                category,
-                style: kCaption12M.copyWith(
-                  color: isSelected ? kTextColor : kMutedText,
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
+  void _openMenuRoute(String routeName) {
+    NavigationService()
+        .pushNamed(routeName)
+        .then((_) => _refreshProductsAfterNavigation());
   }
 
   Widget _buildSearchField() {
-    // Figma Input Field 1: 56h · r16 · border #E3E3E3 · no shadow
     return Container(
       height: 56,
       decoration: BoxDecoration(
@@ -113,7 +125,6 @@ class _MarketPageState extends State<MarketPage> {
             child: TextField(
               controller: _searchController,
               style: kBodyTitleR.copyWith(color: kTextColor),
-              onChanged: (_) => setState(() {}),
               cursorColor: kPrimaryColor,
               decoration: InputDecoration(
                 isDense: true,
@@ -128,33 +139,146 @@ class _MarketPageState extends State<MarketPage> {
     );
   }
 
-  Widget _buildProductGrid(List<MarketProduct> filteredProducts) {
-    if (filteredProducts.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.only(top: 60),
-          child: Text('No products found', style: kEmptyStateM),
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          },
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: kWhite,
+              border: Border.all(color: kStrokeColor, width: 1.25),
+            ),
+            child: const Icon(
+              Icons.arrow_back,
+              color: kTextColor,
+              size: 20,
+            ),
+          ),
         ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            'Jamiat Market Place',
+            style: kSectionTitleSB,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        PopupMenuButton<String>(
+          padding: EdgeInsets.zero,
+          offset: const Offset(0, 44),
+          color: kWhite,
+          elevation: 8,
+          shadowColor: kBlack.withValues(alpha: 0.18),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          icon: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: kWhite,
+              border: Border.all(color: kStrokeColor, width: 1.25),
+            ),
+            child: const Icon(
+              Icons.more_vert,
+              color: kTextColor,
+              size: 20,
+            ),
+          ),
+          onSelected: (value) {
+            HapticHelper.impact(HapticImpact.light);
+            if (value == 'enquiries') {
+              _openMenuRoute('MyEnquiries');
+            } else {
+              _openMenuRoute('SavedProducts');
+            }
+          },
+          itemBuilder: (_) => [
+            PopupMenuItem<String>(
+              value: 'enquiries',
+              height: 48,
+              child: Text(
+                'My Enquiries',
+                style: kStyle(
+                  kMedium,
+                  15,
+                  color: const Color(0xFF888888),
+                ),
+              ),
+            ),
+            PopupMenuItem<String>(
+              enabled: false,
+              height: 1,
+              padding: EdgeInsets.zero,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: kBorder.withValues(alpha: 0.9),
+                ),
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'saved',
+              height: 48,
+              child: Text(
+                'Saved',
+                style: kStyle(
+                  kMedium,
+                  15,
+                  color: const Color(0xFF888888),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProductGrid(List<ProductModel> products) {
+    if (products.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        children: [
+          const SizedBox(height: 60),
+          Center(child: Text('No products found', style: kEmptyStateM)),
+        ],
       );
     }
 
     return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      padding: const EdgeInsets.only(bottom: 24),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: kMarketCardAspectRatio,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
-      itemCount: filteredProducts.length,
+      itemCount: products.length,
       itemBuilder: (context, index) {
-        final product = filteredProducts[index];
+        final product = products[index];
         return MarketProductCard(
           product: product,
           showBookmark: true,
-          isBookmarked: MarketSavedProducts.isSaved(product.id),
-          onBookmark: () => _toggleBookmark(product.id),
+          isBookmarked: _isSaved(product),
+          onBookmark: () => _toggleBookmark(product),
           onViewDetails: () => _openDetails(product.id),
         );
       },
@@ -163,87 +287,47 @@ class _MarketPageState extends State<MarketPage> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredProducts = _filteredProducts();
+    ref.listen(productsListProvider, (previous, next) {
+      if (_bookmarkLoadingId != null) return;
+      next.whenData((_) {
+        if (mounted) _clearBookmarkOverrides();
+      });
+    });
+
+    final productsAsync = ref.watch(productsListProvider);
 
     return Scaffold(
       backgroundColor: kWhite,
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: Padding(
           padding: const EdgeInsets.fromLTRB(
             kScreenPaddingH,
             8,
             kScreenPaddingH,
-            24,
+            0,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      if (Navigator.canPop(context)) {
-                        Navigator.pop(context);
-                      }
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: kWhite,
-                        border: Border.all(color: kStrokeColor, width: 1.25),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: kTextColor,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Jamiat Market Place',
-                      style: kSectionTitleSB,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      HapticHelper.impact(HapticImpact.light);
-                      NavigationService().pushNamed('SavedProducts');
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: kWhite,
-                        border: Border.all(color: kStrokeColor, width: 1.25),
-                      ),
-                      child: Center(
-                        child: SvgPicture.asset(
-                          'assets/svg/market_icon.svg',
-                          width: 22,
-                          height: 22,
-                          colorFilter: const ColorFilter.mode(
-                            kTextColor,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              _buildHeader(),
               const SizedBox(height: 24),
               _buildSearchField(),
-              const SizedBox(height: 16),
-              _buildCategoryList(),
               const SizedBox(height: 32),
-              _buildProductGrid(filteredProducts),
+              Expanded(
+                child: RefreshIndicator(
+                  color: kPrimaryColor,
+                  onRefresh: () async {
+                    ref.invalidate(productsListProvider);
+                    await ref.read(productsListProvider.future);
+                  },
+                  child: AsyncContent(
+                    asyncValue: productsAsync,
+                    onRetry: () => ref.invalidate(productsListProvider),
+                    builder: (page) =>
+                        _buildProductGrid(_filter(page.items)),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

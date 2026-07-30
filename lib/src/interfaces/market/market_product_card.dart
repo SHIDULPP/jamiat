@@ -2,11 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
+import 'package:jamiat/src/data/models/product_model.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/interfaces/market/market_product_data.dart';
 
 /// Figma Offer Card surface (636:3103) — `#F6F6F6`, r14, no border.
 const Color _kMarketCardSurface = Color(0xFFF6F6F6);
+
+Widget productCoverImage(String? url, {BoxFit fit = BoxFit.cover}) {
+  if (url != null && url.startsWith('http')) {
+    return Image.network(
+      url,
+      fit: fit,
+      width: double.infinity,
+      height: double.infinity,
+      errorBuilder: (_, _, _) => Container(
+        color: kScreenBg,
+        child: const Icon(Icons.image_outlined, color: kMutedText, size: 40),
+      ),
+    );
+  }
+  return Container(
+    color: kScreenBg,
+    child: const Icon(Icons.image_outlined, color: kMutedText, size: 40),
+  );
+}
 
 class MarketProductCard extends StatelessWidget {
   const MarketProductCard({
@@ -18,7 +38,7 @@ class MarketProductCard extends StatelessWidget {
     this.onBookmark,
   });
 
-  final MarketProduct product;
+  final ProductModel product;
   final VoidCallback onViewDetails;
   final bool showBookmark;
   final bool isBookmarked;
@@ -41,7 +61,7 @@ class MarketProductCard extends StatelessWidget {
               SizedBox(
                 height: kMarketImageHeight,
                 child: _ProductImage(
-                  imagePath: product.imagePath,
+                  imageUrl: product.image,
                   showBookmark: showBookmark,
                   isBookmarked: isBookmarked,
                   onBookmark: onBookmark,
@@ -61,7 +81,7 @@ class MarketProductCard extends StatelessWidget {
                             children: [
                               Expanded(
                                 child: Text(
-                                  product.title,
+                                  product.name,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: kCaption12R.copyWith(
@@ -118,13 +138,13 @@ class MarketProductCard extends StatelessWidget {
 
 class _ProductImage extends StatelessWidget {
   const _ProductImage({
-    required this.imagePath,
+    required this.imageUrl,
     required this.showBookmark,
     required this.isBookmarked,
     this.onBookmark,
   });
 
-  final String imagePath;
+  final String? imageUrl;
   final bool showBookmark;
   final bool isBookmarked;
   final VoidCallback? onBookmark;
@@ -134,12 +154,7 @@ class _ProductImage extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Image.asset(
-          imagePath,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-        ),
+        productCoverImage(imageUrl),
         if (showBookmark && onBookmark != null)
           Positioned(
             top: 8,
