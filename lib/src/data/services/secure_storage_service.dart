@@ -36,13 +36,9 @@ class SecureStorageService {
 
   Future<String?> getFcmToken() => _storage.read(key: _fcmTokenKey);
 
+  /// Wipes every key in secure storage so the next login starts clean.
   Future<void> clearSession() async {
-    await Future.wait([
-      _storage.delete(key: _authTokenKey),
-      _storage.delete(key: _userIdKey),
-      _storage.delete(key: _phoneKey),
-      _storage.delete(key: _fcmTokenKey),
-    ]);
+    await _storage.deleteAll();
   }
 }
 

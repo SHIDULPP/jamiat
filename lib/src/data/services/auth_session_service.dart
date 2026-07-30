@@ -2,6 +2,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jamiat/src/data/apis/user_api.dart';
 import 'package:jamiat/src/data/models/api_response.dart';
 import 'package:jamiat/src/data/models/user_model.dart';
+import 'package:jamiat/src/data/providers/autopay_provider.dart';
+import 'package:jamiat/src/data/providers/campaign_provider.dart';
+import 'package:jamiat/src/data/providers/donation_provider.dart';
+import 'package:jamiat/src/data/providers/empowerment_provider.dart';
+import 'package:jamiat/src/data/providers/enquiry_provider.dart';
+import 'package:jamiat/src/data/providers/event_provider.dart';
+import 'package:jamiat/src/data/providers/home_provider.dart';
+import 'package:jamiat/src/data/providers/news_provider.dart';
+import 'package:jamiat/src/data/providers/notification_provider.dart';
+import 'package:jamiat/src/data/providers/product_provider.dart';
+import 'package:jamiat/src/data/providers/welfare_provider.dart';
 import 'package:jamiat/src/data/services/secure_storage_service.dart';
 import 'package:jamiat/src/data/utils/auth_navigation.dart';
 
@@ -47,6 +58,32 @@ class AuthSessionService {
 
     return routeForUser(user);
   }
+}
+
+/// Drops cached user-scoped providers so the next login cannot see old data.
+void invalidateSessionCaches(WidgetRef ref) {
+  ref.invalidate(userProfileProvider);
+  ref.invalidate(donationHistoryProvider);
+  ref.invalidate(homeStatsProvider);
+  ref.invalidate(featuredCampaignsProvider);
+  ref.invalidate(campaignListProvider(1));
+  ref.invalidate(campaignMobileStatsProvider);
+  ref.invalidate(savedCampaignsProvider);
+  ref.invalidate(newsListProvider);
+  ref.invalidate(welfareListProvider);
+  ref.invalidate(productsListProvider);
+  ref.invalidate(savedProductsProvider);
+  ref.invalidate(myProductEnquiriesProvider);
+  ref.invalidate(eventsListProvider);
+  ref.invalidate(savedEventsProvider);
+  ref.invalidate(myTicketsProvider('upcoming'));
+  ref.invalidate(myTicketsProvider('past'));
+  ref.invalidate(myAutopaysProvider);
+  ref.invalidate(notificationsProvider);
+  ref.invalidate(receivedEnquiriesProvider);
+  ref.invalidate(empowermentProgramsProvider('all'));
+  ref.invalidate(empowermentProgramsProvider('applied'));
+  ref.invalidate(empowermentProgramsProvider('saved'));
 }
 
 final authSessionServiceProvider = Provider<AuthSessionService>((ref) {
