@@ -9,10 +9,12 @@ class AuthApi {
 
   Future<ApiResponse<Map<String, dynamic>>> requestOtp({
     required String phone,
+    required String otpVia,
     String? fcm,
   }) {
     return _api.post('/auth/login', {
       'phone': phone,
+      'otp_via': otpVia,
       if (fcm != null && fcm.isNotEmpty) 'fcm': fcm,
     });
   }

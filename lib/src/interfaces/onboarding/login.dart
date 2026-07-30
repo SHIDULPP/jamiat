@@ -15,6 +15,8 @@ import 'package:jamiat/src/data/utils/auth_navigation.dart';
 import 'package:jamiat/src/interfaces/components/primarybutton.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
+enum _OtpChannel { sms, whatsapp }
+
 // ================= MAIN LOGIN SCREEN =================
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -31,6 +33,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _showPhoneError = false;
   String _fullPhoneNumber = '';
   String _dialCode = '91';
+  _OtpChannel _otpChannel = _OtpChannel.sms;
+
+  bool get _isIndianNumber => _dialCode == '91';
+
+  String get _otpVia => _isIndianNumber && _otpChannel == _OtpChannel.whatsapp
+      ? 'whatsapp'
+      : 'sms';
 
   @override
   void initState() {
@@ -81,9 +90,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       debugPrint('Error getting FCM token: $e');
     }
 
+    final otpVia = _otpVia;
     final response = await ref
         .read(authApiProvider)
-        .requestOtp(phone: phone, fcm: fcmToken);
+        .requestOtp(phone: phone, otpVia: otpVia, fcm: fcmToken);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -101,6 +111,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           phoneNumber: digits,
           dialCode: _dialCode,
           fullPhoneNumber: phone,
+          otpVia: otpVia,
         ),
       ),
     );
@@ -119,9 +130,82 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
+  Widget _otpChannelOption({
+    required _OtpChannel channel,
+    required String label,
+    required String iconAsset,
+    required bool isSelected,
+  }) {
+    final color = isSelected ? kPrimaryColor : kSecondaryTextColor;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() => _otpChannel = channel);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          height: 48,
+          decoration: BoxDecoration(
+            color: isSelected ? kPrimaryColor.withValues(alpha: 0.08) : kWhite,
+            borderRadius: BorderRadius.circular(kCardRadiusMd),
+            border: Border.all(
+              color: isSelected ? kPrimaryColor : kCardBorder,
+              width: isSelected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SvgPicture.asset(
+                iconAsset,
+                width: 18,
+                height: 18,
+                colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: kCaption12M.copyWith(
+                  color: color,
+                  fontWeight: isSelected ? kSemiBold : kMedium,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOtpChannelPicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Receive OTP via', style: kLabel15M),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            _otpChannelOption(
+              channel: _OtpChannel.sms,
+              label: 'SMS',
+              iconAsset: 'assets/svg/otp_sms.svg',
+              isSelected: _otpChannel == _OtpChannel.sms,
+            ),
+            const SizedBox(width: 12),
+            _otpChannelOption(
+              channel: _OtpChannel.whatsapp,
+              label: 'WhatsApp',
+              iconAsset: 'assets/svg/otp_whatsapp.svg',
+              isSelected: _otpChannel == _OtpChannel.whatsapp,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Figma OTP 636:654 — side inset 24 (16+8) · back 40 · gap 32 · icon 80 · title 23 SB
     return Scaffold(
       backgroundColor: kWhite,
       body: SafeArea(
@@ -168,11 +252,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Enter Phone Number',
+                'Verify your phone number',
                 style: kSubHeadingSB.copyWith(height: 1.4),
               ),
               Text(
-                'We’ll send a OTP to verify your number',
+                "Enter the phone number you'd like to verify.",
                 style: kCaption12R.copyWith(
                   color: kSecondaryTextColor,
                   height: 1.36,
@@ -224,13 +308,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   focusedErrorBorder: _phoneBorder(color: kRed, width: 2),
                 ),
                 onCountryChanged: (value) {
-                  _dialCode = value.dialCode;
+                  setState(() {
+                    _dialCode = value.dialCode;
+                    if (_dialCode != '91') {
+                      _otpChannel = _OtpChannel.sms;
+                    }
+                  });
                 },
                 onChanged: (phone) {
-                  _fullPhoneNumber = phone.completeNumber;
-                  _dialCode = phone.countryCode.replaceAll('+', '');
+                  setState(() {
+                    _fullPhoneNumber = phone.completeNumber;
+                    _dialCode = phone.countryCode.replaceAll('+', '');
+                    if (_dialCode != '91') {
+                      _otpChannel = _OtpChannel.sms;
+                    }
+                  });
                 },
               ),
+              if (_isIndianNumber) ...[
+                const SizedBox(height: 16),
+                _buildOtpChannelPicker(),
+              ],
               const SizedBox(height: 24),
               primaryButton(
                 label: 'Sent OTP',
@@ -251,11 +349,13 @@ class OTPScreen extends ConsumerStatefulWidget {
   final String phoneNumber;
   final String dialCode;
   final String fullPhoneNumber;
+  final String otpVia;
 
   const OTPScreen({
     required this.phoneNumber,
     this.dialCode = '91',
     this.fullPhoneNumber = '',
+    this.otpVia = 'sms',
     super.key,
   });
 
@@ -307,7 +407,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
 
     final response = await ref
         .read(authApiProvider)
-        .requestOtp(phone: widget.fullPhoneNumber);
+        .requestOtp(phone: widget.fullPhoneNumber, otpVia: widget.otpVia);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -376,6 +476,8 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final channelLabel = widget.otpVia == 'whatsapp' ? 'WhatsApp' : 'SMS';
+
     return Scaffold(
       backgroundColor: kWhite,
       body: SafeArea(
@@ -418,11 +520,11 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Enter Phone Number',
+                'Verify your phone number',
                 style: kSubHeadingSB.copyWith(height: 1.4),
               ),
               Text(
-                'We’ll send a OTP to verify your number',
+                "Enter the phone number you'd like to verify.",
                 style: kCaption12R.copyWith(
                   color: kSecondaryTextColor,
                   height: 1.36,
@@ -488,7 +590,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                 child: Column(
                   children: [
                     Text(
-                      "Didn't get SMS?",
+                      "Didn't get $channelLabel?",
                       style: kCaption12R.copyWith(color: kSecondaryTextColor),
                     ),
                     const SizedBox(height: 6),
