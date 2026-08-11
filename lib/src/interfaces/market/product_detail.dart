@@ -9,6 +9,7 @@ import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
 import 'package:jamiat/src/interfaces/components/primarybutton.dart';
 import 'package:jamiat/src/interfaces/market/market_product_card.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   const ProductDetailScreen({super.key, required this.productId});
@@ -174,10 +175,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       GestureDetector(
                         onTap: () {
                           HapticHelper.impact(HapticImpact.light);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Share coming soon'),
-                              behavior: SnackBarBehavior.floating,
+                          final amount = product.amount;
+                          final price = amount % 1 == 0
+                              ? amount.toInt().toString()
+                              : amount.toString();
+                          SharePlus.instance.share(
+                            ShareParams(
+                              text:
+                                  '${product.name}\n₹$price\n${product.description}',
+                              subject: product.name,
                             ),
                           );
                         },

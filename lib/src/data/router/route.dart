@@ -8,7 +8,6 @@ import 'package:jamiat/src/interfaces/campaign/campaign_list.dart';
 import 'package:jamiat/src/interfaces/campaign/campaign_details.dart';
 import 'package:jamiat/src/interfaces/campaign/general_campaigns_list.dart';
 import 'package:jamiat/src/interfaces/campaign/donation_success.dart';
-import 'package:jamiat/src/interfaces/campaign/donations_view.dart';
 import 'package:jamiat/src/interfaces/campaign/autopay_view.dart';
 import 'package:jamiat/src/interfaces/campaign/autopay_details.dart';
 import 'package:jamiat/src/interfaces/campaign/donation_history.dart';
@@ -214,7 +213,8 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
       break;
 
     case 'DonationsView':
-      page = const DonationsViewScreen();
+      // Legacy route — real donation data lives in DonationHistory.
+      page = const DonationHistoryScreen();
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);
       break;
@@ -270,7 +270,6 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
       page = EventDetailsScreen(
         eventId: args?['eventId'] as String?,
         title: args?['title'] as String? ?? 'Event Details',
-        category: args?['category'] as String? ?? 'Conference',
         date: args?['date'] as String? ?? '07 Jun, 2026 • 10:45 am - 3:30pm',
         location: args?['location'] as String? ?? 'Ernakulam Town Hall',
         image:

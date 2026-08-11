@@ -16,7 +16,6 @@ import 'package:jamiat/src/interfaces/events/event_card.dart';
 class EventDetailsScreen extends ConsumerStatefulWidget {
   final String? eventId;
   final String title;
-  final String category;
   final String date;
   final String location;
   final String image;
@@ -26,7 +25,6 @@ class EventDetailsScreen extends ConsumerStatefulWidget {
     super.key,
     this.eventId,
     this.title = 'Event Details',
-    this.category = 'Conference',
     this.date = '',
     this.location = '',
     this.image = 'assets/jpgs/campaign_education.jpg',
@@ -219,21 +217,6 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
     );
   }
 
-  Widget _categoryChip(String label) {
-    if (label.trim().isEmpty) return const SizedBox.shrink();
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: const Color(0xFFD5D5D5).withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        label,
-        style: kCaption10M.copyWith(color: kTextColor),
-      ),
-    );
-  }
-
   Widget _organizersRow(EventModel event) {
     final named = event.coordinators.where((p) => p.name.isNotEmpty).toList();
     final organizer = named.isNotEmpty ? named.first : null;
@@ -294,8 +277,6 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
               child: eventCoverImage(event.coverImage),
             ),
           ),
-          const SizedBox(height: 16),
-          _categoryChip(event.type),
           const SizedBox(height: 16),
           Text(
             event.title,
@@ -358,8 +339,6 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
               child: eventCoverImage(widget.image),
             ),
           ),
-          const SizedBox(height: 16),
-          _categoryChip(widget.category),
           const SizedBox(height: 16),
           Text(widget.title, style: kLabel19SB),
           const SizedBox(height: 16),

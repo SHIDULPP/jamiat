@@ -216,14 +216,17 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
     required String? displayImage,
     required num displayRaised,
     required num displayGoal,
-    required int displayDaysLeft,
+    required int? displayDaysLeft,
     DateTime? targetDate,
   }) {
-    final progress = displayGoal <= 0
-        ? 0.0
-        : (displayRaised / displayGoal).clamp(0.0, 1.0);
+    final hasTarget = displayGoal > 0;
+    final progress = hasTarget
+        ? (displayRaised / displayGoal).clamp(0.0, 1.0)
+        : 0.0;
     final percent = (progress * 100).round();
     final categoryLabel = CategoryMapper.toUi(displayCategory);
+    final hasDaysRemaining = displayDaysLeft != null && displayDaysLeft > 0;
+    final isEnded = displayDaysLeft != null && displayDaysLeft <= 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -254,55 +257,57 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
           displayTitle,
           style: kSectionTitle19SB.copyWith(height: 1.25),
         ),
-        const SizedBox(height: 14),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(1),
-          child: LinearProgressIndicator(
-            value: progress.toDouble(),
-            minHeight: 4,
-            backgroundColor: kGreyLight.withValues(alpha: 0.45),
-            color: kSecondaryColor,
+        if (hasTarget) ...[
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(1),
+            child: LinearProgressIndicator(
+              value: progress.toDouble(),
+              minHeight: 4,
+              backgroundColor: kGreyLight.withValues(alpha: 0.45),
+              color: kSecondaryColor,
+            ),
           ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      formatRupee(displayRaised),
+                      style: kBodyTitleSB,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'of ${formatRupee(displayGoal)}',
+                      style: kCaption12R.copyWith(color: kSecondaryTextColor),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    formatRupee(displayRaised),
-                    style: kBodyTitleSB,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'of ${formatRupee(displayGoal)}',
-                    style: kCaption12R.copyWith(color: kSecondaryTextColor),
-                  ),
+                  Text('$percent%', style: kBodyTitleSB),
+                  if (hasDaysRemaining || isEnded) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      isEnded ? 'Ended' : '$displayDaysLeft days left',
+                      style: kCaption12R.copyWith(
+                        color: hasDaysRemaining && displayDaysLeft <= 7
+                            ? kDaysLeftWarning
+                            : kSecondaryTextColor,
+                      ),
+                    ),
+                  ],
                 ],
               ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text('$percent%', style: kBodyTitleSB),
-                const SizedBox(height: 2),
-                Text(
-                  displayDaysLeft <= 0
-                      ? 'Ended'
-                      : '$displayDaysLeft days left',
-                  style: kCaption12R.copyWith(
-                    color: displayDaysLeft <= 7
-                        ? kDaysLeftWarning
-                        : kSecondaryTextColor,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
         if (targetDate != null) ...[
           const SizedBox(height: 14),
           Text.rich(
@@ -585,7 +590,7 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
                           displayImage: campaign.coverImage,
                           displayRaised: campaign.collectedAmount,
                           displayGoal: campaign.targetAmount,
-                          displayDaysLeft: campaign.remainingDays ?? 0,
+                          displayDaysLeft: campaign.remainingDays,
                           targetDate: campaign.targetDate,
                         ),
                       ),
@@ -603,7 +608,7 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
                               displayImage: widget.image,
                               displayRaised: widget.raised ?? 0,
                               displayGoal: widget.goal ?? 0,
-                              displayDaysLeft: widget.daysLeft ?? 0,
+                              displayDaysLeft: widget.daysLeft,
                             )
                           : _buildCategoryMode(context),
                     ),

@@ -541,14 +541,20 @@ class _CampaignCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = campaign.targetAmount <= 0
-        ? 0.0
-        : (campaign.collectedAmount / campaign.targetAmount).clamp(0.0, 1.0);
-    final percent = campaign.progressPercent > 0
-        ? campaign.progressPercent
-        : (progress * 100).round();
-    final daysLeft = campaign.remainingDays ?? 0;
+    final hasTarget = campaign.hasTargetAmount;
+    final progress = hasTarget
+        ? (campaign.collectedAmount / campaign.targetAmount).clamp(0.0, 1.0)
+        : 0.0;
+    final percent = hasTarget
+        ? (campaign.progressPercent > 0
+              ? campaign.progressPercent
+              : (progress * 100).round())
+        : 0;
     final categoryLabel = CategoryMapper.toUi(campaign.category);
+    final daysColor =
+        campaign.hasDaysRemaining && campaign.remainingDays! <= 7
+            ? kDaysLeftWarning
+            : kMutedText;
 
     return Container(
       decoration: BoxDecoration(
@@ -632,56 +638,63 @@ class _CampaignCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 14),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(1),
-                      child: LinearProgressIndicator(
-                        value: progress.toDouble(),
-                        minHeight: 4,
-                        backgroundColor: kGreyLight.withValues(alpha: 0.4),
-                        color: kSecondaryColor,
+                    if (hasTarget) ...[
+                      const SizedBox(height: 14),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(1),
+                        child: LinearProgressIndicator(
+                          value: progress.toDouble(),
+                          minHeight: 4,
+                          backgroundColor: kGreyLight.withValues(alpha: 0.4),
+                          color: kSecondaryColor,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  formatRupee(campaign.collectedAmount),
+                                  style: kCaption12SB.copyWith(
+                                    color: kTextColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'of ${formatRupee(campaign.targetAmount)}',
+                                  style: kCaption12R.copyWith(
+                                    color: kSecondaryTextColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(
-                                formatRupee(campaign.collectedAmount),
+                                '$percent%',
                                 style: kCaption12SB.copyWith(color: kTextColor),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'of ${formatRupee(campaign.targetAmount)}',
-                                style: kCaption12R.copyWith(
-                                  color: kSecondaryTextColor,
+                              if (campaign.hasDaysRemaining ||
+                                  campaign.isEndedByTargetDate) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  campaign.isEndedByTargetDate
+                                      ? 'Ended'
+                                      : '${campaign.remainingDays} days left',
+                                  style: kCaption12M.copyWith(color: daysColor),
                                 ),
-                              ),
+                              ],
                             ],
                           ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '$percent%',
-                              style: kCaption12SB.copyWith(color: kTextColor),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '$daysLeft days left',
-                              style: kCaption12M.copyWith(
-                                color: kDaysLeftWarning,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 14),
                     primaryButton(
                       label: 'Donate Now',

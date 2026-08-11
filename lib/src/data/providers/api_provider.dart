@@ -28,12 +28,14 @@ class ApiProvider {
   Future<ApiResponse<Map<String, dynamic>>> get(
     String endpoint, {
     bool requireAuth = false,
+    bool attachAuthIfAvailable = false,
     Map<String, String>? queryParams,
   }) {
     return _send(
       'GET',
       endpoint,
       requireAuth: requireAuth,
+      attachAuthIfAvailable: attachAuthIfAvailable,
       queryParams: queryParams,
     );
   }
@@ -42,23 +44,43 @@ class ApiProvider {
     String endpoint,
     Map<String, dynamic> body, {
     bool requireAuth = false,
+    bool attachAuthIfAvailable = false,
   }) {
-    return _send('POST', endpoint, body: body, requireAuth: requireAuth);
+    return _send(
+      'POST',
+      endpoint,
+      body: body,
+      requireAuth: requireAuth,
+      attachAuthIfAvailable: attachAuthIfAvailable,
+    );
   }
 
   Future<ApiResponse<Map<String, dynamic>>> patch(
     String endpoint,
     Map<String, dynamic> body, {
     bool requireAuth = false,
+    bool attachAuthIfAvailable = false,
   }) {
-    return _send('PATCH', endpoint, body: body, requireAuth: requireAuth);
+    return _send(
+      'PATCH',
+      endpoint,
+      body: body,
+      requireAuth: requireAuth,
+      attachAuthIfAvailable: attachAuthIfAvailable,
+    );
   }
 
   Future<ApiResponse<Map<String, dynamic>>> delete(
     String endpoint, {
     bool requireAuth = false,
+    bool attachAuthIfAvailable = false,
   }) {
-    return _send('DELETE', endpoint, requireAuth: requireAuth);
+    return _send(
+      'DELETE',
+      endpoint,
+      requireAuth: requireAuth,
+      attachAuthIfAvailable: attachAuthIfAvailable,
+    );
   }
 
   Future<ApiResponse<Map<String, dynamic>>> postMultipart({
@@ -156,6 +178,7 @@ class ApiProvider {
     String endpoint, {
     Map<String, dynamic>? body,
     required bool requireAuth,
+    bool attachAuthIfAvailable = false,
     Map<String, String>? queryParams,
   }) async {
     if (baseUrl.isEmpty) {
@@ -179,7 +202,10 @@ class ApiProvider {
     final stopwatch = Stopwatch()..start();
 
     try {
-      final headers = await _buildHeaders(requireAuth: requireAuth);
+      final headers = await _buildHeaders(
+        requireAuth: requireAuth,
+        attachAuthIfAvailable: attachAuthIfAvailable,
+      );
       final encodedBody = body == null ? null : jsonEncode(body);
 
       ApiLogger.request(
@@ -266,6 +292,7 @@ class ApiProvider {
 
   Future<Map<String, String>> _buildHeaders({
     required bool requireAuth,
+    bool attachAuthIfAvailable = false,
     bool includeJsonContentType = true,
   }) async {
     final headers = <String, String>{'Accept': 'application/json'};
@@ -284,6 +311,11 @@ class ApiProvider {
         throw StateError('Your session has expired. Please log in again.');
       }
       headers['Authorization'] = 'Bearer $token';
+    } else if (attachAuthIfAvailable) {
+      final token = await secureStorage.getAuthToken();
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
     }
 
     return headers;

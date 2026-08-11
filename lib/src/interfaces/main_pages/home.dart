@@ -657,7 +657,7 @@ class _HomeHeader extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'As- salamu alaykum',
+                'As-salamu alaykum',
                 style: kBodyTitleR.copyWith(
                   color: kSecondaryTextColor,
                   height: 1.2,
@@ -976,9 +976,10 @@ class _CampaignCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = campaign.targetAmount <= 0
-        ? 0.0
-        : (campaign.collectedAmount / campaign.targetAmount).clamp(0.0, 1.0);
+    final hasTarget = campaign.hasTargetAmount;
+    final progress = hasTarget
+        ? (campaign.collectedAmount / campaign.targetAmount).clamp(0.0, 1.0)
+        : 0.0;
     final imageUrl = campaign.coverImage;
 
     return GestureDetector(
@@ -1046,46 +1047,48 @@ class _CampaignCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(1),
-                      child: LinearProgressIndicator(
-                        value: progress.toDouble(),
-                        minHeight: 4,
-                        backgroundColor: const Color(0x66D9D9D9),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          kPrimaryColor,
+                    if (hasTarget) ...[
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(1),
+                        child: LinearProgressIndicator(
+                          value: progress.toDouble(),
+                          minHeight: 4,
+                          backgroundColor: const Color(0x66D9D9D9),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            kPrimaryColor,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: formatRupee(campaign.collectedAmount),
-                            style: kCaption12SB.copyWith(
-                              color: kWhite,
-                              height: 1.2,
+                      const SizedBox(height: 2),
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: formatRupee(campaign.collectedAmount),
+                              style: kCaption12SB.copyWith(
+                                color: kWhite,
+                                height: 1.2,
+                              ),
                             ),
-                          ),
-                          TextSpan(
-                            text: ' / ',
-                            style: kCaption12M.copyWith(
-                              color: kWhite,
-                              height: 1.2,
+                            TextSpan(
+                              text: ' / ',
+                              style: kCaption12M.copyWith(
+                                color: kWhite,
+                                height: 1.2,
+                              ),
                             ),
-                          ),
-                          TextSpan(
-                            text: 'of ${formatRupee(campaign.targetAmount)}',
-                            style: kCaption12R.copyWith(
-                              color: kWhite,
-                              height: 1.2,
+                            TextSpan(
+                              text: 'of ${formatRupee(campaign.targetAmount)}',
+                              style: kCaption12R.copyWith(
+                                color: kWhite,
+                                height: 1.2,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

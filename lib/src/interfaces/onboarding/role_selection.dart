@@ -134,7 +134,7 @@ class RoleSelectionScreen extends ConsumerWidget {
                     _RoleCard(
                       scale: scale,
                       iconAsset: 'assets/svg/figma/users_group.svg',
-                      title: "I'm a Jamaith Member",
+                      title: "I'm a Jamiat Member",
                       description:
                           'Use this if you have a registered membership with our community.',
                       onTap: () {

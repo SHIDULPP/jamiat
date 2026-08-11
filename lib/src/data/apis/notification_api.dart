@@ -3,11 +3,13 @@ import 'package:jamiat/src/data/models/api_response.dart';
 import 'package:jamiat/src/data/models/notification_model.dart';
 import 'package:jamiat/src/data/models/paginated_response.dart';
 import 'package:jamiat/src/data/providers/api_provider.dart';
+import 'package:jamiat/src/data/services/secure_storage_service.dart';
 
 class NotificationApi {
-  NotificationApi(this._api);
+  NotificationApi(this._api, this._secureStorage);
 
   final ApiProvider _api;
+  final SecureStorageService _secureStorage;
 
   Future<ApiResponse<PaginatedResponse<NotificationModel>>> getForUser({
     int pageNo = 1,
@@ -26,9 +28,12 @@ class NotificationApi {
       );
     }
 
-    final items = nestedListData(
-      response.data,
-    ).map(NotificationModel.fromJson).toList();
+    final userId = await _secureStorage.getUserId();
+    final items = nestedListData(response.data)
+        .map(
+          (json) => NotificationModel.fromJson(json, currentUserId: userId),
+        )
+        .toList();
 
     return ApiResponse.success(
       PaginatedResponse(
@@ -58,5 +63,8 @@ class NotificationApi {
 }
 
 final notificationApiProvider = Provider<NotificationApi>(
-  (ref) => NotificationApi(ref.watch(apiProviderProvider)),
+  (ref) => NotificationApi(
+    ref.watch(apiProviderProvider),
+    ref.watch(secureStorageServiceProvider),
+  ),
 );

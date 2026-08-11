@@ -200,7 +200,7 @@ class DonationSuccessScreen extends StatelessWidget {
                     if (isAutopay) {
                       NavigationService().pushNamed('AutopayView');
                     } else {
-                      NavigationService().pushNamed('DonationsView');
+                      NavigationService().pushNamed('DonationHistory');
                     }
                   },
                   style: ElevatedButton.styleFrom(

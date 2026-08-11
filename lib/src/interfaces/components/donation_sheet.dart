@@ -302,7 +302,9 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
 
   Future<void> _verifyAutopay(PaymentSuccessResponse response) async {
     final autopayId = _pendingAutopayId!;
-    final subscriptionId = response.orderId ?? _pendingSubscriptionId ?? '';
+    // Prefer the subscription id from create-autopay; Razorpay's orderId
+    // field is for one-time orders and can break HMAC verification.
+    final subscriptionId = _pendingSubscriptionId ?? response.orderId ?? '';
     final verify = await ref
         .read(autopayApiProvider)
         .verifyAutopay(
@@ -416,27 +418,27 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
                 ),
               ),
               const SizedBox(height: 20),
-              if (hasTarget) ...[
-                if (categoryLabel != null && categoryLabel.isNotEmpty) ...[
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: kChipGreyBg,
-                        borderRadius: BorderRadius.circular(kCardRadiusXs),
-                      ),
-                      child: Text(
-                        categoryLabel,
-                        style: kCaption10M.copyWith(color: kTextColor),
-                      ),
+              if (categoryLabel != null && categoryLabel.isNotEmpty) ...[
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: kChipGreyBg,
+                      borderRadius: BorderRadius.circular(kCardRadiusXs),
+                    ),
+                    child: Text(
+                      categoryLabel,
+                      style: kCaption10M.copyWith(color: kTextColor),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                ],
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (hasTarget) ...[
                 Text(
                   widget.isAutopay ? 'Set up Autopay' : title,
                   style: kSectionTitle19SB,
@@ -467,6 +469,11 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
                       ),
                     ],
                   ),
+                ),
+              ] else if (campaignId != null && campaignId.isNotEmpty) ...[
+                Text(
+                  widget.isAutopay ? 'Set up Autopay' : title,
+                  style: kSectionTitle19SB,
                 ),
               ] else ...[
                 Row(

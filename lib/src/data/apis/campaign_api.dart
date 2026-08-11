@@ -18,6 +18,8 @@ class CampaignApi {
   }) async {
     final response = await _api.get(
       '/campaign/list',
+      // Soft-auth: include JWT when present so backend can set is_bookmarked.
+      attachAuthIfAvailable: true,
       queryParams: {
         'page_no': '$pageNo',
         'limit': '$limit',

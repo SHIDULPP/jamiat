@@ -84,7 +84,12 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
       backgroundColor: kWhite,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(kScreenPaddingH, 8, kScreenPaddingH, 0),
+          padding: const EdgeInsets.fromLTRB(
+            kScreenPaddingH,
+            8,
+            kScreenPaddingH,
+            0,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -200,50 +205,32 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: kWhite,
-                      borderRadius: BorderRadius.circular(kCardRadiusMd),
-                      border: Border.all(color: kCardBorder),
-                    ),
-                    child: IconButton(
-                      onPressed: () {
-                        HapticHelper.impact(HapticImpact.light);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Filters coming soon'),
-                          ),
-                        );
-                      },
-                      icon: const Icon(
-                        Icons.tune_rounded,
-                        color: kTextColor,
-                        size: 22,
-                      ),
-                    ),
-                  ),
+                  // const SizedBox(width: 10),
+                  // Container(
+                  //   width: 56,
+                  //   height: 56,
+                  //   decoration: BoxDecoration(
+                  //     color: kWhite,
+                  //     borderRadius: BorderRadius.circular(kCardRadiusMd),
+                  //     border: Border.all(color: kCardBorder),
+                  //   ),
+                  //   child: IconButton(
+                  //     onPressed: () {
+                  //       HapticHelper.impact(HapticImpact.light);
+                  //       ScaffoldMessenger.of(context).showSnackBar(
+                  //         const SnackBar(
+                  //           content: Text('Filters coming soon'),
+                  //         ),
+                  //       );
+                  //     },
+                  //     icon: const Icon(
+                  //       Icons.tune_rounded,
+                  //       color: kTextColor,
+                  //       size: 22,
+                  //     ),
+                  //   ),
+                  // ),
                 ],
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: 30,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: const [
-                    _EventCategoryChip(label: 'All', selected: true),
-                    SizedBox(width: 12),
-                    _EventCategoryChip(label: 'Conference'),
-                    SizedBox(width: 12),
-                    _EventCategoryChip(label: 'Workshop'),
-                    SizedBox(width: 12),
-                    _EventCategoryChip(label: 'Youth'),
-                    SizedBox(width: 12),
-                    _EventCategoryChip(label: 'Job'),
-                  ],
-                ),
               ),
               const SizedBox(height: 24),
               GestureDetector(
@@ -364,35 +351,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _EventCategoryChip extends StatelessWidget {
-  const _EventCategoryChip({required this.label, this.selected = false});
-
-  final String label;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: selected ? kSecondaryColor : kSecondaryColor.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: selected ? kSecondaryColor : kSecondaryColor,
-          width: 1,
-        ),
-      ),
-      child: Text(
-        label,
-        style: kCaption12M.copyWith(
-          color: selected ? kTextColor : kSecondaryTextColor,
-          height: 1.2,
         ),
       ),
     );

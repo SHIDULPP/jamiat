@@ -469,7 +469,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Jamaith Member',
+                          'Jamiat Member',
                           style: kCaption10R.copyWith(
                             color: kTextColor,
                             height: 1.2,

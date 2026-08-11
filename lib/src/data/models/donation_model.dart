@@ -83,7 +83,7 @@ class DonationModel {
                   json['transaction_id'])
               ?.toString(),
       hasAutopay: _parseHasAutopay(json['autopay']),
-      receiptUrl: json['receipt_url']?.toString(),
+      receiptUrl: _nonEmptyString(json['receipt_url'] ?? json['receipt']),
     );
   }
 }

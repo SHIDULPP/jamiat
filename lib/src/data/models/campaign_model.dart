@@ -35,6 +35,15 @@ class CampaignModel {
   final String? status;
   final DateTime? targetDate;
 
+  /// Campaigns may be goal-based or open-ended.
+  bool get hasTargetAmount => targetAmount > 0;
+
+  /// Only show countdown when the API provided a remaining-days value (> 0).
+  bool get hasDaysRemaining => remainingDays != null && remainingDays! > 0;
+
+  /// True when a target date was set and the campaign window has ended.
+  bool get isEndedByTargetDate => remainingDays != null && remainingDays! <= 0;
+
   factory CampaignModel.fromJson(Map<String, dynamic> json) {
     return CampaignModel(
       id: (json['_id'] ?? json['id'] ?? '').toString(),

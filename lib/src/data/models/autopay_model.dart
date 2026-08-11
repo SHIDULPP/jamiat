@@ -36,6 +36,10 @@ class AutopayModel {
       campaignId = campaign.toString();
     }
 
+    campaignId ??= json['campaign_id']?.toString();
+    campaignName ??=
+        json['campaign_name']?.toString() ?? json['campaign_title']?.toString();
+
     return AutopayModel(
       id: (json['_id'] ?? json['id'] ?? '').toString(),
       amount: json['amount'] ?? 0,
