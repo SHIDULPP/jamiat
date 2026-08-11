@@ -60,8 +60,10 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
         );
         return;
       }
+      // Optimistic UI until providers refresh, then overrides are cleared.
       setState(() => _bookmarkOverrides[event.id] = !currentlyBookmarked);
       ref.invalidate(savedEventsProvider);
+      ref.invalidate(eventsListProvider);
       ref.invalidate(eventDetailProvider(event.id));
     } finally {
       if (mounted) setState(() => _bookmarkLoadingId = null);
@@ -77,6 +79,16 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Drop local overrides once the list reflects server bookmark state.
+    // Fixes green bookmark staying active after unsaving from Saved Events.
+    ref.listen(eventsListProvider, (previous, next) {
+      // Wait until a fresh (non-loading) response arrives so we don't clear
+      // optimistic overrides against stale cached list data mid-refresh.
+      if (!next.hasValue || next.isLoading) return;
+      if (!mounted || _bookmarkOverrides.isEmpty) return;
+      setState(() => _bookmarkOverrides.clear());
+    });
+
     final eventsAsync = ref.watch(eventsListProvider);
     final upcomingTicketsAsync = ref.watch(myTicketsProvider('upcoming'));
 
