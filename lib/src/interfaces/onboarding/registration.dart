@@ -651,6 +651,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                 initialDate: DateTime(now.year - 18),
                 firstDate: DateTime(1920),
                 lastDate: now,
+                locale: const Locale('en', 'IN'),
+                initialEntryMode: DatePickerEntryMode.calendarOnly,
                 builder: (context, child) {
                   return Theme(
                     data: Theme.of(context).copyWith(
