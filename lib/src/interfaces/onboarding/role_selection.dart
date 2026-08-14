@@ -33,8 +33,8 @@ class RoleSelectionScreen extends ConsumerWidget {
     // Scale layout to screen width from Figma's 402pt frame.
     final scale = (size.width / _figmaWidth).clamp(0.88, 1.12);
 
-    // Content starts at y=64 in Figma (below status-bar area).
-    final topPadding = (64 * scale - topInset).clamp(0.0, 64 * scale);
+    // Space on the top of the logo based on the height ratio (70 / 874).
+    final topPadding = size.height * (70 / 874);
 
     // Outer x=16 + inner pad 8 ⇒ 24pt side inset on 402pt frame.
     final sideInset = 24 * scale;
