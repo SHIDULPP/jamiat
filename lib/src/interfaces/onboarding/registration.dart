@@ -904,7 +904,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     final topInset = MediaQuery.paddingOf(context).top;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final scale = (size.width / _figmaWidth).clamp(0.88, 1.12);
-    final topPadding = (64 * scale - topInset).clamp(0.0, 64 * scale);
+    final topPadding = size.height * (70 / 874);
     final sideInset = 24 * scale;
 
     return Scaffold(
@@ -953,10 +953,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                           fontSize: kSize23,
                           height: 27 / kSize23,
                         )
-                      : kSubHeadingSB.copyWith(
-                          color: kTextColor,
-                          height: 1.4,
-                        ),
+                      : kSubHeadingSB.copyWith(color: kTextColor, height: 1.4),
                 ),
                 Text(
                   widget.isEditMode
