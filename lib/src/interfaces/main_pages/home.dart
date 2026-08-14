@@ -16,6 +16,7 @@ import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/data/utils/category_mapper.dart';
 import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
+import 'package:jamiat/src/interfaces/components/profile_avatar.dart';
 
 class _QuickAccessItem {
   final String label;
@@ -630,27 +631,7 @@ class _HomeHeader extends ConsumerWidget {
     // Figma Home header: avatar 48 · gap 8 · greeting 15/#aaa · name 19 SB · bell 40
     return Row(
       children: [
-        ClipOval(
-          child: image != null && image.startsWith('http')
-              ? Image.network(
-                  image,
-                  width: 48,
-                  height: 48,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Image.asset(
-                    'assets/pngs/dummy_avatar.png',
-                    width: 48,
-                    height: 48,
-                    fit: BoxFit.cover,
-                  ),
-                )
-              : Image.asset(
-                  'assets/pngs/dummy_avatar.png',
-                  width: 48,
-                  height: 48,
-                  fit: BoxFit.cover,
-                ),
-        ),
+        ProfileAvatar(imageUrl: image, size: 48),
         const SizedBox(width: 8),
         Expanded(
           child: Column(

@@ -9,6 +9,7 @@ import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/router/nav_router.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/get_fcm.dart';
+import 'package:jamiat/src/interfaces/components/profile_avatar.dart';
 import 'package:jamiat/src/interfaces/main_pages/donate.dart';
 import 'package:jamiat/src/interfaces/main_pages/home.dart';
 import 'package:jamiat/src/interfaces/main_pages/market.dart';
@@ -194,24 +195,14 @@ class _NavBarIcon extends StatelessWidget {
     }
 
     // Figma active Profile tab: 24×24 avatar with 2px primary border
-    final image = profileImageUrl;
-    Widget avatar;
-    if (image != null && image.startsWith('http')) {
-      avatar = ClipOval(
-        child: Image.network(
-          image,
-          width: _profileSize,
-          height: _profileSize,
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) =>
-              Icon(Icons.person_outline, size: 24, color: color),
-        ),
-      );
-    } else {
-      avatar = Icon(Icons.person_outline, size: 24, color: color);
-    }
+    final avatar = ProfileAvatar(
+      imageUrl: profileImageUrl,
+      size: _profileSize,
+      backgroundColor: Colors.transparent,
+      iconColor: color,
+    );
 
-    if (!isSelected) return SizedBox(width: 24, height: 24, child: avatar);
+    if (!isSelected) return avatar;
 
     return Container(
       width: 24,

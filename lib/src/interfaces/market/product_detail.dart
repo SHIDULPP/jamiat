@@ -8,6 +8,7 @@ import 'package:jamiat/src/data/providers/product_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
 import 'package:jamiat/src/interfaces/components/primarybutton.dart';
+import 'package:jamiat/src/interfaces/components/profile_avatar.dart';
 import 'package:jamiat/src/interfaces/market/market_product_card.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -101,18 +102,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   }
 
   Widget _sellerAvatar(ProductSeller? seller) {
-    final image = seller?.image;
-    if (image != null && image.startsWith('http')) {
-      return CircleAvatar(
-        radius: 20,
-        backgroundColor: kScreenBg,
-        backgroundImage: NetworkImage(image),
-      );
-    }
-    return CircleAvatar(
-      radius: 20,
+    return ProfileAvatar(
+      imageUrl: seller?.image,
+      size: 40,
       backgroundColor: kScreenBg,
-      backgroundImage: const AssetImage('assets/pngs/dummy_avatar.png'),
     );
   }
 

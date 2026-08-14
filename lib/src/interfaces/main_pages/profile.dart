@@ -19,6 +19,7 @@ import 'package:jamiat/src/data/services/profile_qr_share_service.dart';
 import 'package:jamiat/src/data/services/secure_storage_service.dart';
 import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
+import 'package:jamiat/src/interfaces/components/profile_avatar.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class _ProfileMenuItem {
@@ -236,25 +237,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   Widget _avatar(UserModel user) {
-    final image = user.image;
-    if (image != null && image.startsWith('http')) {
-      return CircleAvatar(
-        radius: 40,
-        backgroundColor: kScreenBg,
-        backgroundImage: NetworkImage(image),
-        onBackgroundImageError: (_, _) {},
-      );
-    }
-    return Container(
-      width: 80,
-      height: 80,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        image: DecorationImage(
-          image: AssetImage('assets/pngs/profile_avatar.png'),
-          fit: BoxFit.cover,
-        ),
-      ),
+    return ProfileAvatar(
+      imageUrl: user.image,
+      size: 80,
+      backgroundColor: kScreenBg,
     );
   }
 

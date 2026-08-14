@@ -17,6 +17,7 @@ import 'package:jamiat/src/data/providers/location_provider.dart';
 import 'package:jamiat/src/interfaces/components/loading_indicator.dart';
 import 'package:jamiat/src/interfaces/components/modal_sheet.dart';
 import 'package:jamiat/src/interfaces/components/primarybutton.dart';
+import 'package:jamiat/src/interfaces/components/profile_avatar.dart';
 import 'package:jamiat/src/interfaces/onboarding/role_selection.dart';
 
 class RegistrationScreen extends ConsumerStatefulWidget {
@@ -288,7 +289,18 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: _labelGap),
-      child: Text(text, style: kLabel15M.copyWith(height: 1.2)),
+      child: Text.rich(
+        TextSpan(
+          text: text,
+          style: kLabel15M.copyWith(height: 1.2),
+          children: [
+            TextSpan(
+              text: ' *',
+              style: kLabel15M.copyWith(color: kRed, height: 1.2),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -848,22 +860,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   }
 
   Widget _avatarWidget() {
-    final image = _imageUrl;
-    if (image != null && image.startsWith('http')) {
-      return CircleAvatar(
-        radius: _avatarSize / 2,
-        backgroundColor: kGreyLight,
-        backgroundImage: NetworkImage(image),
-        onBackgroundImageError: (_, _) {},
-      );
-    }
-    return Container(
-      width: _avatarSize,
-      height: _avatarSize,
-      decoration: const BoxDecoration(
-        color: kGreyLight,
-        shape: BoxShape.circle,
-      ),
+    return ProfileAvatar(
+      imageUrl: _imageUrl,
+      size: _avatarSize,
+      backgroundColor: kGreyLight,
     );
   }
 
