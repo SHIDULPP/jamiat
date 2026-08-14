@@ -44,7 +44,6 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   late TextEditingController _emailController;
   late TextEditingController _dobController;
   late TextEditingController _addressController;
-  late TextEditingController _areaController;
   late TextEditingController _pincodeController;
 
   late FocusNode _whatsappFocusNode;
@@ -59,6 +58,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   String? _existingRole;
 
   String? _selectedGender;
+  String? _selectedArea;
   String? _selectedCountryCode;
   String? _selectedCountryName;
   String? _selectedStateCode;
@@ -67,6 +67,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   String? _selectedDistrictName;
 
   final List<String> _genders = ['Male', 'Female', 'Other'];
+  final List<String> _areas = ['area1', 'area2', 'area3'];
 
   @override
   void initState() {
@@ -77,7 +78,6 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     _emailController = TextEditingController();
     _dobController = TextEditingController();
     _addressController = TextEditingController();
-    _areaController = TextEditingController();
     _pincodeController = TextEditingController();
 
     _whatsappFocusNode = FocusNode();
@@ -134,7 +134,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     _nameController.text = user.name ?? '';
     _emailController.text = user.email ?? '';
     _addressController.text = user.address ?? '';
-    _areaController.text = user.area ?? '';
+    _selectedArea = user.area;
+    _ensureInList(_areas, _selectedArea);
     _pincodeController.text = user.pincode?.toString() ?? '';
     _dobController.text = _formatDob(user.dob);
     _imageUrl = user.image;
@@ -249,7 +250,6 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     _emailController.dispose();
     _dobController.dispose();
     _addressController.dispose();
-    _areaController.dispose();
     _pincodeController.dispose();
     _whatsappFocusNode.dispose();
     super.dispose();
@@ -418,6 +418,26 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
           itemLabel: (value) => value,
           onItemSelected: (value) {
             setState(() => _selectedGender = value);
+          },
+        ).show();
+      },
+    );
+  }
+
+  Widget _buildAreaField() {
+    return _buildSelectField(
+      label: 'Area',
+      value: _selectedArea,
+      hintText: 'Select',
+      onTap: () {
+        ModalSheet<String>(
+          context: context,
+          title: 'Select area',
+          searchHint: 'Search area',
+          items: _areas,
+          itemLabel: (value) => value,
+          onItemSelected: (value) {
+            setState(() => _selectedArea = value);
           },
         ).show();
       },
@@ -754,7 +774,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       _selectedCountryName,
       _selectedStateName,
       _selectedDistrictName,
-      _areaController.text.trim(),
+      _selectedArea,
     ];
     if (requiredSelections.any((value) => value == null || value.isEmpty)) {
       _showMessage('Please complete all required fields.');
@@ -783,7 +803,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       'gender': _selectedGender!.toLowerCase(),
       'whatsapp_no': whatsapp,
       'address': _addressController.text.trim(),
-      'area': _areaController.text.trim(),
+      'area': _selectedArea!,
       'district': _selectedDistrictName!,
       'state': _selectedStateName!,
       'country': _selectedCountryName!,
@@ -1095,17 +1115,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                 const SizedBox(height: _fieldGap),
                 _buildDistrictField(),
                 const SizedBox(height: _fieldGap),
-                _buildTextField(
-                  label: 'Area',
-                  controller: _areaController,
-                  hintText: 'Select',
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Area is required';
-                    }
-                    return null;
-                  },
-                ),
+                _buildAreaField(),
                 const SizedBox(height: _fieldGap),
                 _buildTextField(
                   label: 'Pin code',
