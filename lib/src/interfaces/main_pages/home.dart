@@ -164,9 +164,11 @@ class HomePage extends ConsumerWidget {
                     if (isJamiatMember)
                       SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: kScreenPaddingH,
-                            vertical: 20,
+                          padding: const EdgeInsets.only(
+                            left: kScreenPaddingH,
+                            right: kScreenPaddingH,
+                            top: 44,
+                            bottom: 40,
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(14),
