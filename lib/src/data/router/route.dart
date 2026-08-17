@@ -7,6 +7,7 @@ import 'package:jamiat/src/interfaces/onboarding/registration.dart';
 import 'package:jamiat/src/interfaces/campaign/campaign_list.dart';
 import 'package:jamiat/src/interfaces/campaign/campaign_details.dart';
 import 'package:jamiat/src/interfaces/campaign/general_campaigns_list.dart';
+import 'package:jamiat/src/interfaces/campaign/ending_soon_campaigns_list.dart';
 import 'package:jamiat/src/interfaces/campaign/donation_success.dart';
 import 'package:jamiat/src/interfaces/campaign/autopay_view.dart';
 import 'package:jamiat/src/interfaces/campaign/autopay_details.dart';
@@ -170,6 +171,12 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
 
     case 'GeneralCampaignsList':
       page = const GeneralCampaignsListScreen();
+      transitionToUse = TransitionType.slideFromRight;
+      transitionDuration = const Duration(milliseconds: 300);
+      break;
+
+    case 'EndingSoonCampaignsList':
+      page = const EndingSoonCampaignsListScreen();
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);
       break;

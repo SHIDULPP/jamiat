@@ -187,8 +187,10 @@ class _DonatePageState extends ConsumerState<DonatePage> {
                     children: [
                       _StatsRow(statsAsync: statsAsync),
                       const SizedBox(height: 16),
-                      _EndingSoonBanner(statsAsync: statsAsync),
-                      const SizedBox(height: 16),
+                      if ((statsAsync.value?.endingSoonCount ?? 0) > 0) ...[
+                        _EndingSoonBanner(statsAsync: statsAsync),
+                        const SizedBox(height: 16),
+                      ],
                       if (campaigns.isEmpty)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 48),
@@ -246,9 +248,7 @@ class _CampaignsHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(
-          child: Text('Campaigns', style: kSectionTitleSB),
-        ),
+        Expanded(child: Text('Campaigns', style: kSectionTitleSB)),
         Container(
           width: 40,
           height: 40,
@@ -259,7 +259,7 @@ class _CampaignsHeader extends StatelessWidget {
           ),
           child: PopupMenuButton<String>(
             padding: EdgeInsets.zero,
-            icon: const Icon(Icons.more_horiz, color: kIconMuted, size: 22),
+            icon: const Icon(Icons.more_vert, color: kIconMuted, size: 22),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(kCardRadiusMd),
               side: const BorderSide(color: kStrokeColor, width: 1),
@@ -508,6 +508,7 @@ class _EndingSoonBanner extends StatelessWidget {
                 GestureDetector(
                   onTap: () {
                     HapticHelper.impact(HapticImpact.light);
+                    NavigationService().pushNamed('EndingSoonCampaignsList');
                   },
                   child: Text('Donate Now', style: kLinkSB),
                 ),
@@ -551,10 +552,9 @@ class _CampaignCard extends StatelessWidget {
               : (progress * 100).round())
         : 0;
     final categoryLabel = CategoryMapper.toUi(campaign.category);
-    final daysColor =
-        campaign.hasDaysRemaining && campaign.remainingDays! <= 7
-            ? kDaysLeftWarning
-            : kMutedText;
+    final daysColor = campaign.hasDaysRemaining && campaign.remainingDays! <= 7
+        ? kDaysLeftWarning
+        : kMutedText;
 
     return Container(
       decoration: BoxDecoration(

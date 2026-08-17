@@ -5,6 +5,7 @@ import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/models/product_model.dart';
 import 'package:jamiat/src/data/providers/product_provider.dart';
+import 'package:jamiat/src/data/router/nav_router.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
@@ -144,9 +145,12 @@ class _MarketPageState extends ConsumerState<MarketPage> {
       children: [
         GestureDetector(
           onTap: () {
+            HapticHelper.impact(HapticImpact.light);
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
+              return;
             }
+            ref.read(selectedIndexProvider.notifier).updateIndex(0);
           },
           child: Container(
             width: 40,
