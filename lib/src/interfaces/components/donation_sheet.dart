@@ -83,6 +83,7 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
   bool _isProcessing = false;
   RazorpayService? _razorpay;
   String? _pendingDonationId;
+  String? _pendingRazorpayOrderId;
   String? _pendingAutopayId;
   String? _pendingSubscriptionId;
 
@@ -191,6 +192,7 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
 
     final result = createResponse.data!;
     _pendingDonationId = result.donationId;
+    _pendingRazorpayOrderId = result.razorpayOrderId;
     _pendingAutopayId = null;
     _pendingSubscriptionId = null;
 
@@ -228,6 +230,7 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
     _pendingAutopayId = result.autopayId;
     _pendingSubscriptionId = result.razorpaySubscriptionId;
     _pendingDonationId = null;
+    _pendingRazorpayOrderId = null;
 
     _initRazorpay();
     _razorpay!.openSubscriptionCheckout(
@@ -257,13 +260,22 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
 
   Future<void> _verifyDonation(PaymentSuccessResponse response) async {
     final donationId = _pendingDonationId!;
+    final orderId = _pendingRazorpayOrderId ?? response.orderId ?? '';
+    final paymentId = response.paymentId ?? '';
+    final signature = response.signature ?? '';
+    if (orderId.isEmpty || paymentId.isEmpty || signature.isEmpty) {
+      if (mounted) setState(() => _isProcessing = false);
+      _showError('Payment confirmation details are missing. Please try again.');
+      return;
+    }
+
     final verify = await ref
         .read(donationApiProvider)
         .verifyPayment(
           donationId: donationId,
-          razorpayOrderId: response.orderId ?? '',
-          razorpayPaymentId: response.paymentId ?? '',
-          razorpaySignature: response.signature ?? '',
+          razorpayOrderId: orderId,
+          razorpayPaymentId: paymentId,
+          razorpaySignature: signature,
         );
 
     if (!mounted) return;
@@ -283,21 +295,25 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
     }
     Navigator.of(context).pop();
 
-    final now = DateTime.now();
+    final donation = verify.data!;
     NavigationService().pushNamed(
       'DonationSuccess',
       arguments: {
         'isAutopay': false,
-        'amount': _amountController.text.trim(),
-        'message': _messageController.text.trim().isEmpty
-            ? null
-            : _messageController.text.trim(),
-        'campaignName': widget.categoryTitle,
-        'transactionId': response.paymentId ?? donationId,
-        'date':
-            '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}',
+        'donationId': donation.id,
+        'amount': donation.amount.toString(),
+        'message': donation.message,
+        'campaignName': donation.campaignName ?? widget.categoryTitle,
+        'transactionId': donation.transactionId ?? response.paymentId ?? '',
+        'date': _formatDonationDate(donation.displayDate),
       },
     );
+  }
+
+  String _formatDonationDate(DateTime? date) {
+    final value = date ?? DateTime.now();
+    return '${value.day.toString().padLeft(2, '0')}/'
+        '${value.month.toString().padLeft(2, '0')}/${value.year}';
   }
 
   Future<void> _verifyAutopay(PaymentSuccessResponse response) async {

@@ -16,6 +16,7 @@ class DonationSuccessScreen extends ConsumerStatefulWidget {
   final String date;
   final String campaignName;
   final String? message;
+  final String? donationId;
 
   const DonationSuccessScreen({
     super.key,
@@ -26,6 +27,7 @@ class DonationSuccessScreen extends ConsumerStatefulWidget {
     this.date = '20/06/2026',
     this.campaignName = 'Medical aid for patient',
     this.message,
+    this.donationId,
   });
 
   @override
@@ -35,15 +37,64 @@ class DonationSuccessScreen extends ConsumerStatefulWidget {
 
 class _DonationSuccessScreenState extends ConsumerState<DonationSuccessScreen> {
   bool _isDownloading = false;
+  Map<String, dynamic>? _receipt;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReceipt();
+  }
+
+  Future<void> _loadReceipt() async {
+    final donationId = widget.donationId?.trim();
+    if (donationId == null || donationId.isEmpty) return;
+
+    final response = await ref.read(donationApiProvider).getReceipt(donationId);
+    if (!mounted || !response.success || response.data == null) return;
+    setState(() => _receipt = response.data);
+  }
+
+  String _receiptValue(String key) => (_receipt?[key] ?? '').toString().trim();
+
+  String get _amount {
+    final value = _receipt?['amount'];
+    return value == null ? widget.amount.trim() : value.toString().trim();
+  }
 
   String get _displayAmount {
-    final amount = widget.amount.trim();
+    final amount = _amount;
     if (amount.isEmpty) return '₹0';
     return amount.startsWith('₹') ? amount : '₹$amount';
   }
 
+  String get _campaignName {
+    return _receiptValue('campaign_title').isNotEmpty
+        ? _receiptValue('campaign_title')
+        : widget.campaignName;
+  }
+
+  String get _transactionId {
+    return _receiptValue('transaction_id').isNotEmpty
+        ? _receiptValue('transaction_id')
+        : widget.transactionId;
+  }
+
+  String get _message {
+    return _receiptValue('message').isNotEmpty
+        ? _receiptValue('message')
+        : widget.message?.trim() ?? '';
+  }
+
+  String get _date {
+    final rawDate = _receiptValue('paid_at');
+    final parsedDate = DateTime.tryParse(rawDate);
+    if (parsedDate == null) return widget.date;
+    return '${parsedDate.day.toString().padLeft(2, '0')}/'
+        '${parsedDate.month.toString().padLeft(2, '0')}/${parsedDate.year}';
+  }
+
   String get _subtitle {
-    return 'Your donation of $_displayAmount to ${widget.campaignName} '
+    return 'Your donation of $_displayAmount to $_campaignName '
         'has been received. May it be a sadaqah for you.';
   }
 
@@ -112,15 +163,17 @@ class _DonationSuccessScreenState extends ConsumerState<DonationSuccessScreen> {
     if (_isDownloading) return;
     HapticHelper.impact(HapticImpact.light);
 
-    final id = widget.transactionId.trim();
-    if (id.isEmpty) {
+    final donationId = widget.donationId?.trim();
+    if (donationId == null || donationId.isEmpty) {
       _showMessage('Receipt is not available yet.');
       return;
     }
 
     setState(() => _isDownloading = true);
     try {
-      final response = await ref.read(donationApiProvider).getReceipt(id);
+      final response = await ref
+          .read(donationApiProvider)
+          .getReceipt(donationId);
       if (!mounted) return;
 
       if (!response.success || response.data == null) {
@@ -129,6 +182,7 @@ class _DonationSuccessScreenState extends ConsumerState<DonationSuccessScreen> {
       }
 
       final data = response.data!;
+      if (mounted) setState(() => _receipt = data);
       final rawUrl =
           (data['receipt_url'] ?? data['url'] ?? data['receipt'] ?? '')
               .toString()
@@ -169,8 +223,7 @@ class _DonationSuccessScreenState extends ConsumerState<DonationSuccessScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final hasMessage =
-        widget.message != null && widget.message!.trim().isNotEmpty;
+    final hasMessage = _message.isNotEmpty;
 
     return Scaffold(
       backgroundColor: kWhite,
@@ -228,9 +281,9 @@ class _DonationSuccessScreenState extends ConsumerState<DonationSuccessScreen> {
               _sectionCard(
                 child: Column(
                   children: [
-                    _buildRow('Date', widget.date),
-                    _buildRow('Campaign', widget.campaignName),
-                    _buildRow('Transaction ID', widget.transactionId),
+                    _buildRow('Date', _date),
+                    _buildRow('Campaign', _campaignName),
+                    _buildRow('Transaction ID', _transactionId),
                     if (widget.isAutopay) _buildRow('Period', widget.period),
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 4),
@@ -260,7 +313,7 @@ class _DonationSuccessScreenState extends ConsumerState<DonationSuccessScreen> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      widget.message!.trim(),
+                      _message,
                       style: kCaption14R.copyWith(
                         color: kTextColor,
                         height: 1.45,

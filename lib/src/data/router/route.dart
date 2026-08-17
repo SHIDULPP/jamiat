@@ -214,6 +214,7 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
         campaignName:
             args?['campaignName'] as String? ?? 'Medical aid for patient',
         message: args?['message'] as String?,
+        donationId: args?['donationId'] as String?,
       );
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);
