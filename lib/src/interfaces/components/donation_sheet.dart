@@ -281,7 +281,7 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
     if (!mounted) return;
     setState(() => _isProcessing = false);
 
-    if (!verify.success) {
+    if (!verify.success || verify.data == null) {
       _showError(verify.message ?? 'Payment verification failed');
       return;
     }
@@ -296,11 +296,13 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
     Navigator.of(context).pop();
 
     final donation = verify.data!;
+    final resolvedDonationId =
+        donation.id.isNotEmpty ? donation.id : donationId;
     NavigationService().pushNamed(
       'DonationSuccess',
       arguments: {
         'isAutopay': false,
-        'donationId': donation.id,
+        'donationId': resolvedDonationId,
         'amount': donation.amount.toString(),
         'message': donation.message,
         'campaignName': donation.campaignName ?? widget.categoryTitle,

@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
+import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -41,7 +41,7 @@ class ApiLogger {
     }
 
     buffer.writeln('└───────────────────────────────────────────');
-    developer.log(buffer.toString(), name: 'API');
+    _emit(buffer.toString());
   }
 
   static void response({
@@ -68,7 +68,7 @@ class ApiLogger {
     }
 
     buffer.writeln('└───────────────────────────────────────────');
-    developer.log(buffer.toString(), name: 'API');
+    _emit(buffer.toString());
   }
 
   static void error({
@@ -83,13 +83,26 @@ class ApiLogger {
         ? ''
         : ' (${duration.inMilliseconds}ms)';
 
-    developer.log(
+    _emit(
       '┌─── API ERROR$durationLabel ─────────────────────────────\n'
       '│ $method ${_safeUri(uri)}\n'
       '│ $error\n'
       '└───────────────────────────────────────────',
-      name: 'API',
     );
+  }
+
+  static void info(String message) {
+    if (!enabled) return;
+    _emit(message);
+  }
+
+  /// Uses [log] so entries show under the `API` name in DevTools / logcat.
+  /// Emits line-by-line so long bodies are not dropped by the logging service.
+  static void _emit(String message) {
+    for (final line in message.split('\n')) {
+      if (line.isEmpty) continue;
+      log(line, name: 'API');
+    }
   }
 
   static Map<String, String> _sanitizeHeaders(Map<String, String>? headers) {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jamiat/src/data/apis/donation_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
+import 'package:jamiat/src/data/services/api_logger.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/interfaces/components/primarybutton.dart';
@@ -42,15 +43,30 @@ class _DonationSuccessScreenState extends ConsumerState<DonationSuccessScreen> {
   @override
   void initState() {
     super.initState();
-    _loadReceipt();
+    // Avoid reading providers during initState; wait for first frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadReceipt();
+    });
   }
 
   Future<void> _loadReceipt() async {
     final donationId = widget.donationId?.trim();
-    if (donationId == null || donationId.isEmpty) return;
+    if (donationId == null || donationId.isEmpty) {
+      ApiLogger.info(
+        'Receipt GET skipped: donationId missing on DonationSuccessScreen',
+      );
+      return;
+    }
 
+    ApiLogger.info('Loading donation receipt for id=$donationId');
     final response = await ref.read(donationApiProvider).getReceipt(donationId);
-    if (!mounted || !response.success || response.data == null) return;
+    if (!mounted) return;
+    if (!response.success || response.data == null) {
+      ApiLogger.info(
+        'Receipt GET failed: ${response.message ?? 'unknown error'}',
+      );
+      return;
+    }
     setState(() => _receipt = response.data);
   }
 
@@ -165,10 +181,14 @@ class _DonationSuccessScreenState extends ConsumerState<DonationSuccessScreen> {
 
     final donationId = widget.donationId?.trim();
     if (donationId == null || donationId.isEmpty) {
+      ApiLogger.info(
+        'Receipt download skipped: donationId missing on DonationSuccessScreen',
+      );
       _showMessage('Receipt is not available yet.');
       return;
     }
 
+    ApiLogger.info('Downloading donation receipt for id=$donationId');
     setState(() => _isDownloading = true);
     try {
       final response = await ref
