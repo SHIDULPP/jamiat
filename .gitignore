@@ -48,6 +48,9 @@ app.*.map.json
 .env
 .env.*
 /android/app/google-services.json
+/android/key.properties
+**/*.keystore
+**/*.jks
 
 # Figma cache
 tool/figma/
