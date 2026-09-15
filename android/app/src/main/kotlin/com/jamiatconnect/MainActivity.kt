@@ -1,4 +1,4 @@
-package com.jamiat
+package com.jamiatconnect
 
 import io.flutter.embedding.android.FlutterActivity
 
