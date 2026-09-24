@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:jamiat/src/data/apis/auth_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
+import 'package:jamiat/src/data/services/auth_session_service.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
+import 'package:jamiat/src/data/services/secure_storage_service.dart';
 
 final selectedRoleProvider = NotifierProvider<SelectedRoleNotifier, String?>(
   SelectedRoleNotifier.new,
@@ -24,6 +27,41 @@ class RoleSelectionScreen extends ConsumerWidget {
 
   static const double _figmaWidth = 402;
 
+  Future<void> _logout(BuildContext context, WidgetRef ref) async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Log out?'),
+        content: const Text(
+          'You will need to verify your phone to sign in again.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Log out'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout != true) return;
+
+    try {
+      await ref.read(authApiProvider).logout();
+    } catch (_) {
+      // Still clear local session even if the API call fails.
+    }
+    await ref.read(secureStorageServiceProvider).clearSession();
+    invalidateSessionCaches(ref);
+    ref.read(selectedRoleProvider.notifier).setRole(null);
+    if (!context.mounted) return;
+    NavigationService().pushNamedAndRemoveUntil('Login');
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final size = MediaQuery.sizeOf(context);
@@ -33,8 +71,8 @@ class RoleSelectionScreen extends ConsumerWidget {
     // Scale layout to screen width from Figma's 402pt frame.
     final scale = (size.width / _figmaWidth).clamp(0.88, 1.12);
 
-    // Space on the top of the logo based on the height ratio (70 / 874).
-    final topPadding = size.height * (70 / 874);
+    // Keep header below status bar; fall back to Figma top ratio on tall screens.
+    final topPadding = (size.height * (70 / 874)).clamp(topInset + 8, double.infinity);
 
     // Outer x=16 + inner pad 8 ⇒ 24pt side inset on 402pt frame.
     final sideInset = 24 * scale;
@@ -51,14 +89,43 @@ class RoleSelectionScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Logo — Figma 140 × 64 (cropped lockup)
-            Image.asset(
-              'assets/pngs/role_selection_logo.png',
-              width: 140 * scale,
-              height: 64 * scale,
-              fit: BoxFit.contain,
-              alignment: Alignment.centerLeft,
-              filterQuality: FilterQuality.high,
+            // Logo + logout — logout sits top-right so users can leave mid-onboarding
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Image.asset(
+                  'assets/pngs/role_selection_logo.png',
+                  width: 140 * scale,
+                  height: 64 * scale,
+                  fit: BoxFit.contain,
+                  alignment: Alignment.centerLeft,
+                  filterQuality: FilterQuality.high,
+                ),
+                const Spacer(),
+                Tooltip(
+                  message: 'Log out',
+                  child: Material(
+                    color: kWhite,
+                    shape: const CircleBorder(
+                      side: BorderSide(color: kBorder, width: 1.25),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: () => _logout(context, ref),
+                      customBorder: const CircleBorder(),
+                      child: const SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: Icon(
+                          Icons.logout,
+                          color: kTextColor,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
 
             // Frame 2004 gap between logo and body
