@@ -63,7 +63,11 @@ class UserModel {
       isProfileComplete: json['is_profile_complete'] == true,
       name: json['name']?.toString(),
       email: json['email']?.toString(),
-      image: json['image']?.toString(),
+      image: () {
+        final raw = json['image']?.toString().trim();
+        if (raw == null || raw.isEmpty || raw == 'null') return null;
+        return raw;
+      }(),
       gender: json['gender']?.toString(),
       whatsappNo: json['whatsapp_no']?.toString(),
       address: json['address']?.toString(),

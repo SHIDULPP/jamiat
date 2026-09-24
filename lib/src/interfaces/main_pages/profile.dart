@@ -82,6 +82,81 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     NavigationService().pushNamedAndRemoveUntil('Login');
   }
 
+  Future<void> _onAvatarTap() async {
+    if (_isUploadingAvatar) return;
+
+    final user = ref.read(userProfileProvider).asData?.value;
+    final hasPhoto = user?.image != null &&
+        user!.image!.trim().isNotEmpty &&
+        user.image!.startsWith('http');
+
+    if (!hasPhoto) {
+      await _pickAndUploadAvatar();
+      return;
+    }
+
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: kWhite,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: kBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.photo_library_outlined,
+                  color: kTextColor,
+                ),
+                title: Text(
+                  'Change photo',
+                  style: kBodyTitleR.copyWith(color: kTextColor),
+                ),
+                onTap: () => Navigator.pop(sheetContext, 'change'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: kRed),
+                title: Text(
+                  'Remove photo',
+                  style: kBodyTitleR.copyWith(color: kRed),
+                ),
+                onTap: () => Navigator.pop(sheetContext, 'remove'),
+              ),
+              ListTile(
+                title: Text(
+                  'Cancel',
+                  style: kBodyTitleR.copyWith(color: kSecondaryTextColor),
+                  textAlign: TextAlign.center,
+                ),
+                onTap: () => Navigator.pop(sheetContext),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (!mounted) return;
+    if (action == 'change') {
+      await _pickAndUploadAvatar();
+    } else if (action == 'remove') {
+      await _removeAvatar();
+    }
+  }
+
   Future<void> _pickAndUploadAvatar() async {
     if (_isUploadingAvatar) return;
 
@@ -127,6 +202,52 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
       ref.invalidate(userProfileProvider);
       _showMessage('Avatar updated.');
+    } catch (e) {
+      if (mounted) {
+        _showMessage(e.toString().replaceFirst('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingAvatar = false);
+    }
+  }
+
+  Future<void> _removeAvatar() async {
+    if (_isUploadingAvatar) return;
+
+    final shouldRemove = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Remove photo?'),
+        content: const Text(
+          'Your profile will show the default avatar until you add a new photo.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (shouldRemove != true || !mounted) return;
+
+    setState(() => _isUploadingAvatar = true);
+    try {
+      final update = await ref.read(userApiProvider).updateProfile({
+        'image': null,
+      });
+      if (!mounted) return;
+      if (!update.success) {
+        _showMessage(update.message ?? 'Unable to remove avatar.');
+        return;
+      }
+
+      ref.invalidate(userProfileProvider);
+      _showMessage('Avatar removed.');
     } catch (e) {
       if (mounted) {
         _showMessage(e.toString().replaceFirst('Exception: ', ''));
@@ -250,7 +371,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           ? null
           : () {
               HapticHelper.impact(HapticImpact.light);
-              _pickAndUploadAvatar();
+              _onAvatarTap();
             },
       child: SizedBox(
         width: 21.3,

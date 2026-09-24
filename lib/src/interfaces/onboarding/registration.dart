@@ -53,6 +53,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   bool _isLoading = false;
   bool _isUploadingAvatar = false;
   bool _didPrefill = false;
+  bool _attemptedSubmit = false;
   String _verifiedPhone = '';
   String _whatsappFullNumber = '';
   String? _imageUrl;
@@ -267,15 +268,21 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     required String hintText,
     Widget? suffixIcon,
     EdgeInsetsGeometry? contentPadding,
+    String? errorText,
   }) {
     return InputDecoration(
       filled: true,
       fillColor: kWhite,
       hintText: hintText,
       hintStyle: kBodyTitleR.copyWith(color: kSecondaryTextColor),
+      errorText: errorText,
+      errorStyle: kCaption12R.copyWith(color: kRed, height: 1.2),
+      errorMaxLines: 2,
       contentPadding:
           contentPadding ??
           const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
+      // Keep field height; do not wrap the FormField in a fixed SizedBox or
+      // error text below the input gets clipped.
       constraints: const BoxConstraints(minHeight: _fieldHeight),
       border: _fieldBorder(),
       enabledBorder: _fieldBorder(),
@@ -284,6 +291,30 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       focusedErrorBorder: _fieldBorder(color: kRed, width: 2),
       suffixIcon: suffixIcon,
     );
+  }
+
+  /// Inline error for required dropdowns after the user taps Continue.
+  String? _requiredSelectionError(String? value, String message) {
+    if (!_attemptedSubmit) return null;
+    if (value == null || value.trim().isEmpty) return message;
+    return null;
+  }
+
+  String? get _whatsappError {
+    if (!_attemptedSubmit) return null;
+    final whatsapp = _sameAsPhoneNumber ? _verifiedPhone : _whatsappFullNumber;
+    if (whatsapp.trim().isEmpty) return 'WhatsApp number is required';
+    return null;
+  }
+
+  bool get _areRequiredSelectionsValid {
+    return [
+      _selectedGender,
+      _selectedCountryName,
+      _selectedStateName,
+      _selectedDistrictName,
+      _selectedArea,
+    ].every((value) => value != null && value.trim().isNotEmpty);
   }
 
   Widget _buildLabel(String text) {
@@ -309,6 +340,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     required String hintText,
     required bool enabled,
     FocusNode? focusNode,
+    String? errorText,
     void Function(String completeNumber)? onChanged,
   }) {
     return IntlPhoneField(
@@ -333,7 +365,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       ),
       dropdownIconPosition: IconPosition.trailing,
       flagsButtonPadding: const EdgeInsets.only(left: 18, right: 8),
-      decoration: _inputDecoration(hintText: hintText),
+      decoration: _inputDecoration(hintText: hintText, errorText: errorText),
       onCountryChanged: (_) {},
       onChanged: (phone) {
         onChanged?.call(phone.completeNumber.replaceAll(' ', ''));
@@ -353,18 +385,15 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildLabel(label),
-        SizedBox(
-          height: _fieldHeight,
-          child: TextFormField(
-            controller: controller,
-            keyboardType: keyboardType,
-            enabled: enabled,
-            style: kBodyTitleR.copyWith(
-              color: enabled ? kTextColor : kSecondaryTextColor,
-            ),
-            validator: validator,
-            decoration: _inputDecoration(hintText: hintText),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          enabled: enabled,
+          style: kBodyTitleR.copyWith(
+            color: enabled ? kTextColor : kSecondaryTextColor,
           ),
+          validator: validator,
+          decoration: _inputDecoration(hintText: hintText),
         ),
       ],
     );
@@ -384,29 +413,27 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
         _buildLabel(label),
         GestureDetector(
           onTap: onTap,
-          child: SizedBox(
-            height: _fieldHeight,
-            child: InputDecorator(
-              decoration: _inputDecoration(hintText: hintText).copyWith(
-                errorText: errorText,
-                suffixIcon: isLoading
-                    ? const Padding(
-                        padding: EdgeInsets.all(14),
-                        child: LoadingAnimation(size: 20),
-                      )
-                    : const Icon(
-                        Icons.keyboard_arrow_down,
-                        color: kSecondaryTextColor,
-                        size: 20,
-                      ),
-              ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  value ?? hintText,
-                  style: kBodyTitleR.copyWith(
-                    color: value == null ? kSecondaryTextColor : kTextColor,
-                  ),
+          child: InputDecorator(
+            decoration: _inputDecoration(
+              hintText: hintText,
+              errorText: errorText,
+              suffixIcon: isLoading
+                  ? const Padding(
+                      padding: EdgeInsets.all(14),
+                      child: LoadingAnimation(size: 20),
+                    )
+                  : const Icon(
+                      Icons.keyboard_arrow_down,
+                      color: kSecondaryTextColor,
+                      size: 20,
+                    ),
+            ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value ?? hintText,
+                style: kBodyTitleR.copyWith(
+                  color: value == null ? kSecondaryTextColor : kTextColor,
                 ),
               ),
             ),
@@ -421,6 +448,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       label: 'Gender',
       value: _selectedGender,
       hintText: 'Select',
+      errorText: _requiredSelectionError(_selectedGender, 'Gender is required'),
       onTap: () {
         ModalSheet<String>(
           context: context,
@@ -441,6 +469,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       label: 'Area',
       value: _selectedArea,
       hintText: 'Select',
+      errorText: _requiredSelectionError(_selectedArea, 'Area is required'),
       onTap: () {
         ModalSheet<String>(
           context: context,
@@ -471,6 +500,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
               label: 'Country',
               value: _selectedCountryName,
               hintText: 'Select',
+              errorText: _requiredSelectionError(
+                _selectedCountryName,
+                'Country is required',
+              ),
               onTap: () {
                 ModalSheet<String>(
                   context: context,
@@ -504,6 +537,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
             hintText: 'Select',
             onTap: null,
             isLoading: true,
+            errorText: _requiredSelectionError(
+              _selectedCountryName,
+              'Country is required',
+            ),
           ),
           error: (error, _) => _buildSelectField(
             label: 'Country',
@@ -526,6 +563,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
             value: null,
             hintText: 'Select',
             onTap: null,
+            errorText: _requiredSelectionError(
+              _selectedStateName,
+              'State is required',
+            ),
           );
         }
 
@@ -542,6 +583,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
               label: 'State',
               value: _selectedStateName,
               hintText: 'Select',
+              errorText: _requiredSelectionError(
+                _selectedStateName,
+                'State is required',
+              ),
               onTap: () {
                 ModalSheet<String>(
                   context: context,
@@ -573,6 +618,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
             hintText: 'Select',
             onTap: null,
             isLoading: true,
+            errorText: _requiredSelectionError(
+              _selectedStateName,
+              'State is required',
+            ),
           ),
           error: (error, _) => _buildSelectField(
             label: 'State',
@@ -591,10 +640,14 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       builder: (context, ref, _) {
         if (_selectedCountryCode == null || _selectedStateCode == null) {
           return _buildSelectField(
-            label: 'District',
+            label: 'District/city',
             value: null,
             hintText: 'Select',
             onTap: null,
+            errorText: _requiredSelectionError(
+              _selectedDistrictName,
+              'District is required',
+            ),
           );
         }
 
@@ -614,6 +667,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
               label: 'District',
               value: _selectedDistrictName,
               hintText: 'Select',
+              errorText: _requiredSelectionError(
+                _selectedDistrictName,
+                'District is required',
+              ),
               onTap: () {
                 ModalSheet<String>(
                   context: context,
@@ -641,6 +698,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
             hintText: 'Select',
             onTap: null,
             isLoading: true,
+            errorText: _requiredSelectionError(
+              _selectedDistrictName,
+              'District is required',
+            ),
           ),
           error: (error, _) => _buildSelectField(
             label: 'District',
@@ -663,52 +724,125 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildLabel(label),
-        SizedBox(
-          height: _fieldHeight,
-          child: TextFormField(
-            controller: controller,
-            readOnly: true,
-            style: kBodyTitleR.copyWith(color: kTextColor),
-            decoration: _inputDecoration(hintText: 'dd/mm/yyyy'),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Date of birth is required';
-              }
-              return null;
-            },
-            onTap: () async {
-              final now = DateTime.now();
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: DateTime(now.year - 18),
-                firstDate: DateTime(1920),
-                lastDate: now,
-                locale: const Locale('en', 'IN'),
-                initialEntryMode: DatePickerEntryMode.calendarOnly,
-                builder: (context, child) {
-                  return Theme(
-                    data: Theme.of(context).copyWith(
-                      colorScheme: const ColorScheme.light(
-                        primary: kPrimaryColor,
-                      ),
+        TextFormField(
+          controller: controller,
+          readOnly: true,
+          style: kBodyTitleR.copyWith(color: kTextColor),
+          decoration: _inputDecoration(hintText: 'dd/mm/yyyy'),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Date of birth is required';
+            }
+            final parts = value.trim().split('/');
+            if (parts.length != 3) {
+              return 'Enter a valid date of birth';
+            }
+            return null;
+          },
+          onTap: () async {
+            final now = DateTime.now();
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: DateTime(now.year - 18),
+              firstDate: DateTime(1920),
+              lastDate: now,
+              locale: const Locale('en', 'IN'),
+              initialEntryMode: DatePickerEntryMode.calendarOnly,
+              builder: (context, child) {
+                return Theme(
+                  data: Theme.of(context).copyWith(
+                    colorScheme: const ColorScheme.light(
+                      primary: kPrimaryColor,
                     ),
-                    child: child!,
-                  );
-                },
-              );
-              if (picked != null) {
-                final day = picked.day.toString().padLeft(2, '0');
-                final month = picked.month.toString().padLeft(2, '0');
-                final year = picked.year.toString();
-                setState(() {
-                  controller.text = '$day/$month/$year';
-                });
-              }
-            },
-          ),
+                  ),
+                  child: child!,
+                );
+              },
+            );
+            if (picked != null) {
+              final day = picked.day.toString().padLeft(2, '0');
+              final month = picked.month.toString().padLeft(2, '0');
+              final year = picked.year.toString();
+              setState(() {
+                controller.text = '$day/$month/$year';
+              });
+            }
+          },
         ),
       ],
     );
+  }
+
+  bool get _hasProfilePhoto {
+    final url = _imageUrl?.trim();
+    return url != null && url.isNotEmpty && url.startsWith('http');
+  }
+
+  Future<void> _onAvatarTap() async {
+    if (_isUploadingAvatar) return;
+
+    if (!_hasProfilePhoto) {
+      await _pickAndUploadAvatar();
+      return;
+    }
+
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: kWhite,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: kBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined, color: kTextColor),
+                title: Text(
+                  'Change photo',
+                  style: kBodyTitleR.copyWith(color: kTextColor),
+                ),
+                onTap: () => Navigator.pop(sheetContext, 'change'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: kRed),
+                title: Text(
+                  'Remove photo',
+                  style: kBodyTitleR.copyWith(color: kRed),
+                ),
+                onTap: () => Navigator.pop(sheetContext, 'remove'),
+              ),
+              ListTile(
+                title: Text(
+                  'Cancel',
+                  style: kBodyTitleR.copyWith(color: kSecondaryTextColor),
+                  textAlign: TextAlign.center,
+                ),
+                onTap: () => Navigator.pop(sheetContext),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (!mounted) return;
+    if (action == 'change') {
+      await _pickAndUploadAvatar();
+    } else if (action == 'remove') {
+      await _removeAvatar();
+    }
   }
 
   Future<void> _pickAndUploadAvatar() async {
@@ -769,6 +903,55 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     }
   }
 
+  Future<void> _removeAvatar() async {
+    if (_isUploadingAvatar || !_hasProfilePhoto) return;
+
+    // Confirm — accidental remove is hard to undo without re-uploading.
+    final shouldRemove = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Remove photo?'),
+        content: const Text(
+          'Your profile will show the default avatar until you add a new photo.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (shouldRemove != true || !mounted) return;
+
+    // Always PATCH image:null so a prefilled/server photo is cleared even
+    // during first-time Profile Setup (not only Edit Profile).
+    setState(() => _isUploadingAvatar = true);
+    try {
+      final update = await ref.read(userApiProvider).updateProfile({
+        'image': null,
+      });
+      if (!mounted) return;
+      if (!update.success) {
+        _showMessage(update.message ?? 'Unable to remove avatar.');
+        return;
+      }
+      ref.invalidate(userProfileProvider);
+      setState(() => _imageUrl = null);
+      _showMessage('Avatar removed.');
+    } catch (e) {
+      if (mounted) {
+        _showMessage(e.toString().replaceFirst('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingAvatar = false);
+    }
+  }
+
   Future<void> _handleContinue() async {
     if (_isLoading) return;
     FocusScope.of(context).unfocus();
@@ -779,30 +962,20 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       return;
     }
 
-    if (!_formKey.currentState!.validate()) return;
+    setState(() => _attemptedSubmit = true);
 
-    final requiredSelections = [
-      _selectedGender,
-      _selectedCountryName,
-      _selectedStateName,
-      _selectedDistrictName,
-      _selectedArea,
-    ];
-    if (requiredSelections.any((value) => value == null || value.isEmpty)) {
-      _showMessage('Please complete all required fields.');
-      return;
-    }
+    final formValid = _formKey.currentState!.validate();
+    final selectionsValid = _areRequiredSelectionsValid;
+    final whatsappValid = _whatsappError == null;
+
+    // Show inline errors on every required field — not a single snackbar.
+    if (!formValid || !selectionsValid || !whatsappValid) return;
 
     final whatsapp = _sameAsPhoneNumber ? _verifiedPhone : _whatsappFullNumber;
-    if (whatsapp.isEmpty) {
-      _showMessage('Please enter a valid WhatsApp number.');
-      return;
-    }
-
     final dobParts = _dobController.text.split('/');
     final pincode = int.tryParse(_pincodeController.text.trim());
     if (dobParts.length != 3 || pincode == null) {
-      _showMessage('Please enter a valid date of birth and pin code.');
+      // Form validators should already cover this; keep a hard stop.
       return;
     }
     final dob = '${dobParts[2]}-${dobParts[1]}-${dobParts[0]}';
@@ -942,6 +1115,9 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
           ),
           child: Form(
             key: _formKey,
+            autovalidateMode: _attemptedSubmit
+                ? AutovalidateMode.onUserInteraction
+                : AutovalidateMode.disabled,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -999,9 +1175,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                           right: 0,
                           bottom: 0,
                           child: GestureDetector(
-                            onTap: _isUploadingAvatar
-                                ? null
-                                : _pickAndUploadAvatar,
+                            onTap: _isUploadingAvatar ? null : _onAvatarTap,
                             child: Container(
                               width: _cameraBadgeSize,
                               height: _cameraBadgeSize,
@@ -1067,7 +1241,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                       controller: _whatsappController,
                       hintText: 'Enter mobile number',
                       enabled: !_sameAsPhoneNumber,
-                      onChanged: (value) => _whatsappFullNumber = value,
+                      errorText: _whatsappError,
+                      onChanged: (value) {
+                        setState(() => _whatsappFullNumber = value);
+                      },
                     ),
                   ],
                 ),
@@ -1123,7 +1300,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   hintText: 'Enter pin code',
                   keyboardType: TextInputType.number,
                   validator: (value) {
-                    if (value == null || int.tryParse(value.trim()) == null) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Pin code is required';
+                    }
+                    if (int.tryParse(value.trim()) == null) {
                       return 'Enter a valid pin code';
                     }
                     return null;
