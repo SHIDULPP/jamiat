@@ -63,6 +63,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   String? _selectedArea;
   String? _selectedCountryCode;
   String? _selectedCountryName;
+  int? _selectedStateId;
   String? _selectedStateCode;
   String? _selectedStateName;
   String? _selectedDistrictCode;
@@ -190,11 +191,14 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
         break;
       }
     }
-    if (country == null || !mounted) return;
+    if (country == null || country.iso2 == null || !mounted) return;
+
+    final resolvedCountry = country;
+    final countryIso2 = resolvedCountry.iso2!;
 
     setState(() {
-      _selectedCountryCode = country!.iso2;
-      _selectedCountryName = country.name;
+      _selectedCountryCode = countryIso2;
+      _selectedCountryName = resolvedCountry.name;
     });
 
     if ((_selectedStateName == null || _selectedStateName!.isEmpty) &&
@@ -202,9 +206,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       return;
     }
 
-    final states = await fc.States.byCountryCode(country.iso2!);
+    final states = await fc.States.byCountryCode(countryIso2);
     fc.State? state;
     for (final item in states) {
+      if (item.countryCode != countryIso2) continue;
       final matchesCode = item.stateCode.toString() == _selectedStateCode;
       final matchesName =
           item.name?.toLowerCase() == _selectedStateName?.toLowerCase();
@@ -215,9 +220,11 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     }
     if (state == null || !mounted) return;
 
+    final resolvedState = state;
     setState(() {
-      _selectedStateCode = state!.stateCode.toString();
-      _selectedStateName = state.name;
+      _selectedStateId = resolvedState.id;
+      _selectedStateCode = resolvedState.stateCode.toString();
+      _selectedStateName = resolvedState.name;
     });
 
     if ((_selectedDistrictName == null || _selectedDistrictName!.isEmpty) &&
@@ -225,7 +232,22 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       return;
     }
 
-    final cities = await fc.Cities.byStateCode(state.stateCode.toString());
+    // Scope cities to this state's unique id — state codes collide globally.
+    final stateId = resolvedState.id;
+    final stateCode = resolvedState.stateCode;
+    final List<fc.City> cities;
+    if (stateId != null) {
+      cities = (await fc.Cities.byStateId(stateId.toString()))
+          .where((city) => city.stateId == stateId)
+          .toList();
+    } else {
+      cities = (await fc.Cities.byStateCode(stateCode.toString()))
+          .where(
+            (city) =>
+                city.stateCode == stateCode && city.countryCode == countryIso2,
+          )
+          .toList();
+    }
     fc.City? city;
     for (final item in cities) {
       final matchesCode = item.id.toString() == _selectedDistrictCode;
@@ -521,6 +543,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                     setState(() {
                       _selectedCountryCode = code;
                       _selectedCountryName = countryMap[code];
+                      _selectedStateId = null;
                       _selectedStateCode = null;
                       _selectedStateName = null;
                       _selectedDistrictCode = null;
@@ -575,9 +598,11 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
         );
         return statesAsync.when(
           data: (states) {
-            final stateMap = {
+            // Key by unique state id — state codes collide across countries
+            // and can even collide within poorly curated datasets.
+            final stateById = {
               for (final state in states)
-                state.stateCode.toString(): state.name ?? '',
+                if (state.id != null) state.id!.toString(): state,
             };
             return _buildSelectField(
               label: 'State',
@@ -592,18 +617,22 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   context: context,
                   title: 'Select state',
                   searchHint: 'Search state',
-                  items: stateMap.keys.toList(),
-                  itemLabel: (code) => stateMap[code] ?? code,
-                  searchFilter: (code, query) {
-                    final name = stateMap[code] ?? '';
+                  items: stateById.keys.toList(),
+                  itemLabel: (id) => stateById[id]?.name ?? id,
+                  searchFilter: (id, query) {
+                    final state = stateById[id];
+                    final name = state?.name ?? '';
+                    final code = state?.stateCode ?? '';
                     final q = query.toLowerCase();
                     return name.toLowerCase().contains(q) ||
                         code.toLowerCase().contains(q);
                   },
-                  onItemSelected: (code) {
+                  onItemSelected: (id) {
+                    final state = stateById[id];
                     setState(() {
-                      _selectedStateCode = code;
-                      _selectedStateName = stateMap[code];
+                      _selectedStateId = state?.id;
+                      _selectedStateCode = state?.stateCode?.toString();
+                      _selectedStateName = state?.name;
                       _selectedDistrictCode = null;
                       _selectedDistrictName = null;
                     });
@@ -638,7 +667,9 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   Widget _buildDistrictField() {
     return Consumer(
       builder: (context, ref, _) {
-        if (_selectedCountryCode == null || _selectedStateCode == null) {
+        if (_selectedCountryCode == null ||
+            (_selectedStateId == null &&
+                (_selectedStateCode == null || _selectedStateCode!.isEmpty))) {
           return _buildSelectField(
             label: 'District/city',
             value: null,
@@ -654,7 +685,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
         final districtsAsync = ref.watch(
           getDistrictsByStateProvider((
             countryCode: _selectedCountryCode!,
-            stateCode: _selectedStateCode!,
+            stateCode: _selectedStateCode ?? '',
+            stateId: _selectedStateId,
           )),
         );
         return districtsAsync.when(
