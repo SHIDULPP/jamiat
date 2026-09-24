@@ -8,6 +8,7 @@ import 'package:jamiat/src/data/apis/upload_api.dart';
 import 'package:jamiat/src/data/apis/user_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
+import 'package:jamiat/src/data/models/location_model.dart';
 import 'package:jamiat/src/data/models/user_model.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/data/services/secure_storage_service.dart';
@@ -68,9 +69,15 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   String? _selectedStateName;
   String? _selectedDistrictCode;
   String? _selectedDistrictName;
+  /// Mongo district `_id` when using Jamiat `/location/districts` (Kerala).
+  String? _selectedBackendDistrictId;
 
   final List<String> _genders = ['Male', 'Female', 'Other'];
-  final List<String> _areas = ['area1', 'area2', 'area3'];
+
+  bool get _isKeralaSelected {
+    final state = _selectedStateName?.trim().toLowerCase();
+    return state == 'kerala';
+  }
 
   @override
   void initState() {
@@ -138,7 +145,6 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     _emailController.text = user.email ?? '';
     _addressController.text = user.address ?? '';
     _selectedArea = user.area;
-    _ensureInList(_areas, _selectedArea);
     _pincodeController.text = user.pincode?.toString() ?? '';
     _dobController.text = _formatDob(user.dob);
     _imageUrl = user.image;
@@ -229,6 +235,13 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
 
     if ((_selectedDistrictName == null || _selectedDistrictName!.isEmpty) &&
         _selectedDistrictCode == null) {
+      await _resolveBackendDistrictId();
+      return;
+    }
+
+    // Kerala districts + areas come from Jamiat backend — skip offline cities.
+    if (_isKeralaSelected) {
+      await _resolveBackendDistrictId();
       return;
     }
 
@@ -263,7 +276,44 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     setState(() {
       _selectedDistrictCode = city!.id.toString();
       _selectedDistrictName = city.name;
+      _selectedBackendDistrictId = null;
     });
+  }
+
+  /// Maps the selected district name to a Mongo district id when Kerala areas apply.
+  Future<void> _resolveBackendDistrictId() async {
+    if (!_isKeralaSelected ||
+        _selectedDistrictName == null ||
+        _selectedDistrictName!.trim().isEmpty) {
+      if (mounted) {
+        setState(() => _selectedBackendDistrictId = null);
+      }
+      return;
+    }
+
+    try {
+      final districts = await ref.read(backendDistrictsProvider.future);
+      LocationDistrict? match;
+      final target = _selectedDistrictName!.trim().toLowerCase();
+      for (final district in districts) {
+        if (district.name.toLowerCase() == target) {
+          match = district;
+          break;
+        }
+      }
+      if (!mounted) return;
+      setState(() {
+        if (match != null) {
+          _selectedBackendDistrictId = match.id;
+          _selectedDistrictCode = match.id;
+          _selectedDistrictName = match.name;
+        } else {
+          _selectedBackendDistrictId = null;
+        }
+      });
+    } catch (_) {
+      if (mounted) setState(() => _selectedBackendDistrictId = null);
+    }
   }
 
   @override
@@ -487,22 +537,87 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   }
 
   Widget _buildAreaField() {
-    return _buildSelectField(
-      label: 'Area',
-      value: _selectedArea,
-      hintText: 'Select',
-      errorText: _requiredSelectionError(_selectedArea, 'Area is required'),
-      onTap: () {
-        ModalSheet<String>(
-          context: context,
-          title: 'Select area',
-          searchHint: 'Search area',
-          items: _areas,
-          itemLabel: (value) => value,
-          onItemSelected: (value) {
-            setState(() => _selectedArea = value);
+    return Consumer(
+      builder: (context, ref, _) {
+        final districtName = _selectedDistrictName?.trim();
+        final hasDistrict = districtName != null && districtName.isNotEmpty;
+
+        if (!hasDistrict) {
+          return _buildSelectField(
+            label: 'Area',
+            value: null,
+            hintText: 'Select district first',
+            onTap: null,
+            errorText: _requiredSelectionError(
+              _selectedArea,
+              'Area is required',
+            ),
+          );
+        }
+
+        final areasAsync = ref.watch(
+          getAreasByDistrictProvider((
+            districtId: _selectedBackendDistrictId,
+            districtName: districtName,
+          )),
+        );
+
+        return areasAsync.when(
+          data: (areas) {
+            final areaNames = areas.map((a) => a.name).toList();
+            if (areaNames.isEmpty) {
+              return _buildSelectField(
+                label: 'Area',
+                value: _selectedArea,
+                hintText: 'Select',
+                onTap: null,
+                errorText: 'No areas available for this district',
+              );
+            }
+
+            return _buildSelectField(
+              label: 'Area',
+              value: _selectedArea,
+              hintText: 'Select',
+              errorText: _requiredSelectionError(
+                _selectedArea,
+                'Area is required',
+              ),
+              onTap: () {
+                ModalSheet<String>(
+                  context: context,
+                  title: 'Select area',
+                  searchHint: 'Search area',
+                  items: areaNames,
+                  itemLabel: (value) => value,
+                  searchFilter: (value, query) =>
+                      value.toLowerCase().contains(query.toLowerCase()),
+                  onItemSelected: (value) {
+                    setState(() => _selectedArea = value);
+                  },
+                ).show();
+              },
+            );
           },
-        ).show();
+          loading: () => _buildSelectField(
+            label: 'Area',
+            value: _selectedArea,
+            hintText: 'Select',
+            onTap: null,
+            isLoading: true,
+            errorText: _requiredSelectionError(
+              _selectedArea,
+              'Area is required',
+            ),
+          ),
+          error: (error, _) => _buildSelectField(
+            label: 'Area',
+            value: _selectedArea,
+            hintText: 'Select',
+            onTap: null,
+            errorText: 'Unable to load areas',
+          ),
+        );
       },
     );
   }
@@ -548,6 +663,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                       _selectedStateName = null;
                       _selectedDistrictCode = null;
                       _selectedDistrictName = null;
+                      _selectedBackendDistrictId = null;
+                      _selectedArea = null;
                     });
                   },
                 ).show();
@@ -635,6 +752,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                       _selectedStateName = state?.name;
                       _selectedDistrictCode = null;
                       _selectedDistrictName = null;
+                      _selectedBackendDistrictId = null;
+                      _selectedArea = null;
                     });
                   },
                 ).show();
@@ -671,13 +790,73 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
             (_selectedStateId == null &&
                 (_selectedStateCode == null || _selectedStateCode!.isEmpty))) {
           return _buildSelectField(
-            label: 'District/city',
+            label: 'District',
             value: null,
             hintText: 'Select',
             onTap: null,
             errorText: _requiredSelectionError(
               _selectedDistrictName,
               'District is required',
+            ),
+          );
+        }
+
+        // Kerala areas are keyed to Mongo districts — use backend list so names/IDs match.
+        if (_isKeralaSelected) {
+          final districtsAsync = ref.watch(backendDistrictsProvider);
+          return districtsAsync.when(
+            data: (districts) {
+              final districtMap = {
+                for (final district in districts) district.id: district.name,
+              };
+              return _buildSelectField(
+                label: 'District',
+                value: _selectedDistrictName,
+                hintText: 'Select',
+                errorText: _requiredSelectionError(
+                  _selectedDistrictName,
+                  'District is required',
+                ),
+                onTap: () {
+                  ModalSheet<String>(
+                    context: context,
+                    title: 'Select district',
+                    searchHint: 'Search district',
+                    items: districtMap.keys.toList(),
+                    itemLabel: (id) => districtMap[id] ?? id,
+                    searchFilter: (id, query) {
+                      final name = districtMap[id] ?? '';
+                      return name.toLowerCase().contains(query.toLowerCase());
+                    },
+                    onItemSelected: (id) {
+                      setState(() {
+                        _selectedBackendDistrictId = id;
+                        _selectedDistrictCode = id;
+                        _selectedDistrictName = districtMap[id];
+                        _selectedArea = null;
+                      });
+                    },
+                  ).show();
+                },
+              );
+            },
+            loading: () => _buildSelectField(
+              label: 'District',
+              value: _selectedDistrictName,
+              hintText: 'Select',
+              onTap: null,
+              isLoading: true,
+              errorText: _requiredSelectionError(
+                _selectedDistrictName,
+                'District is required',
+              ),
+            ),
+            error: (error, _) => _buildSelectField(
+              label: 'District',
+              value: _selectedDistrictName,
+              hintText: 'Select',
+              onTap: null,
+              errorText: 'Unable to load districts',
             ),
           );
         }
@@ -716,8 +895,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   },
                   onItemSelected: (id) {
                     setState(() {
+                      _selectedBackendDistrictId = null;
                       _selectedDistrictCode = id;
                       _selectedDistrictName = districtMap[id];
+                      _selectedArea = null;
                     });
                   },
                 ).show();

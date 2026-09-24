@@ -1,10 +1,13 @@
 import 'package:flutter_countries/flutter_countries.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jamiat/src/data/apis/location_api.dart';
+import 'package:jamiat/src/data/models/location_model.dart';
 
 final getAllCountriesProvider = FutureProvider<List<Country>>((ref) async {
   final countries = await Countries.all;
   countries.sort(
-    (a, b) => (a.name ?? '').toLowerCase().compareTo((b.name ?? '').toLowerCase()),
+    (a, b) =>
+        (a.name ?? '').toLowerCase().compareTo((b.name ?? '').toLowerCase()),
   );
   return countries;
 });
@@ -28,7 +31,7 @@ final getStatesByCountryProvider =
       }
     });
 
-/// Districts/cities for a state.
+/// Districts/cities for a state (flutter_countries offline dataset).
 ///
 /// [stateId] is preferred: state codes like `KL` / `01` collide across countries,
 /// so `Cities.byStateCode` alone returns wrong places (e.g. Botswana + Congo
@@ -73,4 +76,39 @@ final getDistrictsByStateProvider =
       } catch (_) {
         return [];
       }
+    });
+
+/// Jamiat backend districts (Mongo). Used for Kerala so area IDs line up.
+final backendDistrictsProvider =
+    FutureProvider<List<LocationDistrict>>((ref) async {
+      final response = await ref.watch(locationApiProvider).getDistricts();
+      if (!response.success) {
+        throw Exception(response.message ?? 'Failed to load districts');
+      }
+      return response.data ?? const [];
+    });
+
+/// Areas for a district from `GET /location/areas`.
+/// Prefer [districtId] (Mongo ObjectId); fall back to district name.
+typedef AreaLookupParams = ({String? districtId, String? districtName});
+
+final getAreasByDistrictProvider =
+    FutureProvider.family<List<LocationArea>, AreaLookupParams>((
+      ref,
+      params,
+    ) async {
+      final districtId = params.districtId?.trim();
+      final districtName = params.districtName?.trim();
+      if ((districtId == null || districtId.isEmpty) &&
+          (districtName == null || districtName.isEmpty)) {
+        return const [];
+      }
+
+      final response = await ref
+          .watch(locationApiProvider)
+          .getAreas(districtId: districtId, districtName: districtName);
+      if (!response.success) {
+        throw Exception(response.message ?? 'Failed to load areas');
+      }
+      return response.data ?? const [];
     });
