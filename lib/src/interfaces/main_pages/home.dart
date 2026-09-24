@@ -86,7 +86,7 @@ class HomePage extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 kScreenPaddingH,
-                8,
+                16,
                 kScreenPaddingH,
                 0,
               ),
