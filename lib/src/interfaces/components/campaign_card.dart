@@ -7,24 +7,68 @@ import 'package:jamiat/src/data/utils/category_mapper.dart';
 import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:jamiat/src/interfaces/components/primarybutton.dart';
 
-Widget campaignCoverImage(String? url, {BoxFit fit = BoxFit.cover}) {
-  if (url != null && url.startsWith('http')) {
+/// Neutral broken-image state when a campaign has no usable cover.
+Widget campaignImagePlaceholder({
+  double iconSize = 40,
+  bool showLabel = true,
+}) {
+  return ColoredBox(
+    color: const Color(0xFFF0F0F0),
+    child: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.broken_image_outlined,
+            size: iconSize,
+            color: kIconMuted,
+          ),
+          if (showLabel) ...[
+            SizedBox(height: iconSize >= 36 ? 8 : 4),
+            Text(
+              'No image',
+              style: kCaption12R.copyWith(
+                color: kSecondaryTextColor,
+                height: 1.2,
+              ),
+            ),
+          ],
+        ],
+      ),
+    ),
+  );
+}
+
+/// Campaign cover: network URL when valid, otherwise a professional placeholder.
+/// Never falls back to a dummy stock photo.
+Widget campaignCoverImage(
+  String? url, {
+  BoxFit fit = BoxFit.cover,
+  double placeholderIconSize = 40,
+  bool showPlaceholderLabel = true,
+}) {
+  final trimmed = url?.trim();
+  if (trimmed != null &&
+      trimmed.isNotEmpty &&
+      (trimmed.startsWith('http://') ||
+          trimmed.startsWith('https://') ||
+          trimmed.startsWith('//'))) {
+    final resolved = trimmed.startsWith('//') ? 'https:$trimmed' : trimmed;
     return Image.network(
-      url,
+      resolved,
       fit: fit,
-      errorBuilder: (_, _, _) => Container(
-        color: kScreenBg,
-        child: const Icon(Icons.image_outlined, color: kMutedText),
+      width: double.infinity,
+      height: double.infinity,
+      errorBuilder: (_, _, _) => campaignImagePlaceholder(
+        iconSize: placeholderIconSize,
+        showLabel: showPlaceholderLabel,
       ),
     );
   }
-  return Image.asset(
-    url ?? 'assets/jpgs/campaign_education.jpg',
-    fit: fit,
-    errorBuilder: (_, _, _) => Container(
-      color: kScreenBg,
-      child: const Icon(Icons.image_outlined, color: kMutedText),
-    ),
+
+  return campaignImagePlaceholder(
+    iconSize: placeholderIconSize,
+    showLabel: showPlaceholderLabel,
   );
 }
 

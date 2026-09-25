@@ -108,7 +108,34 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Events', style: kSectionTitleSB),
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          HapticHelper.impact(HapticImpact.light);
+                          if (Navigator.canPop(context)) {
+                            Navigator.pop(context);
+                          }
+                        },
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: kWhite.withValues(alpha: 0.08),
+                            border: Border.all(color: kGrey, width: 1.25),
+                          ),
+                          child: const Icon(
+                            Icons.arrow_back,
+                            color: kTextColor,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text('Events', style: kSectionTitleSB),
+                    ],
+                  ),
                   PopupMenuButton<String>(
                     padding: EdgeInsets.zero,
                     offset: const Offset(0, 44),

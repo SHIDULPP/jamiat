@@ -11,6 +11,7 @@ import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/data/utils/category_mapper.dart';
 import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
+import 'package:jamiat/src/interfaces/components/campaign_card.dart';
 import 'package:jamiat/src/interfaces/components/primarybutton.dart';
 
 String _formatCount(int value) {
@@ -22,27 +23,6 @@ String _formatCount(int value) {
     buf.write(raw[i]);
   }
   return buf.toString();
-}
-
-Widget _campaignImage(String? url, {BoxFit fit = BoxFit.cover}) {
-  if (url != null && url.startsWith('http')) {
-    return Image.network(
-      url,
-      fit: fit,
-      errorBuilder: (_, _, _) => Container(
-        color: kScreenBg,
-        child: const Icon(Icons.image_outlined, color: kMutedText),
-      ),
-    );
-  }
-  return Image.asset(
-    url ?? 'assets/jpgs/campaign_education.jpg',
-    fit: fit,
-    errorBuilder: (_, _, _) => Container(
-      color: kScreenBg,
-      child: const Icon(Icons.image_outlined, color: kMutedText),
-    ),
-  );
 }
 
 class DonatePage extends ConsumerStatefulWidget {
@@ -575,7 +555,7 @@ class _CampaignCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    _campaignImage(campaign.coverImage),
+                    campaignCoverImage(campaign.coverImage),
                     Positioned(
                       top: 12,
                       left: 12,

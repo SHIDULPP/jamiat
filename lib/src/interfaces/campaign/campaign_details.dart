@@ -10,6 +10,7 @@ import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/utils/category_mapper.dart';
 import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
+import 'package:jamiat/src/interfaces/components/campaign_card.dart';
 import 'package:jamiat/src/interfaces/components/donation_sheet.dart';
 
 class CampaignDetailsScreen extends ConsumerStatefulWidget {
@@ -184,28 +185,7 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
   }
 
   Widget _coverImage(String? url) {
-    if (url != null && url.startsWith('http')) {
-      return Image.network(
-        url,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (_, _, _) => Container(
-          color: kScreenBg,
-          child: const Icon(Icons.image_outlined, color: kMutedText, size: 40),
-        ),
-      );
-    }
-    return Image.asset(
-      url ?? 'assets/jpgs/campaign_education.jpg',
-      fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
-      errorBuilder: (_, _, _) => Container(
-        color: kScreenBg,
-        child: const Icon(Icons.image_outlined, color: kMutedText, size: 40),
-      ),
-    );
+    return campaignCoverImage(url, placeholderIconSize: 48);
   }
 
   Widget _buildCampaignBody({

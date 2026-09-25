@@ -16,6 +16,7 @@ import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/data/utils/category_mapper.dart';
 import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
+import 'package:jamiat/src/interfaces/components/campaign_card.dart';
 import 'package:jamiat/src/interfaces/components/profile_avatar.dart';
 
 class _QuickAccessItem {
@@ -724,22 +725,25 @@ class _ContributionsCard extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: _StatTile(
-                    label: 'TOTAL DONATED',
-                    value: formatRupee(stats.totalDonated),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: _StatTile(
+                      label: 'TOTAL DONATED',
+                      value: formatRupee(stats.totalDonated),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _StatTile(
-                    label: 'PARTICIPATED CAMPAIGNS',
-                    value: '${stats.participatedCampaigns}',
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _StatTile(
+                      label: 'PARTICIPATED CAMPAIGNS',
+                      value: '${stats.participatedCampaigns}',
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -758,6 +762,7 @@ class _StatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     // Figma stat tiles: pad 16 · radius 8 · label 12 Bold/#6d6d6d · value 19 SB primary
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: kWhite,
@@ -963,7 +968,6 @@ class _CampaignCard extends StatelessWidget {
     final progress = hasTarget
         ? (campaign.collectedAmount / campaign.targetAmount).clamp(0.0, 1.0)
         : 0.0;
-    final imageUrl = campaign.coverImage;
 
     return GestureDetector(
       onTap: onTap,
@@ -975,20 +979,11 @@ class _CampaignCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              if (imageUrl != null && imageUrl.startsWith('http'))
-                Image.network(
-                  imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Image.asset(
-                    'assets/jpgs/campaign_education.jpg',
-                    fit: BoxFit.cover,
-                  ),
-                )
-              else
-                Image.asset(
-                  imageUrl ?? 'assets/jpgs/campaign_education.jpg',
-                  fit: BoxFit.cover,
-                ),
+              campaignCoverImage(
+                campaign.coverImage,
+                placeholderIconSize: 36,
+                showPlaceholderLabel: false,
+              ),
               const DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(

@@ -9,6 +9,7 @@ import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/data/utils/category_mapper.dart';
 import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
+import 'package:jamiat/src/interfaces/components/campaign_card.dart';
 
 class SavedDonationsScreen extends ConsumerStatefulWidget {
   const SavedDonationsScreen({super.key});
@@ -48,7 +49,6 @@ class _SavedDonationsScreenState extends ConsumerState<SavedDonationsScreen> {
               ? campaign.progressPercent
               : (progress * 100).round())
         : 0;
-    final imageUrl = campaign.coverImage;
     final daysColor =
         campaign.hasDaysRemaining && campaign.remainingDays! <= 7
             ? kDaysLeftWarning
@@ -77,30 +77,7 @@ class _SavedDonationsScreenState extends ConsumerState<SavedDonationsScreen> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                if (imageUrl != null && imageUrl.startsWith('http'))
-                  Image.network(
-                    imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(
-                      color: kScreenBg,
-                      child: const Icon(
-                        Icons.image_outlined,
-                        color: kMutedText,
-                      ),
-                    ),
-                  )
-                else
-                  Image.asset(
-                    imageUrl ?? 'assets/jpgs/campaign_education.jpg',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(
-                      color: kScreenBg,
-                      child: const Icon(
-                        Icons.image_outlined,
-                        color: kMutedText,
-                      ),
-                    ),
-                  ),
+                campaignCoverImage(campaign.coverImage),
                 Positioned(
                   top: 12,
                   left: 12,

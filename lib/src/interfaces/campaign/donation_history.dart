@@ -7,6 +7,7 @@ import 'package:jamiat/src/data/providers/donation_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
+import 'package:jamiat/src/interfaces/components/campaign_card.dart';
 
 class DonationHistoryScreen extends ConsumerWidget {
   const DonationHistoryScreen({super.key});
@@ -88,16 +89,7 @@ class DonationHistoryScreen extends ConsumerWidget {
   }
 
   Widget _campaignImagePlaceholder() {
-    return Container(
-      width: 64,
-      height: 64,
-      color: kScreenBg,
-      child: const Icon(
-        Icons.volunteer_activism_outlined,
-        color: kMutedText,
-        size: 24,
-      ),
-    );
+    return campaignImagePlaceholder(iconSize: 24, showLabel: false);
   }
 
   String _transactionLabel(DonationModel donation) {
