@@ -9,6 +9,7 @@ import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/router/nav_router.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/get_fcm.dart';
+import 'package:jamiat/src/data/services/deep_link_service.dart';
 import 'package:jamiat/src/interfaces/components/profile_avatar.dart';
 import 'package:jamiat/src/interfaces/main_pages/donate.dart';
 import 'package:jamiat/src/interfaces/main_pages/home.dart';
@@ -54,9 +55,20 @@ class _NavBarState extends ConsumerState<NavBar> {
   @override
   void initState() {
     super.initState();
+    DeepLinkService.instance.onSelectNavTab = (index) {
+      if (!mounted) return;
+      ref.read(selectedIndexProvider.notifier).updateIndex(index);
+    };
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      DeepLinkService.instance.consumePendingNavTab();
       await getFcmToken(context, ref);
     });
+  }
+
+  @override
+  void dispose() {
+    DeepLinkService.instance.onSelectNavTab = null;
+    super.dispose();
   }
 
   static const List<Widget> _pages = <Widget>[

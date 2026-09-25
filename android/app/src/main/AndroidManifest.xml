@@ -42,14 +42,20 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Custom scheme: jamiatconnect://campaign/<id> -->
+            <!-- Custom scheme deep links. Keep path-less hosts in their OWN
+                 filter — mixing pathPrefix in the same filter makes Android
+                 require a path for ALL hosts (jamiatconnect://donate fails). -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="jamiatconnect" android:host="campaign"/>
+                <data android:scheme="jamiatconnect" android:host="campaigns"/>
+                <data android:scheme="jamiatconnect" android:host="donate"/>
             </intent-filter>
-            <!-- HTTPS share landing under /api/v1 (proxied to backend) -->
+            <!-- HTTPS share landings — separate filters per host so Android
+                 does not merge path/host attributes across environments. -->
+            <!-- Dev: https://uat-admin.juhkerala.com/api/v1/share/... -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -60,8 +66,22 @@
                     android:pathPrefix="/api/v1/share/campaign"/>
                 <data
                     android:scheme="https"
-                    android:host="admin.juhkerala.com"
+                    android:host="uat-admin.juhkerala.com"
+                    android:pathPrefix="/api/v1/share/donate"/>
+            </intent-filter>
+            <!-- Prod: https://api.jamiatconnect.juhkerala.com/api/v1/share/... -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="https"
+                    android:host="api.jamiatconnect.juhkerala.com"
                     android:pathPrefix="/api/v1/share/campaign"/>
+                <data
+                    android:scheme="https"
+                    android:host="api.jamiatconnect.juhkerala.com"
+                    android:pathPrefix="/api/v1/share/donate"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

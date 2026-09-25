@@ -10,21 +10,31 @@ class DeepLinkService {
   static final RegExp _objectId = RegExp(r'^[a-fA-F0-9]{24}$');
 
   /// Same link often arrives from getInitialLink + uriLinkStream + platform
-  /// route within a short window; ignore repeats so CampaignDetails is
-  /// not stacked twice.
+  /// route within a short window; ignore repeats so screens aren't stacked twice.
   static const _dedupeWindow = Duration(seconds: 4);
 
+  static const _listDedupeKey = '__campaign_list__';
+  static const _donateDedupeKey = '__donate__';
+
+  /// Donate tab in [NavBar] (`DonatePage`).
+  static const donateTabIndex = 1;
+
   String? _pendingCampaignId;
-  String? _lastOpenedCampaignId;
+  bool _pendingCampaignList = false;
+  int? _pendingNavTab;
+  String? _lastOpenedKey;
   DateTime? _lastOpenedAt;
   bool _ready = false;
+
+  /// Set by [NavBar] so deep links can switch bottom tabs.
+  void Function(int index)? onSelectNavTab;
 
   String? get pendingCampaignId => _pendingCampaignId;
 
   /// Call once the root navigator exists and auth routing has settled.
   void markReady() {
     _ready = true;
-    consumePendingCampaignLink();
+    consumePending();
   }
 
   void resetReady() {
@@ -33,6 +43,19 @@ class DeepLinkService {
 
   void handleUri(Uri? uri) {
     if (uri == null) return;
+
+    if (isDonateLink(uri)) {
+      debugPrint('DeepLinkService: donate tab from $uri');
+      openDonate();
+      return;
+    }
+
+    if (isCampaignListLink(uri)) {
+      debugPrint('DeepLinkService: campaign list from $uri');
+      openCampaignList();
+      return;
+    }
+
     final campaignId = extractCampaignId(uri);
     if (campaignId == null || campaignId.isEmpty) return;
     debugPrint('DeepLinkService: campaign=$campaignId from $uri');
@@ -51,6 +74,7 @@ class DeepLinkService {
       'Registration',
       'navBar',
       'CampaignDetails',
+      'DonationList',
     };
     if (known.contains(routeName)) return;
 
@@ -70,7 +94,10 @@ class DeepLinkService {
       return false;
     }
     if (routeName.contains('://')) return true;
-    if (routeName.contains('campaign') || routeName.contains('share')) {
+    final lower = routeName.toLowerCase();
+    if (lower.contains('campaign') ||
+        lower.contains('share') ||
+        lower.contains('donate')) {
       return true;
     }
     // Flutter strips scheme+host and pushes path only: `/<objectId>`
@@ -82,28 +109,99 @@ class DeepLinkService {
     return false;
   }
 
+  /// `jamiatconnect://donate` or `…/share/donate`
+  static bool isDonateLink(Uri uri) {
+    final host = uri.host.toLowerCase();
+    if (host == 'donate') return true;
+
+    final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
+    if (segments.length == 1 && segments.first.toLowerCase() == 'donate') {
+      return true;
+    }
+    // …/share/donate
+    for (var i = 0; i + 1 < segments.length; i++) {
+      if (segments[i].toLowerCase() == 'share' &&
+          segments[i + 1].toLowerCase() == 'donate') {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// `jamiatconnect://campaign/list`, `jamiatconnect://campaigns`, `/campaign/list`
+  static bool isCampaignListLink(Uri uri) {
+    final schemeOk = uri.scheme == AppConfig.appDeepLinkScheme ||
+        uri.scheme == 'jamiatconnect' ||
+        uri.scheme == 'https' ||
+        uri.scheme == 'http' ||
+        !uri.hasScheme;
+
+    if (!schemeOk && uri.hasScheme) return false;
+
+    if (uri.host == 'campaigns' || uri.host == 'campaign-list') {
+      return true;
+    }
+
+    final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
+
+    if (uri.host == 'campaign') {
+      if (segments.isEmpty) return false;
+      final first = segments.first.toLowerCase();
+      return first == 'list' || first == 'lists';
+    }
+
+    if (segments.length >= 2 &&
+        segments[0].toLowerCase() == 'campaign' &&
+        (segments[1].toLowerCase() == 'list' ||
+            segments[1].toLowerCase() == 'lists')) {
+      return true;
+    }
+    if (segments.length == 1 &&
+        (segments.first.toLowerCase() == 'campaigns' ||
+            segments.first.toLowerCase() == 'campaign-list')) {
+      return true;
+    }
+    return false;
+  }
+
   static String? extractCampaignId(Uri uri) {
-    // jamiatconnect://campaign/<id>
+    // jamiatconnect://campaign/<id>  (skip reserved "list")
     if (uri.scheme == AppConfig.appDeepLinkScheme ||
         uri.scheme == 'jamiatconnect') {
       if (uri.host == 'campaign' && uri.pathSegments.isNotEmpty) {
-        return uri.pathSegments.first;
+        final id = uri.pathSegments.first;
+        if (id.toLowerCase() == 'list' || id.toLowerCase() == 'lists') {
+          return null;
+        }
+        return id;
       }
       if (uri.pathSegments.length >= 2 && uri.pathSegments.first == 'campaign') {
-        return uri.pathSegments[1];
+        final id = uri.pathSegments[1];
+        if (id.toLowerCase() == 'list' || id.toLowerCase() == 'lists') {
+          return null;
+        }
+        return id;
       }
     }
 
     final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
     // /campaign/<id>
     if (segments.length >= 2 && segments.first == 'campaign') {
-      return segments[1];
+      final id = segments[1];
+      if (id.toLowerCase() == 'list' || id.toLowerCase() == 'lists') {
+        return null;
+      }
+      return id;
     }
     // …/share/campaign/<id>  (with or without /api/v1 prefix)
     for (var i = 0; i + 2 < segments.length; i++) {
       if (segments[i] == 'share' && segments[i + 1] == 'campaign') {
         final id = segments[i + 2];
-        if (id.isNotEmpty) return id;
+        if (id.isNotEmpty &&
+            id.toLowerCase() != 'list' &&
+            id.toLowerCase() != 'lists') {
+          return id;
+        }
       }
     }
 
@@ -120,11 +218,86 @@ class DeepLinkService {
     return null;
   }
 
-  bool _isDuplicate(String campaignId) {
-    if (_lastOpenedCampaignId != campaignId || _lastOpenedAt == null) {
-      return false;
-    }
+  bool _isDuplicate(String key) {
+    if (_lastOpenedKey != key || _lastOpenedAt == null) return false;
     return DateTime.now().difference(_lastOpenedAt!) < _dedupeWindow;
+  }
+
+  void _markOpened(String key) {
+    _lastOpenedKey = key;
+    _lastOpenedAt = DateTime.now();
+  }
+
+  void _clearPendingTargets() {
+    _pendingCampaignId = null;
+    _pendingCampaignList = false;
+    _pendingNavTab = null;
+  }
+
+  void _popToNavBar() {
+    final nav = NavigationService.navigatorKey.currentState;
+    if (nav == null) return;
+    nav.popUntil(
+      (route) => route.isFirst || route.settings.name == 'navBar',
+    );
+  }
+
+  void _selectNavTab(int index) {
+    final switcher = onSelectNavTab;
+    if (switcher != null) {
+      switcher(index);
+      return;
+    }
+    _pendingNavTab = index;
+  }
+
+  /// Applies a queued tab switch once [NavBar] has registered [onSelectNavTab].
+  void consumePendingNavTab() {
+    final tab = _pendingNavTab;
+    if (tab == null) return;
+    final switcher = onSelectNavTab;
+    if (switcher == null) return;
+    _pendingNavTab = null;
+    switcher(tab);
+  }
+
+  void openDonate() {
+    if (_isDuplicate(_donateDedupeKey)) {
+      debugPrint('DeepLinkService: skip duplicate donate');
+      _pendingNavTab = null;
+      return;
+    }
+
+    final nav = NavigationService.navigatorKey.currentState;
+    if (!_ready || nav == null) {
+      _clearPendingTargets();
+      _pendingNavTab = donateTabIndex;
+      return;
+    }
+
+    _clearPendingTargets();
+    _markOpened(_donateDedupeKey);
+    _popToNavBar();
+    _selectNavTab(donateTabIndex);
+  }
+
+  void openCampaignList() {
+    if (_isDuplicate(_listDedupeKey)) {
+      debugPrint('DeepLinkService: skip duplicate campaign list');
+      _pendingCampaignList = false;
+      return;
+    }
+
+    final nav = NavigationService.navigatorKey.currentState;
+    if (!_ready || nav == null) {
+      _clearPendingTargets();
+      _pendingCampaignList = true;
+      return;
+    }
+
+    _clearPendingTargets();
+    _markOpened(_listDedupeKey);
+    NavigationService().pushNamed('DonationList');
   }
 
   void openCampaign(String campaignId) {
@@ -136,20 +309,28 @@ class DeepLinkService {
 
     final nav = NavigationService.navigatorKey.currentState;
     if (!_ready || nav == null) {
+      _clearPendingTargets();
       _pendingCampaignId = campaignId;
       return;
     }
 
-    _pendingCampaignId = null;
-    _lastOpenedCampaignId = campaignId;
-    _lastOpenedAt = DateTime.now();
+    _clearPendingTargets();
+    _markOpened(campaignId);
     NavigationService().pushNamed(
       'CampaignDetails',
       arguments: {'campaignId': campaignId},
     );
   }
 
-  void consumePendingCampaignLink() {
+  void consumePending() {
+    if (_pendingNavTab != null) {
+      openDonate();
+      return;
+    }
+    if (_pendingCampaignList) {
+      openCampaignList();
+      return;
+    }
     final id = _pendingCampaignId;
     if (id == null || id.isEmpty) return;
     openCampaign(id);
