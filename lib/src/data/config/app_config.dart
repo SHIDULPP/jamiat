@@ -8,6 +8,13 @@ class AppConfig {
   static String get baseUrl => dotenv.env['BASE_URL']?.trim() ?? '';
   static String get apiKey => dotenv.env['API_KEY']?.trim() ?? '';
 
+  /// Public Razorpay key only (rzp_live_… / rzp_test_…).
+  /// Prefer the `razorpay_key_id` returned by create-donation / create-autopay;
+  /// this is a fallback when the API omits it.
+  /// Never put RAZORPAY_KEY_SECRET in the app — verification is server-side.
+  static String get razorpayKeyId =>
+      dotenv.env['RAZORPAY_KEY_ID']?.trim() ?? '';
+
   static String get normalizedBaseUrl {
     final value = baseUrl;
     if (value.endsWith('/')) {

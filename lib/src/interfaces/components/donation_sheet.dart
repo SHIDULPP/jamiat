@@ -1,13 +1,17 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jamiat/src/data/apis/autopay_api.dart';
 import 'package:jamiat/src/data/apis/donation_api.dart';
+import 'package:jamiat/src/data/apis/user_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/providers/autopay_provider.dart';
 import 'package:jamiat/src/data/providers/campaign_provider.dart';
 import 'package:jamiat/src/data/providers/donation_provider.dart';
+import 'package:jamiat/src/data/providers/razorpay_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/data/services/razorpay_service.dart';
@@ -55,6 +59,9 @@ class DonationSheet extends ConsumerStatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      // Prevent accidental dismiss while Razorpay native UI may be opening.
+      isDismissible: true,
+      enableDrag: true,
       builder: (_) => DonationSheet(
         categoryTitle: categoryTitle,
         icon: icon,
@@ -81,17 +88,19 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
   int? _selectedPresetIndex;
   String _selectedPeriod = 'monthly';
   bool _isProcessing = false;
-  RazorpayService? _razorpay;
   String? _pendingDonationId;
   String? _pendingRazorpayOrderId;
   String? _pendingAutopayId;
   String? _pendingSubscriptionId;
 
+  RazorpayService get _razorpay => ref.read(razorpayServiceProvider);
+
   @override
   void dispose() {
     _amountController.dispose();
     _messageController.dispose();
-    _razorpay?.dispose();
+    // Do not dispose the shared Razorpay singleton — native checkout may
+    // still deliver success/error after this sheet is closed.
     super.dispose();
   }
 
@@ -130,10 +139,16 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
     );
   }
 
-  void _initRazorpay() {
-    _razorpay?.dispose();
-    _razorpay = RazorpayService();
-    _razorpay!.init(onSuccess: _onPaymentSuccess, onError: _onPaymentError);
+  void _bindRazorpayCallbacks() {
+    _razorpay.setCallbacks(
+      onSuccess: _onPaymentSuccess,
+      onError: _onPaymentError,
+    );
+  }
+
+  ({String? contact, String? email}) _userPrefill() {
+    final user = ref.read(userProfileProvider).asData?.value;
+    return (contact: user?.phone, email: user?.email);
   }
 
   Future<void> _handlePayment() async {
@@ -166,6 +181,7 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
         );
       }
     } catch (e) {
+      log('Payment start failed: $e', name: 'DonationSheet');
       if (mounted) setState(() => _isProcessing = false);
       _showError(e.toString().replaceFirst('Exception: ', ''));
     }
@@ -176,6 +192,10 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
     required num amount,
     required String message,
   }) async {
+    log(
+      'Creating donation: campaign=$campaignId amount=$amount',
+      name: 'DonationSheet',
+    );
     final createResponse = await ref
         .read(donationApiProvider)
         .createDonation(
@@ -191,18 +211,27 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
     }
 
     final result = createResponse.data!;
+    if (result.donationId.isEmpty || result.razorpayOrderId.isEmpty) {
+      if (mounted) setState(() => _isProcessing = false);
+      _showError('Invalid payment order from server. Please try again.');
+      return;
+    }
+
     _pendingDonationId = result.donationId;
     _pendingRazorpayOrderId = result.razorpayOrderId;
     _pendingAutopayId = null;
     _pendingSubscriptionId = null;
 
-    _initRazorpay();
-    _razorpay!.openCheckout(
+    final prefill = _userPrefill();
+    _bindRazorpayCallbacks();
+    _razorpay.openCheckout(
       keyId: result.razorpayKeyId,
       orderId: result.razorpayOrderId,
-      amount: result.amount,
-      name: 'Jamiat',
+      amount: result.amount > 0 ? result.amount : amount,
+      name: 'Jamiat Connect',
       description: widget.categoryTitle,
+      contact: prefill.contact,
+      email: prefill.email,
     );
   }
 
@@ -211,6 +240,11 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
     required num amount,
     required String message,
   }) async {
+    log(
+      'Creating autopay: campaign=$campaignId amount=$amount '
+      'period=$_selectedPeriod',
+      name: 'DonationSheet',
+    );
     final createResponse = await ref
         .read(autopayApiProvider)
         .createAutopay(
@@ -227,17 +261,26 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
     }
 
     final result = createResponse.data!;
+    if (result.autopayId.isEmpty || result.razorpaySubscriptionId.isEmpty) {
+      if (mounted) setState(() => _isProcessing = false);
+      _showError('Invalid subscription from server. Please try again.');
+      return;
+    }
+
     _pendingAutopayId = result.autopayId;
     _pendingSubscriptionId = result.razorpaySubscriptionId;
     _pendingDonationId = null;
     _pendingRazorpayOrderId = null;
 
-    _initRazorpay();
-    _razorpay!.openSubscriptionCheckout(
+    final prefill = _userPrefill();
+    _bindRazorpayCallbacks();
+    _razorpay.openSubscriptionCheckout(
       keyId: result.razorpayKeyId,
       subscriptionId: result.razorpaySubscriptionId,
-      name: 'Jamiat',
+      name: 'Jamiat Connect',
       description: widget.categoryTitle,
+      contact: prefill.contact,
+      email: prefill.email,
     );
   }
 
@@ -251,6 +294,7 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
         setState(() => _isProcessing = false);
       }
     } catch (e) {
+      log('Payment success handling failed: $e', name: 'DonationSheet');
       if (mounted) {
         setState(() => _isProcessing = false);
         _showError(e.toString().replaceFirst('Exception: ', ''));
@@ -362,6 +406,17 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
   }
 
   void _onPaymentError(PaymentFailureResponse response) {
+    log(
+      'Payment failed/cancelled: code=${response.code} msg=${response.message}',
+      name: 'DonationSheet',
+    );
+    // Pending donation stays `pending` server-side — jamiat verify-payment
+    // requires a valid Razorpay HMAC, so we cannot mark failed from the client.
+    _pendingDonationId = null;
+    _pendingRazorpayOrderId = null;
+    _pendingAutopayId = null;
+    _pendingSubscriptionId = null;
+
     if (!mounted) return;
     setState(() => _isProcessing = false);
     _showError(response.message ?? 'Payment cancelled or failed');
@@ -409,7 +464,9 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
-      child: Container(
+      child: PopScope(
+        canPop: !_isProcessing,
+        child: Container(
         decoration: const BoxDecoration(
           color: kWhite,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -723,6 +780,7 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
             ],
           ),
         ),
+      ),
       ),
     );
   }
