@@ -146,7 +146,9 @@ class CampaignApi {
     return ApiResponse.success(null, response.statusCode ?? 200);
   }
 
-  Future<ApiResponse<void>> shareCampaign(String campaignId) async {
+  Future<ApiResponse<Map<String, dynamic>>> shareCampaign(
+    String campaignId,
+  ) async {
     final response = await _api.post(
       '/campaign/share/$campaignId',
       const {},
@@ -158,7 +160,12 @@ class CampaignApi {
         response.statusCode,
       );
     }
-    return ApiResponse.success(null, response.statusCode ?? 200);
+    final data = nestedData(response.data) ?? response.data;
+    return ApiResponse.success(
+      data,
+      response.statusCode ?? 200,
+      message: response.message,
+    );
   }
 }
 

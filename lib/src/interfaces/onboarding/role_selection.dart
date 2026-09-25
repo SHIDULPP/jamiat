@@ -5,6 +5,7 @@ import 'package:jamiat/src/data/apis/auth_api.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/services/auth_session_service.dart';
+import 'package:jamiat/src/data/services/deep_link_service.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/data/services/secure_storage_service.dart';
 
@@ -58,6 +59,7 @@ class RoleSelectionScreen extends ConsumerWidget {
     await ref.read(secureStorageServiceProvider).clearSession();
     invalidateSessionCaches(ref);
     ref.read(selectedRoleProvider.notifier).setRole(null);
+    DeepLinkService.instance.resetReady();
     if (!context.mounted) return;
     NavigationService().pushNamedAndRemoveUntil('Login');
   }

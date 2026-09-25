@@ -10,6 +10,7 @@ import 'package:jamiat/src/data/models/api_response.dart';
 import 'package:jamiat/src/data/models/user_model.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/data/services/secure_storage_service.dart';
+import 'package:jamiat/src/data/services/deep_link_service.dart';
 import 'package:jamiat/src/data/services/get_fcm.dart';
 import 'package:jamiat/src/data/utils/auth_navigation.dart';
 import 'package:jamiat/src/interfaces/components/primarybutton.dart';
@@ -465,7 +466,15 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
 
     if (!mounted) return;
     _showMessage(response.message ?? 'OTP verified successfully.');
-    NavigationService().pushNamedAndRemoveUntil(routeForUser(user));
+    final nextRoute = routeForUser(user);
+    NavigationService().pushNamedAndRemoveUntil(nextRoute);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (nextRoute == 'navBar') {
+        DeepLinkService.instance.markReady();
+      } else {
+        DeepLinkService.instance.resetReady();
+      }
+    });
   }
 
   void _showMessage(String message) {

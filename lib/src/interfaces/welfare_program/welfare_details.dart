@@ -9,6 +9,7 @@ import 'package:jamiat/src/data/providers/campaign_provider.dart';
 import 'package:jamiat/src/data/providers/welfare_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
+import 'package:jamiat/src/data/services/campaign_share_service.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
 import 'package:jamiat/src/interfaces/components/campaign_card.dart';
 
@@ -59,17 +60,17 @@ class _WelfareDetailsScreenState extends ConsumerState<WelfareDetailsScreen> {
     if (_shareLoadingId != null) return;
     setState(() => _shareLoadingId = campaign.id);
     try {
-      final res = await ref
-          .read(campaignApiProvider)
-          .shareCampaign(campaign.id);
+      HapticHelper.impact(HapticImpact.light);
+      await ref.read(campaignShareServiceProvider).shareCampaign(
+            context: context,
+            campaignId: campaign.id,
+            title: campaign.title,
+          );
+    } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            res.success
-                ? 'Thanks for sharing ${campaign.title}'
-                : (res.message ?? 'Share failed'),
-          ),
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
         ),
       );
     } finally {

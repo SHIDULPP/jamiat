@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jamiat/src/data/services/deep_link_service.dart';
 import 'package:jamiat/src/interfaces/main_pages/navbar.dart';
 import 'package:jamiat/src/interfaces/onboarding/login.dart';
 import 'package:jamiat/src/interfaces/onboarding/splash_screen.dart';
@@ -416,6 +417,28 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
       break;
 
     default:
+      // Platform deep links may arrive as route names:
+      // jamiatconnect://campaign/<id>, /campaign/<id>, or path-only /<id>.
+      final routeName = settings?.name;
+      if (DeepLinkService.looksLikeDeepLinkRoute(routeName)) {
+        // Swallow the platform push (warm start). Pop first, then open
+        // CampaignDetails so we don't pop the campaign screen by mistake.
+        return PageRouteBuilder(
+          opaque: false,
+          settings: settings,
+          pageBuilder: (context, _, _) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              }
+              DeepLinkService.instance.handlePlatformInitialRoute(routeName);
+            });
+            return const SizedBox.shrink();
+          },
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+        );
+      }
       if (settings?.name?.startsWith('/app') == true) {
         return PageRouteBuilder(
           opaque: false,

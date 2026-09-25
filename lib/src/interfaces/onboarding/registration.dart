@@ -13,6 +13,7 @@ import 'package:jamiat/src/data/models/user_model.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/data/services/secure_storage_service.dart';
 import 'package:jamiat/src/data/utils/auth_navigation.dart';
+import 'package:jamiat/src/data/services/deep_link_service.dart';
 import 'package:flutter_countries/flutter_countries.dart' as fc;
 import 'package:jamiat/src/data/providers/location_provider.dart';
 import 'package:jamiat/src/interfaces/components/loading_indicator.dart';
@@ -1236,7 +1237,15 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       return;
     }
 
-    NavigationService().pushNamedAndRemoveUntil(routeForUser(user));
+    final nextRoute = routeForUser(user);
+    NavigationService().pushNamedAndRemoveUntil(nextRoute);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (nextRoute == 'navBar') {
+        DeepLinkService.instance.markReady();
+      } else {
+        DeepLinkService.instance.resetReady();
+      }
+    });
   }
 
   void _showMessage(String message) {

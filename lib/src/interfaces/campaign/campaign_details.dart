@@ -12,6 +12,7 @@ import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
 import 'package:jamiat/src/interfaces/components/campaign_card.dart';
 import 'package:jamiat/src/interfaces/components/donation_sheet.dart';
+import 'package:jamiat/src/data/services/campaign_share_service.dart';
 
 class CampaignDetailsScreen extends ConsumerStatefulWidget {
   final String title;
@@ -148,15 +149,20 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
     if (_shareLoading) return;
     setState(() => _shareLoading = true);
     try {
-      final res = await ref.read(campaignApiProvider).shareCampaign(campaignId);
+      HapticHelper.impact(HapticImpact.light);
+      final result = await ref
+          .read(campaignShareServiceProvider)
+          .shareCampaign(
+            context: context,
+            campaignId: campaignId,
+            title: title,
+          );
+      if (!mounted || !result.success) return;
+    } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            res.success
-                ? 'Thanks for sharing $title'
-                : (res.message ?? 'Share failed'),
-          ),
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
         ),
       );
     } finally {

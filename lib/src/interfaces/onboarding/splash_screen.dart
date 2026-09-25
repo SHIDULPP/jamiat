@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:jamiat/src/data/providers/screen_data_providers.dart';
 import 'package:jamiat/src/data/services/auth_session_service.dart';
+import 'package:jamiat/src/data/services/deep_link_service.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -89,6 +90,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final route = await routeFuture;
     if (!mounted) return;
     NavigationService().pushNamedAndRemoveUntil(route);
+    // Only open shared campaigns once the user can enter the app.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (route == 'navBar') {
+        DeepLinkService.instance.markReady();
+      } else {
+        DeepLinkService.instance.resetReady();
+      }
+    });
   }
 
   @override

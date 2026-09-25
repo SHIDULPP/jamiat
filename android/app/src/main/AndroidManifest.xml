@@ -34,9 +34,34 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            <!-- Handled by app_links; disable Flutter's default route push. -->
+            <meta-data
+              android:name="flutter_deeplinking_enabled"
+              android:value="false" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- Custom scheme: jamiatconnect://campaign/<id> -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="jamiatconnect" android:host="campaign"/>
+            </intent-filter>
+            <!-- HTTPS share landing under /api/v1 (proxied to backend) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="https"
+                    android:host="uat-admin.juhkerala.com"
+                    android:pathPrefix="/api/v1/share/campaign"/>
+                <data
+                    android:scheme="https"
+                    android:host="admin.juhkerala.com"
+                    android:pathPrefix="/api/v1/share/campaign"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

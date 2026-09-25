@@ -13,6 +13,7 @@ import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/models/user_model.dart';
 import 'package:jamiat/src/data/providers/donation_provider.dart';
 import 'package:jamiat/src/data/services/auth_session_service.dart';
+import 'package:jamiat/src/data/services/deep_link_service.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/data/services/profile_qr_share_service.dart';
@@ -78,6 +79,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
     await ref.read(secureStorageServiceProvider).clearSession();
     invalidateSessionCaches(ref);
+    DeepLinkService.instance.resetReady();
     if (!context.mounted) return;
     NavigationService().pushNamedAndRemoveUntil('Login');
   }
