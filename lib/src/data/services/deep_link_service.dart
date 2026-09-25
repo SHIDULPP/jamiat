@@ -9,7 +9,14 @@ class DeepLinkService {
 
   static final RegExp _objectId = RegExp(r'^[a-fA-F0-9]{24}$');
 
+  /// Same link often arrives from getInitialLink + uriLinkStream + platform
+  /// route within a short window; ignore repeats so CampaignDetails is
+  /// not stacked twice.
+  static const _dedupeWindow = Duration(seconds: 4);
+
   String? _pendingCampaignId;
+  String? _lastOpenedCampaignId;
+  DateTime? _lastOpenedAt;
   bool _ready = false;
 
   String? get pendingCampaignId => _pendingCampaignId;
@@ -113,7 +120,20 @@ class DeepLinkService {
     return null;
   }
 
+  bool _isDuplicate(String campaignId) {
+    if (_lastOpenedCampaignId != campaignId || _lastOpenedAt == null) {
+      return false;
+    }
+    return DateTime.now().difference(_lastOpenedAt!) < _dedupeWindow;
+  }
+
   void openCampaign(String campaignId) {
+    if (_isDuplicate(campaignId)) {
+      debugPrint('DeepLinkService: skip duplicate $campaignId');
+      _pendingCampaignId = null;
+      return;
+    }
+
     final nav = NavigationService.navigatorKey.currentState;
     if (!_ready || nav == null) {
       _pendingCampaignId = campaignId;
@@ -121,6 +141,8 @@ class DeepLinkService {
     }
 
     _pendingCampaignId = null;
+    _lastOpenedCampaignId = campaignId;
+    _lastOpenedAt = DateTime.now();
     NavigationService().pushNamed(
       'CampaignDetails',
       arguments: {'campaignId': campaignId},

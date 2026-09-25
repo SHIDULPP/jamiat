@@ -32,12 +32,10 @@ class CampaignShareService {
     String? apiMessage;
 
     try {
+      // Record the share server-side; always share the BASE_URL-derived link
+      // so UAT/prod never mix (API may return a fixed host).
       final response = await _api.shareCampaign(campaignId);
-      if (response.success && response.data != null) {
-        final remoteUrl = response.data!['share_url']?.toString().trim();
-        if (remoteUrl != null && remoteUrl.isNotEmpty) {
-          shareUrl = remoteUrl;
-        }
+      if (response.success) {
         apiMessage = response.message;
       }
     } catch (_) {
