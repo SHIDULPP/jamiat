@@ -698,7 +698,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         icon: Icons.article_outlined,
         title: 'Terms and Conditions',
         chevronColor: accentChevron,
-        onTap: () {},
+        onTap: () {
+          HapticHelper.impact(HapticImpact.light);
+          NavigationService().pushNamed('TermsAndConditions');
+        },
       ),
       _ProfileMenuItem(
         icon: Icons.shield_outlined,
