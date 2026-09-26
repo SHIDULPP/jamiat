@@ -210,7 +210,7 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
       page = DonationSuccessScreen(
         isAutopay: args?['isAutopay'] as bool? ?? false,
         amount: args?['amount'] as String? ?? '500',
-        period: args?['period'] as String? ?? 'Daily',
+        period: args?['period'] as String? ?? 'monthly',
         transactionId: args?['transactionId'] as String? ?? 'TR12451BHGF',
         date: args?['date'] as String? ?? '20/06/2026',
         campaignName:
@@ -248,7 +248,7 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
         iconColor: args?['iconColor'] as Color? ?? const Color(0xFF16A34A),
         status: args?['status'] as String? ?? 'Auto Pay Cancelled',
         mandateAmount: args?['mandateAmount'] as String? ?? '₹500',
-        period: args?['period'] as String? ?? 'Daily',
+        period: args?['period'] as String? ?? 'monthly',
         startDate: args?['startDate'] as String? ?? '28 Mar,2025',
         endDate: args?['endDate'] as String? ?? '1 Apr,2026',
         history: args?['history'] as List<Map<String, String>>?,

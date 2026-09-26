@@ -23,7 +23,7 @@ class DonationSuccessScreen extends ConsumerStatefulWidget {
     super.key,
     required this.isAutopay,
     required this.amount,
-    this.period = 'Daily',
+    this.period = 'monthly',
     this.transactionId = 'TR12451BHGF',
     this.date = '20/06/2026',
     this.campaignName = 'Medical aid for patient',

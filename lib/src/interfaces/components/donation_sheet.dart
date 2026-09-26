@@ -82,7 +82,7 @@ class DonationSheet extends ConsumerStatefulWidget {
 
 class _DonationSheetState extends ConsumerState<DonationSheet> {
   final List<int> _presetAmounts = [100, 250, 500, 1000, 2500, 5000];
-  final List<String> _periods = ['daily', 'weekly', 'monthly', 'yearly'];
+  final List<String> _periods = ['weekly', 'monthly', 'yearly'];
   final _amountController = TextEditingController();
   final _messageController = TextEditingController();
   int? _selectedPresetIndex;
@@ -686,10 +686,14 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
                   runSpacing: 8,
                   children: _periods.map((period) {
                     final selected = _selectedPeriod == period;
+                    final label = switch (period) {
+                      'weekly' => 'Weekly',
+                      'monthly' => 'Monthly',
+                      'yearly' => 'Yearly',
+                      _ => period[0].toUpperCase() + period.substring(1),
+                    };
                     return ChoiceChip(
-                      label: Text(
-                        period[0].toUpperCase() + period.substring(1),
-                      ),
+                      label: Text(label),
                       selected: selected,
                       onSelected: (_) {
                         HapticHelper.impact(HapticImpact.light);
