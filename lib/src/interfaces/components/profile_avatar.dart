@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 
@@ -16,8 +18,17 @@ class ProfileAvatar extends StatelessWidget {
   final Color? backgroundColor;
   final Color? iconColor;
 
-  bool get _hasNetworkImage =>
-      imageUrl != null && imageUrl!.startsWith('http');
+  String? get _resolvedUrl {
+    var raw = imageUrl?.trim();
+    if (raw == null || raw.isEmpty || raw == 'null') return null;
+    if ((raw.startsWith('"') && raw.endsWith('"')) ||
+        (raw.startsWith("'") && raw.endsWith("'"))) {
+      raw = raw.substring(1, raw.length - 1).trim();
+    }
+    if (raw.startsWith('//')) raw = 'https:$raw';
+    if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+    return null;
+  }
 
   Widget _placeholder() {
     return Container(
@@ -38,15 +49,30 @@ class ProfileAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!_hasNetworkImage) return _placeholder();
+    final url = _resolvedUrl;
+    if (url == null) return _placeholder();
+
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final cacheSize = (size * dpr).round();
 
     return ClipOval(
       child: Image.network(
-        imageUrl!,
+        url,
         width: size,
         height: size,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _placeholder(),
+        gaplessPlayback: true,
+        filterQuality: FilterQuality.medium,
+        cacheWidth: cacheSize,
+        cacheHeight: cacheSize,
+        errorBuilder: (context, error, stackTrace) {
+          log(
+            'ProfileAvatar failed to load: $url → $error',
+            name: 'ProfileAvatar',
+            stackTrace: stackTrace,
+          );
+          return _placeholder();
+        },
       ),
     );
   }

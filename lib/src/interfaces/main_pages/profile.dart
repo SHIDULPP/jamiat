@@ -12,6 +12,7 @@ import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/models/user_model.dart';
 import 'package:jamiat/src/data/providers/donation_provider.dart';
+import 'package:jamiat/src/data/providers/home_provider.dart';
 import 'package:jamiat/src/data/services/auth_session_service.dart';
 import 'package:jamiat/src/data/services/deep_link_service.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
@@ -203,6 +204,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       }
 
       ref.invalidate(userProfileProvider);
+      ref.invalidate(homeStatsProvider);
       _showMessage('Avatar updated.');
     } catch (e) {
       if (mounted) {
@@ -249,6 +251,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       }
 
       ref.invalidate(userProfileProvider);
+      ref.invalidate(homeStatsProvider);
       _showMessage('Avatar removed.');
     } catch (e) {
       if (mounted) {

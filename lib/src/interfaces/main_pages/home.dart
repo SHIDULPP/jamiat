@@ -626,8 +626,9 @@ class _HomeHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final profileAsync = ref.watch(userProfileProvider);
     final statsAsync = ref.watch(homeStatsProvider);
-    final user = statsAsync.value?.user;
+    final user = profileAsync.asData?.value ?? statsAsync.value?.user;
     final userName = user?.displayName ?? 'Member';
     final image = user?.image;
 

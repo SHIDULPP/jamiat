@@ -64,8 +64,15 @@ class UserModel {
       name: json['name']?.toString(),
       email: json['email']?.toString(),
       image: () {
-        final raw = json['image']?.toString().trim();
+        var raw = json['image']?.toString().trim();
         if (raw == null || raw.isEmpty || raw == 'null') return null;
+        // Strip accidental surrounding quotes from some API payloads.
+        if ((raw.startsWith('"') && raw.endsWith('"')) ||
+            (raw.startsWith("'") && raw.endsWith("'"))) {
+          raw = raw.substring(1, raw.length - 1).trim();
+        }
+        if (raw.startsWith('//')) raw = 'https:$raw';
+        if (raw.isEmpty || raw == 'null') return null;
         return raw;
       }(),
       gender: json['gender']?.toString(),
