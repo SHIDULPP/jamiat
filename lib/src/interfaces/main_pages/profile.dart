@@ -666,12 +666,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           chevronColor: mutedChevron,
           onTap: () => NavigationService().pushNamed('SavedProducts'),
         ),
-        _ProfileMenuItem(
-          icon: Icons.chat_bubble_outline,
-          title: 'Enquiries',
-          chevronColor: mutedChevron,
-          onTap: () => NavigationService().pushNamed('Enquiries'),
-        ),
+        //Temororarily removed
+        // _ProfileMenuItem(
+        //   icon: Icons.chat_bubble_outline,
+        //   title: 'Enquiries',
+        //   chevronColor: mutedChevron,
+        //   onTap: () => NavigationService().pushNamed('Enquiries'),
+        // ),
       ],
       _ProfileMenuItem(
         icon: Icons.autorenew_outlined,
@@ -692,7 +693,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         icon: Icons.headset_mic_outlined,
         title: 'Help & Support',
         chevronColor: accentChevron,
-        onTap: () {},
+        onTap: () {
+          HapticHelper.impact(HapticImpact.light);
+          NavigationService().pushNamed('HelpAndSupport');
+        },
       ),
       _ProfileMenuItem(
         icon: Icons.article_outlined,
