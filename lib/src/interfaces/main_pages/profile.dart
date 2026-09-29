@@ -707,7 +707,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         icon: Icons.shield_outlined,
         title: 'Privacy Policy',
         chevronColor: accentChevron,
-        onTap: () {},
+        onTap: () {
+          HapticHelper.impact(HapticImpact.light);
+          NavigationService().pushNamed('PrivacyPolicy');
+        },
       ),
     ];
   }

@@ -33,6 +33,7 @@ import 'package:jamiat/src/interfaces/market/saved_products.dart';
 import 'package:jamiat/src/interfaces/market/my_enquiries.dart';
 import 'package:jamiat/src/interfaces/enquiries/enquiries.dart';
 import 'package:jamiat/src/interfaces/main_pages/terms_and_conditions.dart';
+import 'package:jamiat/src/interfaces/main_pages/privacy_policy.dart';
 
 enum TransitionType { slideFromBottom, slideFromRight, fade, fadeScale }
 
@@ -413,6 +414,12 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
 
     case 'TermsAndConditions':
       page = const TermsAndConditionsScreen();
+      transitionToUse = TransitionType.slideFromRight;
+      transitionDuration = const Duration(milliseconds: 300);
+      break;
+
+    case 'PrivacyPolicy':
+      page = const PrivacyPolicyScreen();
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);
       break;
