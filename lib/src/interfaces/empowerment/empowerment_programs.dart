@@ -41,6 +41,28 @@ class _EmpowermentProgramsScreenState
   }
 
   Future<void> _apply(EmpowermentProgramModel program) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Apply for program?'),
+        content: Text(
+          'Do you want to apply for "${program.title}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Apply'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
     final res = await ref
         .read(empowermentApiProvider)
         .applyForProgram(program.id);

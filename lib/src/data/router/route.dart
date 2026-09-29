@@ -20,6 +20,7 @@ import 'package:jamiat/src/interfaces/events/event_qr_scan.dart';
 import 'package:jamiat/src/interfaces/events/ticket.dart';
 import 'package:jamiat/src/interfaces/events/tickets_list.dart';
 import 'package:jamiat/src/interfaces/events/saved_events.dart';
+import 'package:jamiat/src/interfaces/events/my_registered_events.dart';
 import 'package:jamiat/src/interfaces/welfare_program/welfare_program.dart';
 import 'package:jamiat/src/interfaces/welfare_program/welfare_details.dart';
 import 'package:jamiat/src/interfaces/news/news_list.dart';
@@ -316,6 +317,12 @@ Route<dynamic> generateRoute(RouteSettings? settings) {
 
     case 'MyTickets':
       page = const MyTicketsScreen();
+      transitionToUse = TransitionType.slideFromRight;
+      transitionDuration = const Duration(milliseconds: 300);
+      break;
+
+    case 'MyRegisteredEvents':
+      page = const MyRegisteredEventsScreen();
       transitionToUse = TransitionType.slideFromRight;
       transitionDuration = const Duration(milliseconds: 300);
       break;

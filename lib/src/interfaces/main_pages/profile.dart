@@ -658,7 +658,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           icon: Icons.local_activity_outlined,
           title: 'Events',
           chevronColor: mutedChevron,
-          onTap: () => NavigationService().pushNamed('Events'),
+          onTap: () => NavigationService().pushNamed('MyRegisteredEvents'),
         ),
         _ProfileMenuItem(
           icon: Icons.inventory_2_outlined,
@@ -667,12 +667,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           onTap: () => NavigationService().pushNamed('SavedProducts'),
         ),
         //Temororarily removed
-        // _ProfileMenuItem(
-        //   icon: Icons.chat_bubble_outline,
-        //   title: 'Enquiries',
-        //   chevronColor: mutedChevron,
-        //   onTap: () => NavigationService().pushNamed('Enquiries'),
-        // ),
+        _ProfileMenuItem(
+          icon: Icons.chat_bubble_outline,
+          title: 'Enquiries',
+          chevronColor: mutedChevron,
+          onTap: () => NavigationService().pushNamed('Enquiries'),
+        ),
       ],
       _ProfileMenuItem(
         icon: Icons.autorenew_outlined,

@@ -2,195 +2,150 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
-import 'package:jamiat/src/data/models/enquiry_model.dart';
-import 'package:jamiat/src/data/providers/enquiry_provider.dart';
+import 'package:jamiat/src/data/models/product_model.dart';
+import 'package:jamiat/src/data/providers/product_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
+import 'package:jamiat/src/data/services/navigation_services.dart';
+import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:jamiat/src/interfaces/components/primarybutton.dart';
+import 'package:jamiat/src/interfaces/market/market_product_card.dart';
 
 class EnquiriesScreen extends ConsumerWidget {
   const EnquiriesScreen({super.key});
 
-  static const _headerBg = Color(0xFFFFFBEB);
-  static const _emailIconColor = Color(0xFF2563EB);
-  static const _phoneIconColor = Color(0xFF16A34A);
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return '';
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${date.day} ${months[date.month - 1]}, ${date.year}';
-  }
-
-  Future<void> _launchUri(BuildContext context, Uri uri) async {
-    try {
-      final launched = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
-      if (!launched && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to open'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to open'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _email(BuildContext context, EnquiryModel enquiry) async {
-    if (enquiry.email.isEmpty) return;
-    HapticHelper.impact(HapticImpact.light);
-    await _launchUri(
-      context,
-      Uri(
-        scheme: 'mailto',
-        path: enquiry.email,
-        queryParameters: {'subject': 'Re: Your enquiry'},
-      ),
-    );
-  }
-
-  Future<void> _call(BuildContext context, EnquiryModel enquiry) async {
-    final phone = enquiry.phone?.trim();
-    if (phone == null || phone.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No phone number available'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-    HapticHelper.impact(HapticImpact.light);
-    await _launchUri(context, Uri(scheme: 'tel', path: phone));
-  }
-
-  Widget _actionIcon({
-    required IconData icon,
-    required Color color,
-    required VoidCallback? onTap,
+  Widget _headerCircleButton({
+    required Widget child,
+    VoidCallback? onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 36,
-        height: 36,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: color.withValues(alpha: 0.35)),
+          color: kWhite,
+          border: Border.all(color: kStrokeColor, width: 1.25),
         ),
-        child: Icon(icon, color: color, size: 18),
+        alignment: Alignment.center,
+        child: child,
       ),
     );
   }
 
-  Widget _enquiryCard(BuildContext context, EnquiryModel enquiry) {
-    final hasPhone =
-        enquiry.phone != null && enquiry.phone!.trim().isNotEmpty;
+  Widget _emptyState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/pngs/noenquiry.png',
+              width: 88,
+              height: 88,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'No Enquiries yet',
+              style: kBodyTitleSB.copyWith(color: kTextColor),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "You haven't submitted any enquiries. Browse products and "
+              'submit an enquiry.',
+              style: kCaption12R.copyWith(
+                color: kSecondaryTextColor,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: 180,
+              child: primaryButton(
+                label: 'Explore Products',
+                buttonHeight: 48,
+                onPressed: () {
+                  HapticHelper.impact(HapticImpact.light);
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  } else {
+                    NavigationService().pushNamedAndRemoveUntil('navBar');
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _enquiryCard(ProductEnquiryModel enquiry) {
+    final product = enquiry.product;
+    final enquiredOn = enquiry.createdAt != null
+        ? formatDonationDateTime(enquiry.createdAt!.toLocal())
+        : '';
 
     return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: kWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: kBorder),
+        borderRadius: BorderRadius.circular(kCardRadiusMd),
+        border: Border.all(color: kCardBorder),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            color: _headerBg,
-            padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        enquiry.name.isEmpty ? 'Unknown' : enquiry.name,
-                        style: kBodyTitleSB.copyWith(
-                          color: kTextColor,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _formatDate(enquiry.createdAt),
-                        style: kCaption12R.copyWith(
-                          color: kSecondaryTextColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (enquiry.email.isNotEmpty)
-                  _actionIcon(
-                    icon: Icons.mail_outline,
-                    color: _emailIconColor,
-                    onTap: () => _email(context, enquiry),
-                  ),
-                if (enquiry.email.isNotEmpty && hasPhone)
-                  const SizedBox(width: 10),
-                if (hasPhone)
-                  _actionIcon(
-                    icon: Icons.phone_outlined,
-                    color: _phoneIconColor,
-                    onTap: () => _call(context, enquiry),
-                  ),
-              ],
+          ClipRRect(
+            borderRadius: BorderRadius.circular(kCardRadiusSm),
+            child: SizedBox(
+              width: 72,
+              height: 72,
+              child: productCoverImage(product.image),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-              decoration: BoxDecoration(
-                color: kScreenBg,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        product.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: kCaption12SB.copyWith(
+                          color: kTextColor,
+                          height: 1.25,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      product.formattedPrice,
+                      style: kCaption12SB.copyWith(color: kTextColor),
+                    ),
+                  ],
+                ),
+                if (enquiredOn.isNotEmpty) ...[
+                  const SizedBox(height: 8),
                   Text(
-                    'Message',
-                    style: kCaption12R.copyWith(color: kMutedText),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    enquiry.message.isEmpty ? '—' : enquiry.message,
-                    style: kBodyTitleR.copyWith(
-                      color: kTextColor,
-                      fontSize: 14,
-                      height: 1.4,
+                    'Enquired on: $enquiredOn',
+                    style: kCaption10R.copyWith(
+                      color: kSecondaryTextColor,
+                      height: 1.3,
                     ),
                   ),
                 ],
-              ),
+              ],
             ),
           ),
         ],
@@ -200,7 +155,7 @@ class EnquiriesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final enquiriesAsync = ref.watch(receivedEnquiriesProvider);
+    final enquiriesAsync = ref.watch(myProductEnquiriesProvider);
 
     return Scaffold(
       backgroundColor: kWhite,
@@ -209,69 +164,67 @@ class EnquiriesScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingH,
+                8,
+                kScreenPaddingH,
+                16,
+              ),
               child: Row(
                 children: [
-                  GestureDetector(
+                  _headerCircleButton(
                     onTap: () {
                       HapticHelper.impact(HapticImpact.light);
                       Navigator.pop(context);
                     },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: kWhite,
-                        border: Border.all(color: kBorder, width: 1.25),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: kTextColor,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'Enquiries',
-                    style: kHeadTitleB.copyWith(
+                    child: const Icon(
+                      Icons.arrow_back,
                       color: kTextColor,
-                      fontSize: 22,
+                      size: 20,
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Text('Enquiries', style: kSectionTitleSB),
                 ],
               ),
             ),
             Expanded(
               child: AsyncContent(
                 asyncValue: enquiriesAsync,
-                onRetry: () => ref.invalidate(receivedEnquiriesProvider),
+                onRetry: () => ref.invalidate(myProductEnquiriesProvider),
                 builder: (page) {
-                  if (page.items.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'No enquiries yet',
-                        style: kEmptyStateM,
-                      ),
-                    );
-                  }
+                  final items = page.items;
+                  if (items.isEmpty) return _emptyState(context);
 
                   return RefreshIndicator(
                     color: kPrimaryColor,
                     onRefresh: () async {
-                      ref.invalidate(receivedEnquiriesProvider);
-                      await ref.read(receivedEnquiriesProvider.future);
+                      ref.invalidate(myProductEnquiriesProvider);
+                      await ref.read(myProductEnquiriesProvider.future);
                     },
-                    child: ListView.separated(
+                    child: ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(
                         parent: BouncingScrollPhysics(),
                       ),
-                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-                      itemCount: page.items.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 16),
+                      padding: const EdgeInsets.fromLTRB(
+                        kScreenPaddingH,
+                        0,
+                        kScreenPaddingH,
+                        16,
+                      ),
+                      itemCount: items.length,
                       itemBuilder: (context, index) {
-                        return _enquiryCard(context, page.items[index]);
+                        final enquiry = items[index];
+                        return GestureDetector(
+                          onTap: () {
+                            HapticHelper.impact(HapticImpact.light);
+                            NavigationService().pushNamed(
+                              'MarketProductDetail',
+                              arguments: {'productId': enquiry.product.id},
+                            );
+                          },
+                          child: _enquiryCard(enquiry),
+                        );
                       },
                     ),
                   );
