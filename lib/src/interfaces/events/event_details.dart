@@ -296,7 +296,9 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
               text: event.venue!,
             ),
           ],
+          // Meeting link is only for registered attendees (not public).
           if (event.type == 'Online' &&
+              event.isRegistered == true &&
               event.onlineLink != null &&
               event.onlineLink!.isNotEmpty) ...[
             const SizedBox(height: 8),
