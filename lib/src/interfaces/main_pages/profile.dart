@@ -15,6 +15,7 @@ import 'package:jamiat/src/data/providers/donation_provider.dart';
 import 'package:jamiat/src/data/providers/home_provider.dart';
 import 'package:jamiat/src/data/services/auth_session_service.dart';
 import 'package:jamiat/src/data/services/deep_link_service.dart';
+import 'package:jamiat/src/data/services/external_donation_service.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/data/services/profile_qr_share_service.dart';
@@ -645,9 +646,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   List<_ProfileMenuItem> _menuItems({
     required bool isJamiatMember,
     required BuildContext context,
+    String? phone,
   }) {
     const mutedChevron = kSecondaryTextColor;
     const accentChevron = kPrimaryColor;
+    final hideAutopay = ExternalDonationService.isTargetPhone(phone);
 
     return [
       _ProfileMenuItem(
@@ -677,12 +680,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           onTap: () => NavigationService().pushNamed('Enquiries'),
         ),
       ],
-      _ProfileMenuItem(
-        icon: Icons.autorenew_outlined,
-        title: 'Autopay',
-        chevronColor: mutedChevron,
-        onTap: () => NavigationService().pushNamed('AutopayView'),
-      ),
+      if (!hideAutopay)
+        _ProfileMenuItem(
+          icon: Icons.autorenew_outlined,
+          title: 'Autopay',
+          chevronColor: mutedChevron,
+          onTap: () => NavigationService().pushNamed('AutopayView'),
+        ),
       _ProfileMenuItem(
         icon: Icons.person_outline,
         title: 'Edit Profile',
@@ -782,6 +786,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             final menuItems = _menuItems(
               isJamiatMember: isJamiatMember,
               context: context,
+              phone: user.phone,
             );
 
             return SingleChildScrollView(

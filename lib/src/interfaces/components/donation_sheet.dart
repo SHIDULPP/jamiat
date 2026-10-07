@@ -15,6 +15,7 @@ import 'package:jamiat/src/data/providers/razorpay_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/data/services/razorpay_service.dart';
+import 'package:jamiat/src/data/services/external_donation_service.dart';
 import 'package:jamiat/src/data/utils/category_mapper.dart';
 import 'package:jamiat/src/data/utils/format_helpers.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
@@ -153,6 +154,15 @@ class _DonationSheetState extends ConsumerState<DonationSheet> {
 
   Future<void> _handlePayment() async {
     if (!_hasValidAmount) return;
+
+    final handled = await ExternalDonationService.handleDonationClick(ref: ref);
+    if (handled) {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        Navigator.of(context).pop();
+      }
+      return;
+    }
 
     final campaignId = widget.campaignId;
     if (campaignId == null || campaignId.isEmpty) {

@@ -13,6 +13,7 @@ import 'package:jamiat/src/interfaces/components/async_content.dart';
 import 'package:jamiat/src/interfaces/components/campaign_card.dart';
 import 'package:jamiat/src/interfaces/components/donation_sheet.dart';
 import 'package:jamiat/src/data/services/campaign_share_service.dart';
+import 'package:jamiat/src/data/services/external_donation_service.dart';
 
 class CampaignDetailsScreen extends ConsumerStatefulWidget {
   final String title;
@@ -412,8 +413,12 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
           height: 52,
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               HapticHelper.impact(HapticImpact.medium);
+              final handled =
+                  await ExternalDonationService.handleDonationClick(ref: ref);
+              if (handled) return;
+              if (!mounted) return;
               DonationSheet.show(
                 context: context,
                 categoryTitle: title,
@@ -436,7 +441,10 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
               ),
             ),
             child: Text(
-              widget.isAutopay ? 'Set up Autopay' : 'Donate Now',
+              ExternalDonationService.getDonationButtonLabel(
+                ref: ref,
+                isAutopay: widget.isAutopay,
+              ),
               style: kButtonLabelSB,
             ),
           ),
@@ -637,8 +645,14 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
               height: 52,
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   HapticHelper.impact(HapticImpact.medium);
+                  final handled =
+                      await ExternalDonationService.handleDonationClick(
+                    ref: ref,
+                  );
+                  if (handled) return;
+                  if (!context.mounted) return;
                   DonationSheet.show(
                     context: context,
                     categoryTitle: widget.title,
@@ -658,7 +672,10 @@ class _CampaignDetailsScreenState extends ConsumerState<CampaignDetailsScreen> {
                   ),
                 ),
                 child: Text(
-                  widget.isAutopay ? 'Set up Autopay' : 'Donate Now',
+                  ExternalDonationService.getDonationButtonLabel(
+                    ref: ref,
+                    isAutopay: widget.isAutopay,
+                  ),
                   style: kButtonLabelSB,
                 ),
               ),
