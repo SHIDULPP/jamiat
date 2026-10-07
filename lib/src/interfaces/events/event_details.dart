@@ -7,6 +7,7 @@ import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/models/event_model.dart';
 import 'package:jamiat/src/data/providers/event_provider.dart';
+import 'package:jamiat/src/data/services/event_share_service.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/data/utils/format_helpers.dart';
@@ -38,6 +39,29 @@ class EventDetailsScreen extends ConsumerStatefulWidget {
 class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
   bool _bookmarkLoading = false;
   bool _registerLoading = false;
+  bool _shareLoading = false;
+
+  Future<void> _shareEvent(String eventId, String title) async {
+    if (_shareLoading) return;
+    setState(() => _shareLoading = true);
+    try {
+      HapticHelper.impact(HapticImpact.light);
+      await ref.read(eventShareServiceProvider).shareEvent(
+            context: context,
+            eventId: eventId,
+            title: title,
+          );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _shareLoading = false);
+    }
+  }
 
   Widget _headerCircleButton({
     required Widget child,
@@ -424,22 +448,28 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
                   ),
                   if (hasId) ...[
                     _headerCircleButton(
-                      onTap: () {
-                        HapticHelper.impact(HapticImpact.light);
-                        final title = event?.title ?? widget.title;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Thanks for sharing $title')),
-                        );
-                      },
-                      child: SvgPicture.asset(
-                        'assets/svg/share.svg',
-                        width: 18,
-                        height: 18,
-                        colorFilter: const ColorFilter.mode(
-                          kTextColor,
-                          BlendMode.srcIn,
-                        ),
-                      ),
+                      onTap: _shareLoading
+                          ? null
+                          : () {
+                              final id = widget.eventId!;
+                              final title = event?.title ?? widget.title;
+                              _shareEvent(id, title);
+                            },
+                      child: _shareLoading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : SvgPicture.asset(
+                              'assets/svg/share.svg',
+                              width: 18,
+                              height: 18,
+                              colorFilter: const ColorFilter.mode(
+                                kTextColor,
+                                BlendMode.srcIn,
+                              ),
+                            ),
                     ),
                     const SizedBox(width: 8),
                     _headerCircleButton(

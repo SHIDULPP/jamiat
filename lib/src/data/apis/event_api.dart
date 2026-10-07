@@ -209,6 +209,26 @@ class EventApi {
       response.statusCode,
     );
   }
+
+  Future<ApiResponse<Map<String, dynamic>>> shareEvent(String eventId) async {
+    final response = await _api.post(
+      '/event/share/$eventId',
+      const {},
+      requireAuth: true,
+    );
+    if (!response.success) {
+      return ApiResponse.error(
+        response.message ?? 'Failed to share',
+        response.statusCode,
+      );
+    }
+    final data = nestedData(response.data) ?? response.data;
+    return ApiResponse.success(
+      data,
+      response.statusCode ?? 200,
+      message: response.message,
+    );
+  }
 }
 
 final eventApiProvider = Provider<EventApi>(

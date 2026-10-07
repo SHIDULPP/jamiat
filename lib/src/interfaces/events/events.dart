@@ -5,6 +5,7 @@ import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
 import 'package:jamiat/src/data/models/event_model.dart';
 import 'package:jamiat/src/data/providers/event_provider.dart';
+import 'package:jamiat/src/data/services/event_share_service.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 import 'package:jamiat/src/interfaces/components/async_content.dart';
@@ -22,6 +23,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
   String _searchQuery = '';
   final Map<String, bool> _bookmarkOverrides = {};
   String? _bookmarkLoadingId;
+  String? _shareLoadingId;
 
   @override
   void dispose() {
@@ -74,11 +76,26 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     }
   }
 
-  void _shareEvent(EventModel event) {
-    HapticHelper.impact(HapticImpact.light);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Thanks for sharing ${event.title}')),
-    );
+  Future<void> _shareEvent(EventModel event) async {
+    if (_shareLoadingId != null) return;
+    setState(() => _shareLoadingId = event.id);
+    try {
+      HapticHelper.impact(HapticImpact.light);
+      await ref.read(eventShareServiceProvider).shareEvent(
+            context: context,
+            eventId: event.id,
+            title: event.title,
+          );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _shareLoadingId = null);
+    }
   }
 
   @override
@@ -378,6 +395,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                             event: event,
                             isBookmarked: _isBookmarked(event),
                             isBookmarkLoading: _bookmarkLoadingId == event.id,
+                            isShareLoading: _shareLoadingId == event.id,
                             onTap: () {
                               HapticHelper.impact(HapticImpact.light);
                               NavigationService().pushNamed(

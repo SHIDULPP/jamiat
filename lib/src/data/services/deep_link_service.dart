@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:jamiat/src/data/config/app_config.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
 
-/// Parses and routes campaign deep links from share landing pages.
+/// Parses and routes campaign / event deep links from share landing pages.
 class DeepLinkService {
   DeepLinkService._();
   static final DeepLinkService instance = DeepLinkService._();
@@ -20,6 +20,7 @@ class DeepLinkService {
   static const donateTabIndex = 1;
 
   String? _pendingCampaignId;
+  String? _pendingEventId;
   bool _pendingCampaignList = false;
   int? _pendingNavTab;
   String? _lastOpenedKey;
@@ -30,6 +31,7 @@ class DeepLinkService {
   void Function(int index)? onSelectNavTab;
 
   String? get pendingCampaignId => _pendingCampaignId;
+  String? get pendingEventId => _pendingEventId;
 
   /// Call once the root navigator exists and auth routing has settled.
   void markReady() {
@@ -56,6 +58,14 @@ class DeepLinkService {
       return;
     }
 
+    // Events before campaigns — bare ObjectIds stay campaign for back-compat.
+    final eventId = extractEventId(uri);
+    if (eventId != null && eventId.isNotEmpty) {
+      debugPrint('DeepLinkService: event=$eventId from $uri');
+      openEvent(eventId);
+      return;
+    }
+
     final campaignId = extractCampaignId(uri);
     if (campaignId == null || campaignId.isEmpty) return;
     debugPrint('DeepLinkService: campaign=$campaignId from $uri');
@@ -75,6 +85,8 @@ class DeepLinkService {
       'navBar',
       'CampaignDetails',
       'DonationList',
+      'EventDetails',
+      'Events',
     };
     if (known.contains(routeName)) return;
 
@@ -83,7 +95,7 @@ class DeepLinkService {
       handleUri(uri);
       return;
     }
-    // Path-only fallback: campaign/<id>
+    // Path-only fallback: campaign/<id> or event/<id>
     handleUri(Uri.parse('jamiatconnect://$routeName'));
   }
 
@@ -96,6 +108,7 @@ class DeepLinkService {
     if (routeName.contains('://')) return true;
     final lower = routeName.toLowerCase();
     if (lower.contains('campaign') ||
+        lower.contains('event') ||
         lower.contains('share') ||
         lower.contains('donate')) {
       return true;
@@ -164,6 +177,40 @@ class DeepLinkService {
     return false;
   }
 
+  /// `jamiatconnect://event/<id>` or `…/share/event/<id>`
+  static String? extractEventId(Uri uri) {
+    if (uri.scheme == AppConfig.appDeepLinkScheme ||
+        uri.scheme == 'jamiatconnect') {
+      if (uri.host == 'event' && uri.pathSegments.isNotEmpty) {
+        return uri.pathSegments.first;
+      }
+      if (uri.pathSegments.length >= 2 &&
+          uri.pathSegments.first.toLowerCase() == 'event') {
+        return uri.pathSegments[1];
+      }
+    }
+
+    final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
+    // /event/<id>
+    if (segments.length >= 2 && segments.first.toLowerCase() == 'event') {
+      return segments[1];
+    }
+    // …/share/event/<id>
+    for (var i = 0; i + 2 < segments.length; i++) {
+      if (segments[i].toLowerCase() == 'share' &&
+          segments[i + 1].toLowerCase() == 'event') {
+        final id = segments[i + 2];
+        if (id.isNotEmpty) return id;
+      }
+    }
+
+    final queryId = uri.queryParameters['eventId'] ??
+        uri.queryParameters['event_id'];
+    if (queryId != null && queryId.isNotEmpty) return queryId;
+
+    return null;
+  }
+
   static String? extractCampaignId(Uri uri) {
     // jamiatconnect://campaign/<id>  (skip reserved "list")
     if (uri.scheme == AppConfig.appDeepLinkScheme ||
@@ -205,7 +252,7 @@ class DeepLinkService {
       }
     }
 
-    // Flutter deep-link path-only: /<objectId>
+    // Flutter deep-link path-only: /<objectId> (campaign back-compat)
     if (segments.length == 1 && _objectId.hasMatch(segments.first)) {
       return segments.first;
     }
@@ -230,6 +277,7 @@ class DeepLinkService {
 
   void _clearPendingTargets() {
     _pendingCampaignId = null;
+    _pendingEventId = null;
     _pendingCampaignList = false;
     _pendingNavTab = null;
   }
@@ -302,7 +350,7 @@ class DeepLinkService {
 
   void openCampaign(String campaignId) {
     if (_isDuplicate(campaignId)) {
-      debugPrint('DeepLinkService: skip duplicate $campaignId');
+      debugPrint('DeepLinkService: skip duplicate campaign $campaignId');
       _pendingCampaignId = null;
       return;
     }
@@ -322,6 +370,29 @@ class DeepLinkService {
     );
   }
 
+  void openEvent(String eventId) {
+    final key = 'event:$eventId';
+    if (_isDuplicate(key)) {
+      debugPrint('DeepLinkService: skip duplicate event $eventId');
+      _pendingEventId = null;
+      return;
+    }
+
+    final nav = NavigationService.navigatorKey.currentState;
+    if (!_ready || nav == null) {
+      _clearPendingTargets();
+      _pendingEventId = eventId;
+      return;
+    }
+
+    _clearPendingTargets();
+    _markOpened(key);
+    NavigationService().pushNamed(
+      'EventDetails',
+      arguments: {'eventId': eventId},
+    );
+  }
+
   void consumePending() {
     if (_pendingNavTab != null) {
       openDonate();
@@ -329,6 +400,11 @@ class DeepLinkService {
     }
     if (_pendingCampaignList) {
       openCampaignList();
+      return;
+    }
+    final eventId = _pendingEventId;
+    if (eventId != null && eventId.isNotEmpty) {
+      openEvent(eventId);
       return;
     }
     final id = _pendingCampaignId;

@@ -62,12 +62,22 @@ class AppConfig {
   }
 
   /// Always derived from [BASE_URL] (dev or prod) — never hardcodes a host.
+  /// Dev:  `…/api/v1/share/event/{id}` on uat-admin
+  /// Prod: `…/api/v1/share/event/{id}` on api.jamiatconnect
+  static String eventShareUrl(String eventId) {
+    return '$normalizedBaseUrl/share/event/$eventId';
+  }
+
+  /// Always derived from [BASE_URL] (dev or prod) — never hardcodes a host.
   /// Dev:  `https://uat-admin.juhkerala.com/api/v1/share/donate`
   /// Prod: `https://api.jamiatconnect.juhkerala.com/api/v1/share/donate`
   static String get donateShareUrl => '$normalizedBaseUrl/share/donate';
 
   static String campaignDeepLink(String campaignId) =>
       '$appDeepLinkScheme://campaign/$campaignId';
+
+  static String eventDeepLink(String eventId) =>
+      '$appDeepLinkScheme://event/$eventId';
 
   /// Opens the in-app campaign list (`DonationList`).
   static String get campaignListDeepLink =>
