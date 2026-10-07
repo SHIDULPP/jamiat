@@ -30,9 +30,13 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
   }
 
   List<EventModel> _filter(List<EventModel> items) {
-    if (_searchQuery.isEmpty) return items;
+    // Upcoming list: drop completed/deleted (API status) and past-by-date.
+    var result = items
+        .where((e) => !e.isHiddenFromListing && !e.hasEnded)
+        .toList();
+    if (_searchQuery.isEmpty) return result;
     final query = _searchQuery.toLowerCase();
-    return items.where((e) {
+    return result.where((e) {
       return e.title.toLowerCase().contains(query) ||
           e.type.toLowerCase().contains(query) ||
           (e.venue?.toLowerCase().contains(query) ?? false) ||
@@ -351,7 +355,12 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                     final events = _filter(page.items);
                     if (events.isEmpty) {
                       return Center(
-                        child: Text('No events found', style: kEmptyStateM),
+                        child: Text(
+                          _searchQuery.isEmpty
+                              ? 'No upcoming events'
+                              : 'No events found',
+                          style: kEmptyStateM,
+                        ),
                       );
                     }
                     return RefreshIndicator(

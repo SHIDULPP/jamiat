@@ -171,7 +171,7 @@ class EventListCard extends StatelessWidget {
                         ],
                       ),
                     ],
-                    if (event.hasEnded) ...[
+                    if (event.isFinished) ...[
                       const SizedBox(height: 12),
                       SizedBox(
                         height: 40,

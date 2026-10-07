@@ -30,6 +30,7 @@ class EventModel {
     required this.description,
     required this.type,
     required this.isBookmarked,
+    this.status = 'draft',
     this.coverImage,
     this.startDate,
     this.endDate,
@@ -47,6 +48,9 @@ class EventModel {
   final String description;
   final String type;
   final bool isBookmarked;
+
+  /// Backend: draft | published | completed | deleted
+  final String status;
   final String? coverImage;
   final DateTime? startDate;
   final DateTime? endDate;
@@ -110,6 +114,28 @@ class EventModel {
     return now.isAfter(cutoff);
   }
 
+  /// Hide from user-facing lists (completed / deleted API status).
+  bool get isHiddenFromListing {
+    switch (status.toLowerCase()) {
+      case 'completed':
+      case 'deleted':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /// Finished for UX: API marked completed, or calendar window is over.
+  bool get isFinished =>
+      status.toLowerCase() == 'completed' || hasEnded;
+
+  static String _parseStatus(dynamic raw) {
+    if (raw == null) return 'draft';
+    final value = raw.toString().trim().toLowerCase();
+    if (value.isEmpty || value == 'null') return 'draft';
+    return value;
+  }
+
   static DateTime? _parseDate(dynamic raw) {
     if (raw == null) return null;
     if (raw is DateTime) return raw;
@@ -162,6 +188,7 @@ class EventModel {
       description: (json['description'] ?? '').toString(),
       type: (json['event_type'] ?? json['type'] ?? 'Offline').toString(),
       isBookmarked: json['is_bookmarked'] == true,
+      status: _parseStatus(json['status']),
       coverImage: json['cover_image']?.toString(),
       startDate: _parseDate(
         json['start_date'] ?? json['startDate'] ?? json['event_date'] ?? json['date'],

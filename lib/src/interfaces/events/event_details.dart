@@ -96,7 +96,7 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
       return;
     }
 
-    if (event.hasEnded) {
+    if (event.isFinished) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('This event has ended')),
@@ -373,7 +373,7 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
     );
     final isCoordinator =
         event != null && event.isCoordinator(currentUserId);
-    final isCompleted = event?.hasEnded == true;
+    final isCompleted = event?.isFinished == true;
     final isRegistered = event?.isRegistered == true;
     // Past events: Completed (grey). Registered past events can still view ticket.
     final showCompleted = event != null && !isCoordinator && isCompleted && !isRegistered;
