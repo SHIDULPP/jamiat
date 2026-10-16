@@ -1391,7 +1391,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                       : 'Complete your details to connect with the community and access your services.',
                   style: kCaption13R.copyWith(
                     color: kSecondaryTextColor,
-                    height: 32 / kSize13,
+                    height: 1.4,
                   ),
                 ),
                 SizedBox(height: 16 * scale),
