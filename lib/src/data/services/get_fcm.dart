@@ -101,6 +101,16 @@ Future<void> _setupFCM(BuildContext context, WidgetRef ref) async {
           );
         }
       }
+
+      // Subscribe to the broadcast topic so the user receives topic-based
+      // pushes (e.g., campaign start/end, new events) regardless of whether
+      // the backend also sends to individual tokens.
+      try {
+        await messaging.subscribeToTopic('push_notification');
+        debugPrint("Subscribed to FCM topic: push_notification");
+      } catch (e) {
+        debugPrint("Failed to subscribe to FCM topic: $e");
+      }
     }
   } catch (e) {
     debugPrint('Error setting up FCM: $e');
