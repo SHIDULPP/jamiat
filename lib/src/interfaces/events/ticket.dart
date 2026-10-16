@@ -243,7 +243,10 @@ class _TicketBody extends StatelessWidget {
     final dateLabel = ticket.eventDate != null
         ? formatEventShortDate(ticket.eventDate)
         : (fallbackDateLabel ?? '');
-    final timeLabel = formatEventTime(ticket.eventDate);
+    final timeLabel = formatEventTimeRange(
+      ticket.eventDate,
+      ticket.eventEndDate,
+    );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(

@@ -136,28 +136,31 @@ class EventModel {
     return value;
   }
 
-  static DateTime? _parseDate(dynamic raw) {
+  /// Parses API dates and returns device-local wall time so UI matches admin.
+  static DateTime? parseApiDate(dynamic raw) {
     if (raw == null) return null;
-    if (raw is DateTime) return raw;
-    if (raw is int) {
+    DateTime? parsed;
+    if (raw is DateTime) {
+      parsed = raw;
+    } else if (raw is int) {
       // Heuristic: seconds vs milliseconds
       final ms = raw < 100000000000 ? raw * 1000 : raw;
-      return DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true);
-    }
-    if (raw is num) {
-      return _parseDate(raw.toInt());
-    }
-    if (raw is Map) {
+      parsed = DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true);
+    } else if (raw is num) {
+      return parseApiDate(raw.toInt());
+    } else if (raw is Map) {
       final nested = raw[r'$date'] ?? raw['date'];
-      return _parseDate(nested);
+      return parseApiDate(nested);
+    } else {
+      final text = raw.toString().trim();
+      if (text.isEmpty || text == 'null') return null;
+      final asInt = int.tryParse(text);
+      if (asInt != null && text.length >= 9) {
+        return parseApiDate(asInt);
+      }
+      parsed = DateTime.tryParse(text);
     }
-    final text = raw.toString().trim();
-    if (text.isEmpty || text == 'null') return null;
-    final asInt = int.tryParse(text);
-    if (asInt != null && text.length >= 9) {
-      return _parseDate(asInt);
-    }
-    return DateTime.tryParse(text);
+    return parsed?.toLocal();
   }
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
@@ -190,10 +193,10 @@ class EventModel {
       isBookmarked: json['is_bookmarked'] == true,
       status: _parseStatus(json['status']),
       coverImage: json['cover_image']?.toString(),
-      startDate: _parseDate(
+      startDate: parseApiDate(
         json['start_date'] ?? json['startDate'] ?? json['event_date'] ?? json['date'],
       ),
-      endDate: _parseDate(
+      endDate: parseApiDate(
         json['end_date'] ?? json['endDate'],
       ),
       venue: json['venue']?.toString(),
@@ -265,12 +268,8 @@ class EventTicketModel {
       qrToken: json['qr_token']?.toString(),
       eventId: (eventMap['_id'] ?? eventMap['id'])?.toString(),
       eventTitle: eventMap['title']?.toString(),
-      eventDate: eventMap['start_date'] != null
-          ? DateTime.tryParse(eventMap['start_date'].toString())
-          : null,
-      eventEndDate: eventMap['end_date'] != null
-          ? DateTime.tryParse(eventMap['end_date'].toString())
-          : null,
+      eventDate: EventModel.parseApiDate(eventMap['start_date']),
+      eventEndDate: EventModel.parseApiDate(eventMap['end_date']),
       venue: eventMap['venue']?.toString(),
       passType: (json['pass_type'] ?? 'General Entry Pass').toString(),
     );

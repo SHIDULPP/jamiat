@@ -70,6 +70,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   String? _selectedStateName;
   String? _selectedDistrictCode;
   String? _selectedDistrictName;
+
   /// Mongo district `_id` when using Jamiat `/location/districts` (Kerala).
   String? _selectedBackendDistrictId;
 
@@ -251,9 +252,9 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     final stateCode = resolvedState.stateCode;
     final List<fc.City> cities;
     if (stateId != null) {
-      cities = (await fc.Cities.byStateId(stateId.toString()))
-          .where((city) => city.stateId == stateId)
-          .toList();
+      cities = (await fc.Cities.byStateId(
+        stateId.toString(),
+      )).where((city) => city.stateId == stateId).toList();
     } else {
       cities = (await fc.Cities.byStateCode(stateCode.toString()))
           .where(
@@ -347,13 +348,17 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       filled: true,
       fillColor: kWhite,
       hintText: hintText,
-      hintStyle: kBodyTitleR.copyWith(color: kSecondaryTextColor),
+      // height: 1.0 removes Flutter's default line-height leading so the hint
+      // glyph sits at the same optical baseline as typed input text.
+      hintStyle: kBodyTitleR.copyWith(color: kSecondaryTextColor, height: 1.0),
       errorText: errorText,
       errorStyle: kCaption12R.copyWith(color: kRed, height: 1.2),
       errorMaxLines: 2,
+      // vertical: 25 centres a 15 sp glyph (height:1.0 → 15 px) inside the
+      // 66 px minHeight field: (66 - 15) / 2 ≈ 25.5 → 25.
       contentPadding:
           contentPadding ??
-          const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
+          const EdgeInsets.symmetric(vertical: 25, horizontal: 24),
       // Keep field height; do not wrap the FormField in a fixed SizedBox or
       // error text below the input gets clipped.
       constraints: const BoxConstraints(minHeight: _fieldHeight),
@@ -462,8 +467,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
           controller: controller,
           keyboardType: keyboardType,
           enabled: enabled,
+          // height: 1.0 keeps the typed-text baseline aligned with the hint.
           style: kBodyTitleR.copyWith(
             color: enabled ? kTextColor : kSecondaryTextColor,
+            height: 1.0,
           ),
           validator: validator,
           decoration: _inputDecoration(hintText: hintText),
@@ -1021,7 +1028,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                 ),
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library_outlined, color: kTextColor),
+                leading: const Icon(
+                  Icons.photo_library_outlined,
+                  color: kTextColor,
+                ),
                 title: Text(
                   'Change photo',
                   style: kBodyTitleR.copyWith(color: kTextColor),

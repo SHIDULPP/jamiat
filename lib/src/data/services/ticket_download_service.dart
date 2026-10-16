@@ -229,7 +229,10 @@ class _TicketCaptureCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateLabel = formatEventShortDate(ticket.eventDate);
-    final timeLabel = formatEventTime(ticket.eventDate);
+    final timeLabel = formatEventTimeRange(
+      ticket.eventDate,
+      ticket.eventEndDate,
+    );
     final qrData = (ticket.qrToken != null && ticket.qrToken!.isNotEmpty)
         ? ticket.qrToken!
         : ticket.ticketCode;

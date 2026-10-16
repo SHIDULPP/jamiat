@@ -95,39 +95,52 @@ String formatTargetDate(DateTime date) {
   return '${date.day} ${_monthLabelsFull[date.month - 1]}, ${date.year}';
 }
 
+/// API dates arrive as UTC ISO; always format in the device local timezone
+/// so times match admin (Asia/Kolkata on Indian devices).
 String _formatTimeAmPm(DateTime date) {
-  final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
-  final minute = date.minute.toString().padLeft(2, '0');
-  final period = date.hour >= 12 ? 'pm' : 'am';
+  final local = date.toLocal();
+  final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
+  final minute = local.minute.toString().padLeft(2, '0');
+  final period = local.hour >= 12 ? 'pm' : 'am';
   return '$hour:$minute $period';
 }
 
 /// e.g. `07 Jun, 2026 • 10:45 am - 3:30pm`
 String formatEventDateTimeRange(DateTime? start, [DateTime? end]) {
   if (start == null) return '';
-  final day = start.day.toString().padLeft(2, '0');
-  final month = _monthLabels[start.month - 1];
-  final datePart = '$day $month, ${start.year}';
+  final localStart = start.toLocal();
+  final day = localStart.day.toString().padLeft(2, '0');
+  final month = _monthLabels[localStart.month - 1];
+  final datePart = '$day $month, ${localStart.year}';
   if (end == null) {
-    return '$datePart • ${_formatTimeAmPm(start)}';
+    return '$datePart • ${_formatTimeAmPm(localStart)}';
   }
-  return '$datePart • ${_formatTimeAmPm(start)} - ${_formatTimeAmPm(end)}';
+  return '$datePart • ${_formatTimeAmPm(localStart)} - ${_formatTimeAmPm(end)}';
 }
 
 /// e.g. `20 Jun 2026`
 String formatEventShortDate(DateTime? date) {
   if (date == null) return '';
-  final day = date.day.toString().padLeft(2, '0');
-  final month = _monthLabels[date.month - 1];
-  return '$day $month ${date.year}';
+  final local = date.toLocal();
+  final day = local.day.toString().padLeft(2, '0');
+  final month = _monthLabels[local.month - 1];
+  return '$day $month ${local.year}';
 }
 
 /// e.g. `May 2026`
 String formatEventMonthYear(DateTime date) {
-  return '${_monthLabelsFull[date.month - 1]} ${date.year}';
+  final local = date.toLocal();
+  return '${_monthLabelsFull[local.month - 1]} ${local.year}';
 }
 
 String formatEventTime(DateTime? date) {
   if (date == null) return '';
   return _formatTimeAmPm(date);
+}
+
+/// e.g. `10:45 am - 3:30 pm` (start only when end is null)
+String formatEventTimeRange(DateTime? start, [DateTime? end]) {
+  if (start == null) return '';
+  if (end == null) return _formatTimeAmPm(start);
+  return '${_formatTimeAmPm(start)} - ${_formatTimeAmPm(end)}';
 }
