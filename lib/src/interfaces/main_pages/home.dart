@@ -115,7 +115,7 @@ class HomePage extends ConsumerWidget {
                           children: [
                             const _ContributionsCard(),
                             if (isJamiatMember) ...[
-                              const SizedBox(height: 15),
+                              const SizedBox(height: 24),
                               Text('Quick Access', style: kSectionTitleSB),
                               const SizedBox(height: 12),
                             ],
