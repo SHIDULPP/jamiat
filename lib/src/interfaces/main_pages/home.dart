@@ -1082,9 +1082,11 @@ class _CampaignCard extends StatelessWidget {
 class _WelfareGridSection extends ConsumerWidget {
   const _WelfareGridSection();
 
-  static const double _figmaCol = 113;
-  static const double _figmaGap = 16;
-  static const double _figmaMidOffset = 31;
+  // Uniform grid constants — single source of truth for spacing and sizing.
+  static const int _columns = 3;
+  static const double _tileGap = 12;
+  // childAspectRatio: width / height. 113 wide × 128 tall ≈ 0.88.
+  static const double _tileAspectRatio = 113 / 128;
 
   static const _fallbackColors = [
     Color(0xFFFFFBEB),
@@ -1094,8 +1096,6 @@ class _WelfareGridSection extends ConsumerWidget {
     Color(0xFFFDF4FF),
     Color(0xFFF5EBE6),
   ];
-
-  static const _fallbackHeights = [128.0, 100.0, 135.0, 155.0, 100.0, 128.0];
 
   static const _localAssetByKeyword = <String, String>{
     'maktab': 'assets/pngs/maktab.png',
@@ -1125,16 +1125,6 @@ class _WelfareGridSection extends ConsumerWidget {
       if (lower.contains(entry.key)) return entry.value;
     }
     return null;
-  }
-
-  List<List<WelfareServiceModel>> _splitColumns(
-    List<WelfareServiceModel> items,
-  ) {
-    final cols = List.generate(3, (_) => <WelfareServiceModel>[]);
-    for (var i = 0; i < items.length; i++) {
-      cols[i % 3].add(items[i]);
-    }
-    return cols;
   }
 
   @override
@@ -1198,68 +1188,27 @@ class _WelfareGridSection extends ConsumerWidget {
               }
 
               final preview = services.take(6).toList();
-              final columns = _splitColumns(preview);
 
-              return LayoutBuilder(
-                builder: (context, constraints) {
-                  final colWidth = (constraints.maxWidth - _figmaGap * 2) / 3;
-                  final scale = colWidth / _figmaCol;
-                  final midOffset = _figmaMidOffset * scale;
-                  final gap = _figmaGap * scale;
-
-                  Widget buildCol(
-                    List<WelfareServiceModel> items,
-                    int columnIndex,
-                  ) {
-                    return Column(
-                      children: [
-                        for (var i = 0; i < items.length; i++) ...[
-                          if (i > 0) SizedBox(height: gap),
-                          _WelfareServiceCard(
-                            service: items[i],
-                            width: colWidth,
-                            scale: scale,
-                            height:
-                                _fallbackHeights[(columnIndex + i * 3) %
-                                    _fallbackHeights.length] *
-                                scale,
-                            bgColor: _cardColor(items[i], columnIndex + i * 3),
-                            fallbackAsset: _localAsset(items[i].name),
-                          ),
-                        ],
-                      ],
-                    );
-                  }
-
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: 40 * scale),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: colWidth,
-                          child: Padding(
-                            padding: EdgeInsets.only(top: midOffset),
-                            child: buildCol(columns[0], 0),
-                          ),
-                        ),
-                        SizedBox(width: gap),
-                        SizedBox(
-                          width: colWidth,
-                          child: buildCol(columns[1], 1),
-                        ),
-                        SizedBox(width: gap),
-                        SizedBox(
-                          width: colWidth,
-                          child: Padding(
-                            padding: EdgeInsets.only(top: midOffset),
-                            child: buildCol(columns[2], 2),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+              // GridView.count keeps all tiles equal width, equal height, and
+              // equal gaps — no manual column splitting or height maps needed.
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 40),
+                child: GridView.count(
+                  crossAxisCount: _columns,
+                  crossAxisSpacing: _tileGap,
+                  mainAxisSpacing: _tileGap,
+                  childAspectRatio: _tileAspectRatio,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    for (var i = 0; i < preview.length; i++)
+                      _WelfareServiceCard(
+                        service: preview[i],
+                        bgColor: _cardColor(preview[i], i),
+                        fallbackAsset: _localAsset(preview[i].name),
+                      ),
+                  ],
+                ),
               );
             },
           ),
@@ -1271,17 +1220,11 @@ class _WelfareGridSection extends ConsumerWidget {
 
 class _WelfareServiceCard extends StatelessWidget {
   final WelfareServiceModel service;
-  final double width;
-  final double scale;
-  final double height;
   final Color bgColor;
   final String? fallbackAsset;
 
   const _WelfareServiceCard({
     required this.service,
-    required this.width,
-    required this.scale,
-    required this.height,
     required this.bgColor,
     this.fallbackAsset,
   });
@@ -1313,44 +1256,29 @@ class _WelfareServiceCard extends StatelessWidget {
           arguments: {'welfareId': service.id},
         );
       },
-      child: SizedBox(
-        width: width,
-        height: height,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: bgColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            Positioned(
-              top: 10 * scale,
-              left: 4,
-              right: 4,
-              child: Text(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        // Column layout: label pinned at top, image fills remaining space.
+        // No Positioned/Stack needed — the GridView cell provides the fixed size.
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
                 service.name,
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: kCaption12SB.copyWith(
-                  color: kTextColor,
-                  height: 1.2,
-                  fontSize: 12 * scale.clamp(0.9, 1.15),
-                ),
+                style: kCaption12SB.copyWith(color: kTextColor, height: 1.2),
               ),
-            ),
-            Positioned(
-              left: 8 * scale,
-              right: 8 * scale,
-              top: 36 * scale,
-              bottom: 8 * scale,
-              child: _image(),
-            ),
-          ],
+              const SizedBox(height: 6),
+              Expanded(child: _image()),
+            ],
+          ),
         ),
       ),
     );
