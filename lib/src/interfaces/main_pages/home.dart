@@ -68,6 +68,12 @@ const _quickAccessItems = <_QuickAccessItem>[
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
+  // ── Home spacing system ──────────────────────────────────────────────────
+  // Apply gap as top-only padding on each section to avoid double-stacking
+  // (A.bottom + B.top). All major section-to-section gaps share one token.
+  static const double _sectionGap = 20;
+  static const double _screenBottomGap = 32;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isJamiatMember = ref
@@ -168,8 +174,7 @@ class HomePage extends ConsumerWidget {
                           padding: const EdgeInsets.only(
                             left: kScreenPaddingH,
                             right: kScreenPaddingH,
-                            top: 44,
-                            bottom: 40,
+                            top: _sectionGap,
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(14),
@@ -265,9 +270,10 @@ class HomePage extends ConsumerWidget {
                     // Medical Relief Fund banner — Figma 2248:756 / Frame 2001
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: kScreenPaddingH,
-                          vertical: 20,
+                        padding: const EdgeInsets.only(
+                          left: kScreenPaddingH,
+                          right: kScreenPaddingH,
+                          top: _sectionGap,
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(14),
@@ -383,7 +389,7 @@ class HomePage extends ConsumerWidget {
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(
                           kScreenPaddingH,
-                          16,
+                          _sectionGap,
                           kScreenPaddingH,
                           8,
                         ),
@@ -517,9 +523,11 @@ class HomePage extends ConsumerWidget {
                     if (isJamiatMember)
                       SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: kScreenPaddingH,
-                            vertical: 24,
+                          padding: const EdgeInsets.only(
+                            left: kScreenPaddingH,
+                            right: kScreenPaddingH,
+                            top: _sectionGap,
+                            bottom: _sectionGap,
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(14),
@@ -603,7 +611,9 @@ class HomePage extends ConsumerWidget {
                           ),
                         ),
                       ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 48)),
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: _screenBottomGap),
+                    ),
                   ],
                 ),
               ),
@@ -1191,24 +1201,21 @@ class _WelfareGridSection extends ConsumerWidget {
 
               // GridView.count keeps all tiles equal width, equal height, and
               // equal gaps — no manual column splitting or height maps needed.
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 40),
-                child: GridView.count(
-                  crossAxisCount: _columns,
-                  crossAxisSpacing: _tileGap,
-                  mainAxisSpacing: _tileGap,
-                  childAspectRatio: _tileAspectRatio,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    for (var i = 0; i < preview.length; i++)
-                      _WelfareServiceCard(
-                        service: preview[i],
-                        bgColor: _cardColor(preview[i], i),
-                        fallbackAsset: _localAsset(preview[i].name),
-                      ),
-                  ],
-                ),
+              return GridView.count(
+                crossAxisCount: _columns,
+                crossAxisSpacing: _tileGap,
+                mainAxisSpacing: _tileGap,
+                childAspectRatio: _tileAspectRatio,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  for (var i = 0; i < preview.length; i++)
+                    _WelfareServiceCard(
+                      service: preview[i],
+                      bgColor: _cardColor(preview[i], i),
+                      fallbackAsset: _localAsset(preview[i].name),
+                    ),
+                ],
               );
             },
           ),
