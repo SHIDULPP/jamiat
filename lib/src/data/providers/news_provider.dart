@@ -23,3 +23,17 @@ final newsDetailProvider = FutureProvider.family<NewsModel, String>((
   }
   return response.data!;
 });
+
+final newsSearchProvider = FutureProvider.autoDispose
+    .family<PaginatedResponse<NewsModel>, ({String search, int page})>((
+      ref,
+      query,
+    ) async {
+      final response = await ref
+          .watch(newsApiProvider)
+          .getNewsForUser(search: query.search, pageNo: query.page);
+      if (!response.success || response.data == null) {
+        throw Exception(response.message ?? 'Failed to load news');
+      }
+      return response.data!;
+    });

@@ -1,8 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jamiat/src/data/constants/color_constants.dart';
 import 'package:jamiat/src/data/constants/style_constants.dart';
-import 'package:jamiat/src/data/models/news_model.dart';
 import 'package:jamiat/src/data/providers/news_provider.dart';
 import 'package:jamiat/src/data/services/haptic_helper.dart';
 import 'package:jamiat/src/data/services/navigation_services.dart';
@@ -19,30 +20,41 @@ class NewsListScreen extends ConsumerStatefulWidget {
 class _NewsListScreenState extends ConsumerState<NewsListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  int _page = 1;
+  Timer? _searchDebounce;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text.trim().toLowerCase();
-      });
+      _searchDebounce?.cancel();
+      final query = _searchController.text.trim();
+      if (query.isEmpty) {
+        _applySearch();
+      } else {
+        _searchDebounce = Timer(
+          const Duration(milliseconds: 300),
+          _applySearch,
+        );
+      }
+    });
+  }
+
+  void _applySearch() {
+    _searchDebounce?.cancel();
+    final query = _searchController.text.trim();
+    if (!mounted || query == _searchQuery) return;
+    setState(() {
+      _searchQuery = query;
+      _page = 1;
     });
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
-  }
-
-  List<NewsModel> _filter(List<NewsModel> items) {
-    if (_searchQuery.isEmpty) return items;
-    return items.where((item) {
-      return item.title.toLowerCase().contains(_searchQuery) ||
-          item.description.toLowerCase().contains(_searchQuery) ||
-          (item.subTitle?.toLowerCase().contains(_searchQuery) ?? false);
-    }).toList();
   }
 
   Widget _thumb(String? url) {
@@ -76,7 +88,11 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final newsAsync = ref.watch(newsListProvider);
+    final searchProvider = newsSearchProvider((
+      search: _searchQuery,
+      page: _page,
+    ));
+    final newsAsync = ref.watch(searchProvider);
 
     return Scaffold(
       backgroundColor: kWhite,
@@ -150,6 +166,8 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
                     Expanded(
                       child: TextField(
                         controller: _searchController,
+                        textInputAction: TextInputAction.search,
+                        onSubmitted: (_) => _applySearch(),
                         style: kBodyTitleR.copyWith(color: kTextColor),
                         decoration: InputDecoration(
                           hintText: 'Search for news',
@@ -173,9 +191,9 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
             Expanded(
               child: AsyncContent(
                 asyncValue: newsAsync,
-                onRetry: () => ref.invalidate(newsListProvider),
+                onRetry: () => ref.invalidate(searchProvider),
                 builder: (page) {
-                  final filtered = _filter(page.items);
+                  final filtered = page.items;
                   if (filtered.isEmpty) {
                     return Center(
                       child: Text(
@@ -184,77 +202,111 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
                       ),
                     );
                   }
-                  return ListView.builder(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: kScreenPaddingH,
-                    ),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      final item = filtered[index];
-                      return GestureDetector(
-                        onTap: () {
-                          HapticHelper.impact(HapticImpact.light);
-                          NavigationService().pushNamed(
-                            'NewsDetail',
-                            arguments: {'newsId': item.id},
-                          );
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: kWhite,
-                            borderRadius: BorderRadius.circular(kCardRadiusMd),
-                            border: Border.all(color: kBorder, width: 1),
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: ListView.builder(
+                          key: ValueKey((_searchQuery, _page)),
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: kScreenPaddingH,
                           ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(6),
-                                child: _thumb(item.image),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
+                          itemCount: filtered.length,
+                          itemBuilder: (context, index) {
+                            final item = filtered[index];
+                            return GestureDetector(
+                              onTap: () {
+                                HapticHelper.impact(HapticImpact.light);
+                                NavigationService().pushNamed(
+                                  'NewsDetail',
+                                  arguments: {'newsId': item.id},
+                                );
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 16),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: kWhite,
+                                  borderRadius: BorderRadius.circular(
+                                    kCardRadiusMd,
+                                  ),
+                                  border: Border.all(color: kBorder, width: 1),
+                                ),
+                                child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      item.title,
-                                      style: kBodyTitleB.copyWith(
-                                        color: kTextColor,
-                                        fontSize: 15,
-                                        height: 1.2,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(6),
+                                      child: _thumb(item.image),
                                     ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      item.subTitle ?? item.description,
-                                      style: kCaption12R.copyWith(
-                                        color: kSecondaryTextColor,
-                                        height: 1.2,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      formatDateLabel(item.createdAt),
-                                      style: kCaption10SB.copyWith(
-                                        color: kText2Color,
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item.title,
+                                            style: kBodyTitleB.copyWith(
+                                              color: kTextColor,
+                                              fontSize: 15,
+                                              height: 1.2,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            item.subTitle ?? item.description,
+                                            style: kCaption12R.copyWith(
+                                              color: kSecondaryTextColor,
+                                              height: 1.2,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            formatDateLabel(item.createdAt),
+                                            style: kCaption10SB.copyWith(
+                                              color: kText2Color,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
+                            );
+                          },
+                        ),
+                      ),
+                      if (_page > 1 || page.hasMore)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: kScreenPaddingH,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              TextButton(
+                                onPressed: _page > 1
+                                    ? () => setState(() => _page--)
+                                    : null,
+                                child: const Text('Previous'),
+                              ),
+                              Text('Page $_page', style: kCaption12R),
+                              TextButton(
+                                onPressed: page.hasMore
+                                    ? () => setState(() => _page++)
+                                    : null,
+                                child: const Text('Next'),
+                              ),
                             ],
                           ),
                         ),
-                      );
-                    },
+                    ],
                   );
                 },
               ),

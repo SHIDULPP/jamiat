@@ -121,6 +121,7 @@ class NewsDetailScreen extends ConsumerWidget {
                       Text(article.title, style: kSectionTitleSB),
                       const SizedBox(height: 16),
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(4),
@@ -153,8 +154,6 @@ class NewsDetailScreen extends ConsumerWidget {
                                   style: kCaption12R.copyWith(
                                     color: kTextColor,
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
