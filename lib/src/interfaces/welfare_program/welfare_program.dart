@@ -114,7 +114,14 @@ class _WelfareProgramScreenState extends ConsumerState<WelfareProgramScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text('Welfare Services', style: kSectionTitleSB),
+                  Expanded(
+                    child: Text(
+                      'Welfare Services',
+                      style: kSectionTitleSB,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 32),

@@ -124,9 +124,11 @@ class _AutopayViewScreenState extends ConsumerState<AutopayViewScreen> {
       backgroundColor: kWhite,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: kScreenPaddingH,
-            vertical: 16,
+          padding: const EdgeInsets.fromLTRB(
+            kScreenPaddingH,
+            8,
+            kScreenPaddingH,
+            16,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,12 +155,16 @@ class _AutopayViewScreenState extends ConsumerState<AutopayViewScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Autopay',
-                    style: kSectionTitleSB,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Autopay',
+                      style: kSectionTitleSB,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   GestureDetector(
                     onTap: () {
                       HapticHelper.impact(HapticImpact.light);
