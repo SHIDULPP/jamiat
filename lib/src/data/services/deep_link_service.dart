@@ -21,6 +21,7 @@ class DeepLinkService {
 
   String? _pendingCampaignId;
   String? _pendingEventId;
+  String? _pendingProductId;
   bool _pendingCampaignList = false;
   int? _pendingNavTab;
   String? _lastOpenedKey;
@@ -32,6 +33,7 @@ class DeepLinkService {
 
   String? get pendingCampaignId => _pendingCampaignId;
   String? get pendingEventId => _pendingEventId;
+  String? get pendingProductId => _pendingProductId;
 
   /// Call once the root navigator exists and auth routing has settled.
   void markReady() {
@@ -55,6 +57,12 @@ class DeepLinkService {
     if (isCampaignListLink(uri)) {
       debugPrint('DeepLinkService: campaign list from $uri');
       openCampaignList();
+      return;
+    }
+
+    final productId = extractProductId(uri);
+    if (productId != null) {
+      openProduct(productId);
       return;
     }
 
@@ -85,6 +93,7 @@ class DeepLinkService {
       'navBar',
       'CampaignDetails',
       'DonationList',
+      'MarketProductDetail',
       'EventDetails',
       'Events',
     };
@@ -109,13 +118,13 @@ class DeepLinkService {
     final lower = routeName.toLowerCase();
     if (lower.contains('campaign') ||
         lower.contains('event') ||
+        lower.contains('product') ||
         lower.contains('share') ||
         lower.contains('donate')) {
       return true;
     }
     // Flutter strips scheme+host and pushes path only: `/<objectId>`
-    final segments =
-        routeName.split('/').where((s) => s.isNotEmpty).toList();
+    final segments = routeName.split('/').where((s) => s.isNotEmpty).toList();
     if (segments.length == 1 && _objectId.hasMatch(segments.first)) {
       return true;
     }
@@ -143,7 +152,8 @@ class DeepLinkService {
 
   /// `jamiatconnect://campaign/list`, `jamiatconnect://campaigns`, `/campaign/list`
   static bool isCampaignListLink(Uri uri) {
-    final schemeOk = uri.scheme == AppConfig.appDeepLinkScheme ||
+    final schemeOk =
+        uri.scheme == AppConfig.appDeepLinkScheme ||
         uri.scheme == 'jamiatconnect' ||
         uri.scheme == 'https' ||
         uri.scheme == 'http' ||
@@ -204,11 +214,29 @@ class DeepLinkService {
       }
     }
 
-    final queryId = uri.queryParameters['eventId'] ??
-        uri.queryParameters['event_id'];
+    final queryId =
+        uri.queryParameters['eventId'] ?? uri.queryParameters['event_id'];
     if (queryId != null && queryId.isNotEmpty) return queryId;
 
     return null;
+  }
+
+  static String? extractProductId(Uri uri) {
+    final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
+    String? id;
+    if ((uri.scheme == AppConfig.appDeepLinkScheme ||
+            uri.scheme == 'jamiatconnect') &&
+        uri.host == 'product' &&
+        segments.length == 1) {
+      id = segments.first;
+    } else if (segments.length == 2 && segments.first == 'product') {
+      id = segments.last;
+    } else if (segments.length >= 3 &&
+        segments[segments.length - 3] == 'share' &&
+        segments[segments.length - 2] == 'product') {
+      id = segments.last;
+    }
+    return id != null && _objectId.hasMatch(id) ? id : null;
   }
 
   static String? extractCampaignId(Uri uri) {
@@ -222,7 +250,8 @@ class DeepLinkService {
         }
         return id;
       }
-      if (uri.pathSegments.length >= 2 && uri.pathSegments.first == 'campaign') {
+      if (uri.pathSegments.length >= 2 &&
+          uri.pathSegments.first == 'campaign') {
         final id = uri.pathSegments[1];
         if (id.toLowerCase() == 'list' || id.toLowerCase() == 'lists') {
           return null;
@@ -257,7 +286,8 @@ class DeepLinkService {
       return segments.first;
     }
 
-    final queryId = uri.queryParameters['campaignId'] ??
+    final queryId =
+        uri.queryParameters['campaignId'] ??
         uri.queryParameters['campaign_id'] ??
         uri.queryParameters['id'];
     if (queryId != null && queryId.isNotEmpty) return queryId;
@@ -278,6 +308,7 @@ class DeepLinkService {
   void _clearPendingTargets() {
     _pendingCampaignId = null;
     _pendingEventId = null;
+    _pendingProductId = null;
     _pendingCampaignList = false;
     _pendingNavTab = null;
   }
@@ -285,9 +316,7 @@ class DeepLinkService {
   void _popToNavBar() {
     final nav = NavigationService.navigatorKey.currentState;
     if (nav == null) return;
-    nav.popUntil(
-      (route) => route.isFirst || route.settings.name == 'navBar',
-    );
+    nav.popUntil((route) => route.isFirst || route.settings.name == 'navBar');
   }
 
   void _selectNavTab(int index) {
@@ -393,7 +422,32 @@ class DeepLinkService {
     );
   }
 
+  void openProduct(String productId) {
+    final key = 'product:$productId';
+    if (_isDuplicate(key)) {
+      _pendingProductId = null;
+      return;
+    }
+    final nav = NavigationService.navigatorKey.currentState;
+    if (!_ready || nav == null) {
+      _clearPendingTargets();
+      _pendingProductId = productId;
+      return;
+    }
+    _clearPendingTargets();
+    _markOpened(key);
+    NavigationService().pushNamed(
+      'MarketProductDetail',
+      arguments: {'productId': productId},
+    );
+  }
+
   void consumePending() {
+    final productId = _pendingProductId;
+    if (productId != null) {
+      openProduct(productId);
+      return;
+    }
     if (_pendingNavTab != null) {
       openDonate();
       return;

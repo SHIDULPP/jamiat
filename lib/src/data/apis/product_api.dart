@@ -102,11 +102,9 @@ class ProductApi {
   }
 
   Future<ApiResponse<bool>> toggleSaveProduct(String productId) async {
-    final response = await _api.post(
-      '/product/save',
-      {'product_id': productId},
-      requireAuth: true,
-    );
+    final response = await _api.post('/product/save', {
+      'product_id': productId,
+    }, requireAuth: true);
     if (!response.success) {
       return ApiResponse.error(
         response.message ?? 'Failed to update saved product',
@@ -123,11 +121,9 @@ class ProductApi {
   }
 
   Future<ApiResponse<void>> createEnquiry(String productId) async {
-    final response = await _api.post(
-      '/product/enquiry',
-      {'product_id': productId},
-      requireAuth: true,
-    );
+    final response = await _api.post('/product/enquiry', {
+      'product_id': productId,
+    }, requireAuth: true);
     if (!response.success) {
       return ApiResponse.error(
         response.message ?? 'Failed to submit enquiry',
@@ -175,6 +171,28 @@ class ProductApi {
         limit: limit,
       ),
       response.statusCode ?? 200,
+    );
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> shareProduct(
+    String productId,
+  ) async {
+    final response = await _api.post(
+      '/product/share/$productId',
+      const {},
+      requireAuth: true,
+    );
+    if (!response.success) {
+      return ApiResponse.error(
+        response.message ?? 'Failed to share',
+        response.statusCode,
+      );
+    }
+    final data = nestedData(response.data) ?? response.data;
+    return ApiResponse.success(
+      data,
+      response.statusCode ?? 200,
+      message: response.message,
     );
   }
 }

@@ -10,7 +10,7 @@ import 'package:jamiat/src/interfaces/components/async_content.dart';
 import 'package:jamiat/src/interfaces/components/primarybutton.dart';
 import 'package:jamiat/src/interfaces/components/profile_avatar.dart';
 import 'package:jamiat/src/interfaces/market/market_product_card.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:jamiat/src/data/services/product_share_service.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   const ProductDetailScreen({super.key, required this.productId});
@@ -26,6 +26,32 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   bool? _isSavedOverride;
   bool _saveLoading = false;
   bool _enquireLoading = false;
+  bool _shareLoading = false;
+
+  Future<void> _shareProduct(ProductModel product) async {
+    if (_shareLoading) return;
+    setState(() => _shareLoading = true);
+    try {
+      HapticHelper.impact(HapticImpact.light);
+      await ref
+          .read(productShareServiceProvider)
+          .shareProduct(
+            context: context,
+            productId: product.id,
+            title: product.name,
+          );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to share this product. Please try again.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _shareLoading = false);
+    }
+  }
 
   bool _isSaved(ProductModel product) {
     return _isSavedOverride ?? product.isSaved;
@@ -35,8 +61,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     if (_saveLoading) return;
     setState(() => _saveLoading = true);
     try {
-      final res =
-          await ref.read(productApiProvider).toggleSaveProduct(product.id);
+      final res = await ref
+          .read(productApiProvider)
+          .toggleSaveProduct(product.id);
       if (!mounted) return;
       if (!res.success) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -121,10 +148,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           onRetry: () =>
               ref.invalidate(productDetailProvider(widget.productId)),
           builder: (product) {
-            final sellerName =
-                (product.seller?.name.isNotEmpty == true)
-                    ? product.seller!.name
-                    : 'Jamiat Welfare Committee';
+            final sellerName = (product.seller?.name.isNotEmpty == true)
+                ? product.seller!.name
+                : 'Jamiat Welfare Committee';
             final isSaved = _isSaved(product);
 
             return Column(
@@ -160,26 +186,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(
-                          'Product Details',
-                          style: kSectionTitleSB,
-                        ),
+                        child: Text('Product Details', style: kSectionTitleSB),
                       ),
                       GestureDetector(
-                        onTap: () {
-                          HapticHelper.impact(HapticImpact.light);
-                          final amount = product.amount;
-                          final price = amount % 1 == 0
-                              ? amount.toInt().toString()
-                              : amount.toString();
-                          SharePlus.instance.share(
-                            ShareParams(
-                              text:
-                                  '${product.name}\n₹$price\n${product.description}',
-                              subject: product.name,
-                            ),
-                          );
-                        },
+                        onTap: _shareLoading
+                            ? null
+                            : () => _shareProduct(product),
                         child: Container(
                           width: 40,
                           height: 40,
@@ -244,10 +256,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 ],
                               ),
                             ),
-                            Text(
-                              product.formattedPrice,
-                              style: kSubHeadingSB,
-                            ),
+                            Text(product.formattedPrice, style: kSubHeadingSB),
                           ],
                         ),
                         const SizedBox(height: 16),

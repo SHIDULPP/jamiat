@@ -38,8 +38,7 @@ class AppConfig {
   static bool get isProductionApi =>
       apiHost == 'api.jamiatconnect.juhkerala.com';
 
-  static bool get isDevelopmentApi =>
-      apiHost == 'uat-admin.juhkerala.com';
+  static bool get isDevelopmentApi => apiHost == 'uat-admin.juhkerala.com';
 
   static String get androidPackageId =>
       dotenv.env['ANDROID_PACKAGE_ID']?.trim().isNotEmpty == true
@@ -66,6 +65,10 @@ class AppConfig {
   /// Prod: `…/api/v1/share/event/{id}` on api.jamiatconnect
   static String eventShareUrl(String eventId) {
     return '$normalizedBaseUrl/share/event/$eventId';
+  }
+
+  static String productShareUrl(String productId) {
+    return '$normalizedBaseUrl/share/product/${Uri.encodeComponent(productId)}';
   }
 
   /// Always derived from [BASE_URL] (dev or prod) — never hardcodes a host.
