@@ -85,7 +85,12 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(kScreenPaddingH, 8, kScreenPaddingH, 0),
+              padding: const EdgeInsets.fromLTRB(
+                kScreenPaddingH,
+                8,
+                kScreenPaddingH,
+                0,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -115,16 +120,16 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
                       Text('News & Announcements', style: kSectionTitleSB),
                     ],
                   ),
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: kWhite.withValues(alpha: 0.08),
-                      border: Border.all(color: kGrey, width: 1.25),
-                    ),
-                    child: const Icon(Icons.more_vert, color: kMutedText, size: 20),
-                  ),
+                  // Container(
+                  //   width: 40,
+                  //   height: 40,
+                  //   decoration: BoxDecoration(
+                  //     shape: BoxShape.circle,
+                  //     color: kWhite.withValues(alpha: 0.08),
+                  //     border: Border.all(color: kGrey, width: 1.25),
+                  //   ),
+                  //   child: const Icon(Icons.more_vert, color: kMutedText, size: 20),
+                  // ),
                 ],
               ),
             ),
@@ -154,31 +159,14 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
                           ),
                           border: InputBorder.none,
                           isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 30,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
-                children: const [
-                  _NewsCategoryChip(label: 'All', selected: true),
-                  SizedBox(width: 12),
-                  _NewsCategoryChip(label: 'Charity'),
-                  SizedBox(width: 12),
-                  _NewsCategoryChip(label: 'Welfare'),
-                  SizedBox(width: 12),
-                  _NewsCategoryChip(label: 'Events'),
-                  SizedBox(width: 12),
-                  _NewsCategoryChip(label: 'Medical'),
-                ],
               ),
             ),
             const SizedBox(height: 16),
@@ -198,7 +186,9 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
                   }
                   return ListView.builder(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: kScreenPaddingH),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: kScreenPaddingH,
+                    ),
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final item = filtered[index];
@@ -253,7 +243,9 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
                                     const SizedBox(height: 8),
                                     Text(
                                       formatDateLabel(item.createdAt),
-                                      style: kCaption10SB.copyWith(color: kText2Color),
+                                      style: kCaption10SB.copyWith(
+                                        color: kText2Color,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -268,32 +260,6 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NewsCategoryChip extends StatelessWidget {
-  const _NewsCategoryChip({required this.label, this.selected = false});
-
-  final String label;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: selected ? kSecondaryColor : kSecondaryColor.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: kSecondaryColor, width: 1),
-      ),
-      child: Text(
-        label,
-        style: kCaption12M.copyWith(
-          color: selected ? kTextColor : kSecondaryTextColor,
-          height: 1.2,
         ),
       ),
     );
